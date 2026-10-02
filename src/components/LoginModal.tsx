@@ -30,6 +30,7 @@ import {
   Phone,
   Users,
   Download,
+  Printer,
   RefreshCw,
   CheckCircle2,
   Calendar,
@@ -115,6 +116,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [regGeneratedBene, setRegGeneratedBene] = useState<Beneficiary | null>(null);
   const [regQrCodeDataUrl, setRegQrCodeDataUrl] = useState<string>('');
   const [isRegisterLoading, setIsRegisterLoading] = useState<boolean>(false);
+
+  // Event QR Code data URL state (with dynamic QR generator fallback)
+  const [eventQrUrl, setEventQrUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (!eventBroadcast) return;
+    if (eventBroadcast.qrDataUrl) {
+      setEventQrUrl(eventBroadcast.qrDataUrl);
+      return;
+    }
+    const payload = eventBroadcast.qrPayload || `https://linis-dingalan.aurora.gov.ph/attendance/checkin?act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
+    QRCode.toDataURL(payload, {
+      width: 320,
+      margin: 1,
+      color: { dark: '#022c22', light: '#ffffff' },
+      errorCorrectionLevel: 'H',
+    })
+      .then((url) => setEventQrUrl(url))
+      .catch((err) => console.error('Error generating event QR fallback:', err));
+  }, [eventBroadcast]);
+
+  // Automatically open the Event Advisory with QR Code whenever a broadcast is sent or loaded
+  useEffect(() => {
+    if (eventBroadcast && eventBroadcast.id && !isBroadcastHidden) {
+      setIsUnfolded(true);
+      setActiveView('event');
+    }
+  }, [eventBroadcast]);
 
   // Precision 5-second video loop controller & guaranteed autoplay
   useEffect(() => {
@@ -592,20 +621,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <span className="tracking-wide">Registration / Generate QR</span>
           </button>
 
-          {/* EVENT Button (Only displays on Mobile Devices when an Event Broadcast is Active; Hidden on Computer) */}
+          {/* EVENT / PAALALA & QR CODE Button (Visible on both Mobile and Desktop when active) */}
           {eventBroadcast && (
             <button
               type="button"
               onClick={handleEventPortalClick}
-              className={`sm:hidden w-full flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 rounded-xl transition-all transform hover:scale-[1.01] active:scale-95 cursor-pointer shadow-sm ${
+              className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'event'
                   ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
-                  : 'text-emerald-100 bg-gradient-to-r from-teal-800/80 via-emerald-700/80 to-teal-900/80 hover:from-teal-700 hover:to-emerald-600 border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                  : 'text-emerald-100 bg-gradient-to-r from-teal-800/90 via-emerald-700/90 to-teal-900/90 hover:from-teal-700 hover:to-emerald-600 border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.45)]'
               }`}
-              title="Pindutin para lumabas ang Event Advisory sa itaas ng Linis Dingalan"
+              title="Pindutin para tingnan ang Opisyal na Paalala at QR Code ng Event"
             >
               <Radio className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-300 animate-pulse'}`} />
-              <span className="tracking-wide font-extrabold uppercase">EVENT</span>
+              <span className="tracking-wide font-extrabold uppercase">Paalala & QR Code</span>
               <span className={`w-2 h-2 rounded-full shrink-0 ${isUnfolded && activeView === 'event' ? 'bg-slate-950' : 'bg-emerald-400 animate-ping'}`} />
             </button>
           )}
@@ -723,6 +752,60 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
                         <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
                       </p>
+                    </div>
+                  </div>
+
+                  {/* High-Resolution Event Attendance QR Code Box with White Frame, Download & Print */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border-2 border-emerald-400/70 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+                    {/* White Framed QR Canvas */}
+                    <div className="p-3 bg-white rounded-2xl shadow-2xl border-4 border-emerald-400/50 flex flex-col items-center shrink-0">
+                      {eventQrUrl || eventBroadcast.qrDataUrl ? (
+                        <img
+                          src={eventQrUrl || eventBroadcast.qrDataUrl}
+                          alt="Official Event Attendance QR Code"
+                          className="w-36 h-36 sm:w-44 sm:h-44 object-contain"
+                        />
+                      ) : (
+                        <div className="w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center bg-slate-100 rounded-xl">
+                          <QrCode className="w-24 h-24 text-slate-800" />
+                        </div>
+                      )}
+                      <span className="text-[10px] font-mono font-black text-slate-900 mt-1 uppercase tracking-wider">
+                        SCAN FOR ATTENDANCE
+                      </span>
+                    </div>
+
+                    {/* QR Details and Action Buttons */}
+                    <div className="space-y-2.5 text-left flex-1 min-w-0">
+                      <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 text-[10px] sm:text-xs font-mono font-bold">
+                        <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>OPISYAL NA EVENT ATTENDANCE QR CODE</span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-100 font-sans leading-relaxed text-justify">
+                        I-scan ang QR Code na ito gamit ang camera ng inyong cellphone para mag-upload ng accomplishment attendance at mga larawan sa paglilinis.
+                      </p>
+                      
+                      {/* Action buttons: Download & Print */}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {(eventQrUrl || eventBroadcast.qrDataUrl) && (
+                          <a
+                            href={eventQrUrl || eventBroadcast.qrDataUrl}
+                            download={`Dingalan_Event_QR_${eventBroadcast.barangay}_${eventBroadcast.eventDate}.png`}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-950" />
+                            <span>I-Download ang QR</span>
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => window.print()}
+                          className="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-white font-mono font-bold text-xs flex items-center space-x-1.5 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-slate-300" />
+                          <span>I-Print ang Paalala</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 

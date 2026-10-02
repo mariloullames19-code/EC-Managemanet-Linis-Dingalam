@@ -853,6 +853,16 @@ export class ApiService {
     const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
     list.unshift(broadcast);
     localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(list));
+
+    // Cross-tab/window Broadcast synchronization
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'NEW_BROADCAST', broadcast });
+        bc.close();
+      }
+    } catch {}
+
     return { success: true, broadcast };
   }
 

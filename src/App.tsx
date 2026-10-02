@@ -300,9 +300,44 @@ export default function App() {
           setAttendances((prev) => [newAtt, ...prev.filter((a) => a.id !== newAtt.id)]);
           showToast(`Bagong Accomplishment Attendance: ${newAtt.beneficiaryName}!`, 'success');
         }
+        if (event.data?.type === 'NEW_BROADCAST' && event.data.broadcast) {
+          const newBc = event.data.broadcast as EventQrBroadcast;
+          setLatestEventBroadcast(newBc);
+          showToast(`Bagong Opisyal na Paalala at QR Code: ${newBc.activityTitle}!`, 'success');
+        }
       };
       return () => bc.close();
     }
+  }, []);
+
+  // Real-time synchronization #4: Firestore onSnapshot for Broadcasts
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = onSnapshot(
+        collection(db, 'broadcasts'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: EventQrBroadcast[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push(docSnap.data() as EventQrBroadcast);
+            });
+            list.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+            if (list.length > 0) {
+              setLatestEventBroadcast(list[0]);
+            }
+          }
+        },
+        (error) => {
+          console.warn('Firestore onSnapshot broadcasts warning:', error);
+        }
+      );
+    } catch (err) {
+      console.warn('Firestore broadcasts subscription exception:', err);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const handleBroadcastSuccess = async (broadcast: EventQrBroadcast) => {
@@ -528,7 +563,7 @@ export default function App() {
           onOpenRegisterModal={() => setIsPersonalQrModalOpen(true)}
           onOpenUploadAccomplishment={() => setIsUploadAccomplishmentModalOpen(true)}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
-          eventBroadcast={isBroadcastActive(latestEventBroadcast) ? latestEventBroadcast : null}
+          eventBroadcast={latestEventBroadcast}
         />
 
         {/* Standalone Personal QR Generator & Registration Modal */}
