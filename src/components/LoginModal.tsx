@@ -96,10 +96,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 }) => {
   const [phTime, setPhTime] = useState<string>('');
   const [isUnfolded, setIsUnfolded] = useState<boolean>(false);
+  const [isBroadcastHidden, setIsBroadcastHidden] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
 
-  // Switchable Active View: 'login' | 'register'
-  const [activeView, setActiveView] = useState<'login' | 'register'>('login');
+  // Switchable Active View: 'login' | 'register' | 'event'
+  const [activeView, setActiveView] = useState<'login' | 'register' | 'event'>('login');
 
   // Registration Form States
   const [regFullName, setRegFullName] = useState<string>('');
@@ -165,11 +167,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('login');
+      setTimeout(() => {
+        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     } else {
       if (activeView === 'login') {
         setIsUnfolded(false);
       } else {
         setActiveView('login');
+        setTimeout(() => {
+          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
       }
     }
   };
@@ -180,11 +188,38 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('register');
+      setTimeout(() => {
+        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     } else {
       if (activeView === 'register') {
         setIsUnfolded(false);
       } else {
         setActiveView('register');
+        setTimeout(() => {
+          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
+      }
+    }
+  };
+
+  const handleEventPortalClick = () => {
+    setErrorMessage(null);
+    setPendingNotice(null);
+    if (!isUnfolded) {
+      setIsUnfolded(true);
+      setActiveView('event');
+      setTimeout(() => {
+        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
+    } else {
+      if (activeView === 'event') {
+        setIsUnfolded(false);
+      } else {
+        setActiveView('event');
+        setTimeout(() => {
+          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
       }
     }
   };
@@ -381,7 +416,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-slate-950 font-sans text-slate-100 flex flex-col justify-between">
+    <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-slate-950 font-sans text-slate-100 flex flex-col justify-between">
       {/* ========================================================================= */}
       {/* NATIVE HTML5 HD 1080P BACKGROUND VIDEO (5-SECOND PRECISION LOOP) */}
       {/* ========================================================================= */}
@@ -409,10 +444,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       {/* ========================================================================= */}
       {/* TOP NAVIGATION / STATUS BAR */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 bg-slate-950/30 backdrop-blur-md">
+      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/10 bg-slate-950/40 backdrop-blur-md">
         {/* Official eC access Logo & National Branding */}
-        <div className="flex items-center space-x-3.5 sm:space-x-4">
-          <div className="flex items-center shrink-0">
+        <div className="flex items-center justify-between sm:justify-start space-x-3.5 sm:space-x-4 w-full sm:w-auto">
+          <div className="flex items-center space-x-3 sm:space-x-3.5 shrink-0">
             <svg
               viewBox="0 0 205 64"
               className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto drop-shadow-[0_4px_14px_rgba(0,0,0,0.85)]"
@@ -497,52 +532,81 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 access
               </text>
             </svg>
+
+            <div className="h-8 sm:h-10 w-px bg-slate-700/80" />
+
+            <div className="text-left space-y-0.5">
+              <span className="text-[9px] sm:text-xs font-mono font-extrabold text-emerald-400 tracking-wider uppercase block">
+                REPUBLIC OF THE PHILIPPINES
+              </span>
+              <h1 className="text-xs sm:text-base md:text-lg font-black text-white tracking-tight leading-tight drop-shadow">
+                Municipality of Dingalan, Aurora
+              </h1>
+            </div>
           </div>
 
-          <div className="h-8 sm:h-10 w-px bg-slate-700/80" />
-
-          <div className="text-left space-y-0.5">
-            <span className="text-[10px] sm:text-xs font-mono font-extrabold text-emerald-400 tracking-widest uppercase block">
-              REPUBLIC OF THE PHILIPPINES
-            </span>
-            <h1 className="text-sm sm:text-base md:text-lg font-black text-white tracking-tight leading-tight drop-shadow">
-              Municipality of Dingalan, Aurora
-            </h1>
-          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="sm:hidden p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0"
+              title="Isara o Pumunta sa System Overview"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Right Header Status Bar & Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {/* Right Header Action Buttons: Neatly Full-Width and Justified on Mobile, Row on Desktop */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Admin Login Icon Button */}
           <button
             type="button"
             onClick={handleAdminPortalClick}
-            className={`flex items-center space-x-2 text-xs font-mono font-bold border px-4 py-2 rounded-full transition-all transform hover:scale-105 active:scale-95 cursor-pointer ${
+            className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
               isUnfolded && activeView === 'login'
                 ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
                 : 'text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.5)]'
             }`}
             title="Pindutin para lumabas ang Admin Login Portal"
           >
-            <ShieldCheck className={`w-4 h-4 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-white'}`} />
-            <span>Admin Login Portal</span>
-            <LogIn className={`w-4 h-4 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
+            <ShieldCheck className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-white'}`} />
+            <span className="tracking-wide">Admin Login Portal</span>
+            <LogIn className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
           </button>
 
-          {/* Registration Button next to Admin Login Portal button */}
+          {/* Registration Button */}
           <button
             type="button"
             onClick={handleRegisterPortalClick}
-            className={`flex items-center space-x-2 text-xs font-mono font-bold border px-4 py-2 rounded-full transition-all transform hover:scale-105 active:scale-95 cursor-pointer ${
+            className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
               isUnfolded && activeView === 'register'
                 ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
                 : 'text-slate-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 border-cyan-300/80 shadow-[0_0_20px_rgba(6,182,212,0.5)]'
             }`}
             title="Mag-rehistro ng Personal Details at Mag-generate ng QR Code"
           >
-            <QrCode className="w-4 h-4 text-slate-950" />
-            <span>Registration / Generate QR</span>
+            <QrCode className="w-4 h-4 shrink-0 text-slate-950" />
+            <span className="tracking-wide">Registration / Generate QR</span>
           </button>
+
+          {/* EVENT Button (Only displays on Mobile Devices when an Event Broadcast is Active; Hidden on Computer) */}
+          {eventBroadcast && (
+            <button
+              type="button"
+              onClick={handleEventPortalClick}
+              className={`sm:hidden w-full flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 rounded-xl transition-all transform hover:scale-[1.01] active:scale-95 cursor-pointer shadow-sm ${
+                isUnfolded && activeView === 'event'
+                  ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
+                  : 'text-emerald-100 bg-gradient-to-r from-teal-800/80 via-emerald-700/80 to-teal-900/80 hover:from-teal-700 hover:to-emerald-600 border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+              }`}
+              title="Pindutin para lumabas ang Event Advisory sa itaas ng Linis Dingalan"
+            >
+              <Radio className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-300 animate-pulse'}`} />
+              <span className="tracking-wide font-extrabold uppercase">EVENT</span>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isUnfolded && activeView === 'event' ? 'bg-slate-950' : 'bg-emerald-400 animate-ping'}`} />
+            </button>
+          )}
 
           <div className="hidden sm:flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/80 border border-emerald-500/40 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.25)]">
             <Clock className="w-3.5 h-3.5 text-emerald-400" />
@@ -553,7 +617,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+              className="hidden sm:flex p-2 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
               title="Isara o Pumunta sa System Overview"
             >
               <X className="w-5 h-5" />
@@ -563,77 +627,165 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* MAIN CENTER HERO CONTAINER (GRID LAYOUT) */}
+      {/* MAIN CENTER HERO CONTAINER (MOVED HIGHER FOR CLEANER VISUAL BALANCE) */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 py-8 my-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-3 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 mt-1 sm:mt-2 mb-auto">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start lg:items-center">
           
           {/* --------------------------------------------------------------------- */}
-          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING */}
+          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
-          <div className="lg:col-span-6 xl:col-span-6 text-left space-y-6">
+          <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full ${isUnfolded ? 'order-2 lg:order-1' : 'order-1'}`}>
             <div className="space-y-3">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.05] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
+              <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.08] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
                 Linis Dingalan <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
                   EC Management
                 </span>
               </h1>
-              <p className="text-sm sm:text-base lg:text-lg text-slate-200 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              <p className="text-xs sm:text-base lg:text-lg text-slate-200 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] text-justify">
                 Innovation in Action Project of Municipal Environment and Natural Resources Office in Collaboration with Public Employment Service Office.
               </p>
-              <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span>PESO & MENRO INTEGRATED OPERATIONS PLATFORM</span>
+              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3.5 py-2 rounded-xl sm:rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md text-center sm:text-left">
+                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="leading-tight">PESO & MENRO INTEGRATED OPERATIONS PLATFORM</span>
               </div>
             </div>
 
-            <div className="p-5 sm:p-6 rounded-3xl bg-slate-950/60 border border-slate-700/80 backdrop-blur-xl shadow-2xl space-y-3 max-w-xl">
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            <div className="p-4 sm:p-6 rounded-3xl bg-slate-950/60 border border-slate-700/80 backdrop-blur-xl shadow-2xl space-y-3 max-w-xl">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans text-justify">
                 Activity-based participants' inventory monitoring with photographic compliance and real-time GPS watermarking across 11 coastal and river Barangays with Offline First to Online Sync Feature.
               </p>
-              <div className="flex items-center space-x-4 pt-2 border-t border-slate-800 text-xs font-mono text-emerald-400">
-                <span className="flex items-center space-x-1.5">
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>11 Coastal Barangays Covered</span>
+              <div className="flex items-center justify-between sm:justify-start space-x-4 pt-2 border-t border-slate-800 text-xs font-mono text-emerald-400">
+                <span className="flex items-center space-x-2">
+                  <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                  <span className="font-semibold tracking-wide">11 Coastal Barangays Covered</span>
                 </span>
               </div>
             </div>
           </div>
 
           {/* --------------------------------------------------------------------- */}
-          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD */}
+          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (ORDER-1 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
-          <div className="lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start">
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0' : 'order-2 hidden lg:block'}`}>
             {isUnfolded ? (
-              /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD */
-              <div
-                className="relative rounded-3xl border-2 border-emerald-500 shadow-[0_0_45px_rgba(16,185,129,0.65),inset_0_0_25px_rgba(16,185,129,0.25)] bg-slate-950/95 backdrop-blur-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
-                style={{
-                  perspective: '1200px',
-                  transformStyle: 'preserve-3d',
-                  animation: 'smoothPopup 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                }}
-              >
-                {/* Pop-Up Close Icon (X) on Top Right */}
-                <button
-                  type="button"
-                  onClick={() => setIsUnfolded(false)}
-                  className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/90 hover:bg-emerald-950 border border-emerald-500/50 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer shadow-lg hover:scale-110"
-                  title="Isara ang Login Box"
-                >
-                  <X className="w-5 h-5 text-emerald-400" />
-                </button>
+              activeView === 'event' && eventBroadcast ? (
+                /* ========================================================================= */
+                /* EVENT BROADCAST CARD (POPPED UP ABOVE LINIS DINGALAN ON MOBILE)          */
+                /* ========================================================================= */
+                <div className="relative rounded-3xl border-2 border-emerald-500/70 shadow-[0_0_50px_rgba(16,185,129,0.4),inset_0_0_25px_rgba(16,185,129,0.15)] bg-slate-950/50 hover:bg-slate-950/55 backdrop-blur-md p-5 sm:p-8 space-y-5 sm:space-y-6 transition-all duration-500 hover:shadow-[0_0_55px_rgba(16,185,129,0.45)] hover:border-emerald-400 animate-scaleIn w-full">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3.5 gap-2">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                      <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider sm:tracking-widest flex items-center gap-1.5 backdrop-blur-sm truncate">
+                        <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
+                        <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
+                      </span>
+                    </div>
 
-                {/* Pop-Up Close Icon (X) on Top Right */}
-                <button
-                  type="button"
-                  onClick={() => setIsUnfolded(false)}
-                  className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/90 hover:bg-emerald-950 border border-emerald-500/50 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer shadow-lg hover:scale-110"
-                  title="Isara ang Login Box"
+                    <div className="flex items-center space-x-2 shrink-0">
+                      {/* Hide Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsUnfolded(false)}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/60 hover:border-emerald-500/60 text-slate-300 hover:text-white text-xs font-mono font-semibold transition-all cursor-pointer backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 shrink-0"
+                        title="I-hide / Itago ang paalala"
+                      >
+                        <EyeOff className="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400 shrink-0" />
+                        <span>Itago / Hide</span>
+                      </button>
+
+                      {/* Close Button X */}
+                      <button
+                        type="button"
+                        onClick={() => setIsUnfolded(false)}
+                        className="p-1.5 rounded-xl bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm hover:scale-105 shrink-0"
+                        title="Isara ang Event Advisory"
+                      >
+                        <X className="w-4 h-4 text-emerald-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                    <div className="space-y-2 min-w-0 flex-1 text-left">
+                      <h3 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                        {eventBroadcast.activityTitle}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-emerald-300 font-mono font-semibold flex items-center gap-1.5 drop-shadow">
+                        <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                        <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
+                      </p>
+                      <p className="text-xs sm:text-sm text-slate-300 font-mono flex items-center gap-1.5 drop-shadow">
+                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
+                        <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Specific Advisories Grid with Modern Semi-Transparent Glass Styling & Justified Text */}
+                  <div className="space-y-3 sm:space-y-3.5 pt-3 sm:pt-4 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
+                    {eventBroadcast.requiredTools && (
+                      <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
+                        <Wrench className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Dalhing Kagamitan:</span>
+                          <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.requiredTools}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {eventBroadcast.waterTumblerReminder && (
+                      <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
+                        <Coffee className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Paalala sa Hydration / Tubig:</span>
+                          <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.waterTumblerReminder}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {eventBroadcast.recommendedAttire && (
+                      <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
+                        <Shirt className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Kasuotan (Attire):</span>
+                          <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.recommendedAttire}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {eventBroadcast.additionalNotes && (
+                      <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/40 hover:bg-slate-950/50 border border-emerald-500/25 text-xs font-sans text-slate-200 italic leading-relaxed backdrop-blur-sm shadow-inner transition-colors text-justify">
+                        <strong className="text-emerald-300 not-italic font-semibold">Karagdagang Paalala ng LGU Admin:</strong> {eventBroadcast.additionalNotes}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-[10px] font-mono text-slate-400 pt-2 text-right border-t border-white/10">
+                    Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName}</strong>
+                  </div>
+                </div>
+              ) : (
+                /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD (SEMI-TRANSPARENT FROSTED GLASS) */
+                <div
+                  className="relative rounded-3xl border-2 border-emerald-500/70 shadow-[0_0_50px_rgba(16,185,129,0.4),inset_0_0_25px_rgba(16,185,129,0.15)] bg-slate-950/50 hover:bg-slate-950/55 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
+                  style={{
+                    perspective: '1200px',
+                    transformStyle: 'preserve-3d',
+                    animation: 'smoothPopup 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  }}
                 >
-                  <X className="w-5 h-5 text-emerald-400" />
-                </button>
+                  {/* Pop-Up Close Icon (X) on Top Right */}
+                  <button
+                    type="button"
+                    onClick={() => setIsUnfolded(false)}
+                    className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer shadow-lg hover:scale-110 backdrop-blur-sm"
+                    title="Isara ang Login Box"
+                  >
+                    <X className="w-5 h-5 text-emerald-400" />
+                  </button>
 
                 {activeView === 'register' ? (
                   /* ========================================================================= */
@@ -642,16 +794,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <div className="col-span-12 p-6 sm:p-8 flex flex-col space-y-5 relative z-10 animate-fadeIn">
                     
                     {/* Header */}
-                    <div className="flex items-start justify-between pb-3 border-b border-slate-800">
+                    <div className="flex items-start justify-between pb-3 border-b border-white/10">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                        <div className="p-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 backdrop-blur-sm">
                           <QrCode className="w-6 h-6 animate-pulse" />
                         </div>
                         <div className="text-left">
                           <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                             Register & Generate Personal QR Code
                           </h2>
-                          <p className="text-[11px] sm:text-xs text-slate-400">
+                          <p className="text-[11px] sm:text-xs text-slate-300">
                             Pang-isahang Personal QR Code para sa Accomplishment Attendance
                           </p>
                         </div>
@@ -670,10 +822,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           <select
                             value={regDepartment}
                             onChange={(e) => setRegDepartment(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all"
+                            className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
                           >
                             {DEPARTMENT_OFFICES.map((dept) => (
-                              <option key={dept} value={dept} className="bg-slate-950">
+                              <option key={dept} value={dept} className="bg-slate-900 text-white">
                                 {dept}
                               </option>
                             ))}
@@ -691,7 +843,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             placeholder="hal. Juan Dela Cruz"
                             value={regFullName}
                             onChange={(e) => setRegFullName(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-sans"
+                            className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
                           />
                         </div>
 
@@ -708,7 +860,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               placeholder="hal. 34"
                               value={regAge}
                               onChange={(e) => setRegAge(e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-sans"
+                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
                             />
                           </div>
 
@@ -720,10 +872,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <select
                               value={regGender}
                               onChange={(e) => setRegGender(e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all"
+                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
                             >
-                              <option value="Male (Lalaki)" className="bg-slate-950">Male (Lalaki)</option>
-                              <option value="Female (Babae)" className="bg-slate-950">Female (Babae)</option>
+                              <option value="Male (Lalaki)" className="bg-slate-900 text-white">Male (Lalaki)</option>
+                              <option value="Female (Babae)" className="bg-slate-900 text-white">Female (Babae)</option>
                             </select>
                           </div>
 
@@ -738,7 +890,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               placeholder="0917-123-4567"
                               value={regPhoneNumber}
                               onChange={(e) => setRegPhoneNumber(e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-sans"
+                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
                             />
                           </div>
                         </div>
@@ -753,10 +905,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <select
                               value={regBarangay}
                               onChange={(e) => setRegBarangay(e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all"
+                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
                             >
                               {DINGALAN_BARANGAYS.map((brgy) => (
-                                <option key={brgy} value={brgy} className="bg-slate-950">
+                                <option key={brgy} value={brgy} className="bg-slate-900 text-white">
                                   Brgy. {brgy}
                                 </option>
                               ))}
@@ -774,7 +926,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               placeholder="hal. Purok 3, Feeder Port Area"
                               value={regAddress}
                               onChange={(e) => setRegAddress(e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-sans"
+                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
                             />
                           </div>
                         </div>
@@ -823,7 +975,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </div>
 
                         {/* QR Code Canvas Frame */}
-                        <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-emerald-500/30 flex flex-col items-center">
+                        <div className="p-4 bg-white/95 rounded-3xl shadow-2xl border-4 border-emerald-500/30 flex flex-col items-center backdrop-blur-sm">
                           <img src={regQrCodeDataUrl} alt="Personal QR Code" className="w-52 h-52 object-contain" />
                           <div className="mt-2 text-center">
                             <p className="font-mono text-xs font-extrabold text-slate-900 tracking-wider">
@@ -836,8 +988,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </div>
 
                         {/* Details Summary */}
-                        <div className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-left text-xs space-y-2 font-mono">
-                          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+                        <div className="w-full bg-slate-950/50 border border-slate-800/80 backdrop-blur-sm rounded-2xl p-4 text-left text-xs space-y-2 font-mono">
+                          <div className="flex justify-between border-b border-slate-800 pb-1.5">
                             <span className="text-slate-400">Department:</span>
                             <span className="text-emerald-400 font-bold truncate max-w-[240px]">
                               {regGeneratedBene.assignedCluster}
@@ -1005,11 +1157,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </form>
                     </div>
 
-                    {/* RIGHT SIDE DIAGONAL GREEN PANEL */}
+                    {/* RIGHT SIDE DIAGONAL GREEN PANEL (TRANSLUCENT FROSTED GLASS) */}
                     <div className="md:col-span-5 relative hidden md:flex flex-col justify-center items-center p-6 text-center text-white overflow-hidden min-h-[360px]">
                       {/* Diagonal Green Panel Background */}
                       <div
-                        className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-900 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]"
+                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/60 via-emerald-600/50 to-teal-950/70 backdrop-blur-sm shadow-[inset_0_0_30px_rgba(0,0,0,0.3)]"
                         style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)' }}
                       />
 
@@ -1031,80 +1183,107 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   </>
                 )}
 
-              </div>
-            ) : (
-              /* BROADCAST CARD IN RIGHT SIDE WITH GORGEOUS DESIGN */
-              eventBroadcast && (
-                <div className="relative rounded-3xl border-2 border-emerald-500/80 shadow-[0_0_50px_rgba(16,185,129,0.55),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/95 backdrop-blur-3xl p-6 sm:p-8 space-y-6 transition-all duration-500 hover:shadow-[0_0_70px_rgba(16,185,129,0.7)] hover:border-emerald-400 animate-scaleIn">
-                  <div className="flex items-center justify-between border-b border-slate-800/85 pb-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 uppercase tracking-widest flex items-center gap-1.5">
-                        <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                        Opisyal na Patnubay at Paalala ng Admin
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <div className="space-y-2.5 min-w-0 flex-1 text-left">
-                      <h3 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-md">
-                        {eventBroadcast.activityTitle}
-                      </h3>
-                      <p className="text-sm text-emerald-300 font-mono font-semibold flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-emerald-400" />
-                        <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
-                      </p>
-                      <p className="text-sm text-slate-300 font-mono flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-cyan-400" />
-                        <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Specific Advisories Grid with Modern Borders */}
-                  <div className="space-y-3.5 pt-4 border-t border-slate-800 text-xs font-mono text-slate-300 text-left">
-                    {eventBroadcast.requiredTools && (
-                      <div className="flex items-start space-x-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80">
-                        <Wrench className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Dalhing Kagamitan:</span>
-                          <span className="text-white text-xs leading-relaxed">{eventBroadcast.requiredTools}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.waterTumblerReminder && (
-                      <div className="flex items-start space-x-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80">
-                        <Coffee className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Paalala sa Hydration / Tubig:</span>
-                          <span className="text-white text-xs leading-relaxed">{eventBroadcast.waterTumblerReminder}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.recommendedAttire && (
-                      <div className="flex items-start space-x-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80">
-                        <Shirt className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Kasuotan (Attire):</span>
-                          <span className="text-white text-xs leading-relaxed">{eventBroadcast.recommendedAttire}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.additionalNotes && (
-                      <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-sans text-slate-300 italic leading-relaxed shadow-inner">
-                        <strong>Karagdagang Paalala ng LGU Admin:</strong> {eventBroadcast.additionalNotes}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-[10px] font-mono text-slate-500 pt-2 text-right border-t border-slate-800/50">
-                    Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName}</strong>
-                  </div>
                 </div>
+              )
+            ) : (
+              /* BROADCAST CARD IN RIGHT SIDE WITH GORGEOUS TRANSLUCENT GLASS DESIGN & HIDE TOGGLE */
+              eventBroadcast && (
+                isBroadcastHidden ? (
+                  <div className="flex justify-end w-full animate-fadeIn">
+                    <button
+                      type="button"
+                      onClick={() => setIsBroadcastHidden(false)}
+                      className="group flex items-center justify-center space-x-2.5 px-5 py-3 rounded-2xl bg-slate-950/40 hover:bg-slate-900/70 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 text-xs font-mono font-bold backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all cursor-pointer transform hover:scale-105 active:scale-95 w-full sm:w-auto"
+                      title="Ipakita muli ang Opisyal na Paalala ng Admin"
+                    >
+                      <Radio className="w-4 h-4 text-emerald-400 animate-pulse group-hover:scale-110 transition-transform shrink-0" />
+                      <span>Ipakita ang Paalala ng Admin</span>
+                      <Eye className="w-4 h-4 text-emerald-400 group-hover:text-emerald-200 shrink-0" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative rounded-3xl border-2 border-emerald-500/60 shadow-[0_0_40px_rgba(16,185,129,0.3),inset_0_0_20px_rgba(16,185,129,0.12)] bg-slate-950/45 hover:bg-slate-950/55 backdrop-blur-md p-5 sm:p-8 space-y-5 sm:space-y-6 transition-all duration-500 hover:shadow-[0_0_55px_rgba(16,185,129,0.45)] hover:border-emerald-400 animate-scaleIn w-full">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3.5 gap-2">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                        <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider sm:tracking-widest flex items-center gap-1.5 backdrop-blur-sm truncate">
+                          <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
+                          <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
+                        </span>
+                      </div>
+
+                      {/* Hide Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsBroadcastHidden(true)}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/60 hover:border-emerald-500/60 text-slate-300 hover:text-white text-xs font-mono font-semibold transition-all cursor-pointer backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 shrink-0"
+                        title="I-hide / Itago ang paalala para mas makita ang background video"
+                      >
+                        <EyeOff className="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400 shrink-0" />
+                        <span>Itago / Hide</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                      <div className="space-y-2 min-w-0 flex-1 text-left">
+                        <h3 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                          {eventBroadcast.activityTitle}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-emerald-300 font-mono font-semibold flex items-center gap-1.5 drop-shadow">
+                          <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                          <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
+                        </p>
+                        <p className="text-xs sm:text-sm text-slate-300 font-mono flex items-center gap-1.5 drop-shadow">
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
+                          <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Specific Advisories Grid with Modern Semi-Transparent Glass Styling & Justified Text */}
+                    <div className="space-y-3 sm:space-y-3.5 pt-3 sm:pt-4 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
+                      {eventBroadcast.requiredTools && (
+                        <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
+                          <Wrench className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Dalhing Kagamitan:</span>
+                            <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.requiredTools}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {eventBroadcast.waterTumblerReminder && (
+                        <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
+                          <Coffee className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Paalala sa Hydration / Tubig:</span>
+                            <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.waterTumblerReminder}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {eventBroadcast.recommendedAttire && (
+                        <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
+                          <Shirt className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Kasuotan (Attire):</span>
+                            <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.recommendedAttire}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {eventBroadcast.additionalNotes && (
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/40 hover:bg-slate-950/50 border border-emerald-500/25 text-xs font-sans text-slate-200 italic leading-relaxed backdrop-blur-sm shadow-inner transition-colors text-justify">
+                          <strong className="text-emerald-300 not-italic font-semibold">Karagdagang Paalala ng LGU Admin:</strong> {eventBroadcast.additionalNotes}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[10px] font-mono text-slate-400 pt-2 text-right border-t border-white/10">
+                      Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName}</strong>
+                    </div>
+                  </div>
+                )
               )
             )}
           </div>
@@ -1114,13 +1293,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       {/* ========================================================================= */}
       {/* BOTTOM FOOTER BAR */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 py-3 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-slate-300 border-t border-white/10 bg-slate-950/30 backdrop-blur-sm">
-        <div className="drop-shadow">
+      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 py-3 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-slate-300 border-t border-white/10 bg-slate-950/30 backdrop-blur-sm gap-2">
+        <div className="drop-shadow text-center sm:text-left text-[11px] sm:text-xs">
           Linis Dingalan EC Management Platform • PESO & MENRO Operations • Municipality of Dingalan, Aurora
         </div>
-        <div className="flex items-center space-x-3 text-emerald-300 mt-1 sm:mt-0 drop-shadow text-[11px]">
+        <div className="flex flex-wrap justify-center items-center gap-2 sm:space-x-3 text-emerald-300 drop-shadow text-[10px] sm:text-[11px]">
           <span>Lead Approver: ENGR. JOHN MARK N. ORLASAN</span>
-          <span>•</span>
+          <span className="hidden sm:inline">•</span>
           <span>Offline-First Synced</span>
         </div>
       </div>
