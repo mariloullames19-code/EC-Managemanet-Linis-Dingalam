@@ -167,11 +167,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('login');
+      setTimeout(() => {
+        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     } else {
       if (activeView === 'login') {
         setIsUnfolded(false);
       } else {
         setActiveView('login');
+        setTimeout(() => {
+          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
       }
     }
   };
@@ -182,11 +188,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('register');
+      setTimeout(() => {
+        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     } else {
       if (activeView === 'register') {
         setIsUnfolded(false);
       } else {
         setActiveView('register');
+        setTimeout(() => {
+          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
       }
     }
   };
@@ -197,11 +209,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('event');
+      setTimeout(() => {
+        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     } else {
       if (activeView === 'event') {
         setIsUnfolded(false);
       } else {
         setActiveView('event');
+        setTimeout(() => {
+          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
       }
     }
   };
@@ -400,7 +418,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   return (
     <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-slate-950 font-sans text-slate-100 flex flex-col justify-between">
       {/* ========================================================================= */}
-      {/* NATIVE HTML5 HD 1080P BACKGROUND VIDEO (5-SECOND PRECISION LOOP) */}
+      {/* NATIVE HTML5 HD 1080P SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN TWILIGHT) */}
       {/* ========================================================================= */}
       <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-slate-950 flex items-center justify-center">
         <video
@@ -412,21 +430,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
           aria-hidden="true"
-          className="w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.05] brightness-[1.02] transform translate-z-0"
+          className="w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.14] brightness-[0.98] transform translate-z-0"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_tech_background.mp4"
+          src="/dingalan_sunset_background.mp4"
         >
+          <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
           <source src="/dingalan_tech_background.mp4" type="video/mp4" />
         </video>
 
-        {/* Minimal Vignette Tint for 100% Video Crispness & Contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-slate-950/20 pointer-events-none" />
+        {/* Lighter, luminous ambient sunset veil for a brighter, warmer login page view */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/35 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/10 via-transparent to-slate-950/25 pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}
       {/* TOP NAVIGATION / STATUS BAR */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/10 bg-slate-950/40 backdrop-blur-md">
+      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/15 bg-slate-950/25 backdrop-blur-md">
         {/* Official eC access Logo & National Branding */}
         <div className="flex items-center justify-between sm:justify-start space-x-3.5 sm:space-x-4 w-full sm:w-auto">
           <div className="flex items-center space-x-3 sm:space-x-3.5 shrink-0">
@@ -612,12 +632,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       {/* MAIN CENTER HERO CONTAINER (MOVED HIGHER FOR CLEANER VISUAL BALANCE) */}
       {/* ========================================================================= */}
       <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-3 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 mt-1 sm:mt-2 mb-auto">
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start lg:items-center">
           
           {/* --------------------------------------------------------------------- */}
-          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (PERMANENTLY ANCHORED AT TOP-LEFT) */}
+          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
-          <div className="lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full order-1">
+          <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full ${isUnfolded ? 'order-2 lg:order-1' : 'order-1'}`}>
             <div className="space-y-3">
               <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.08] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
                 Linis Dingalan <br />
@@ -625,17 +645,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   EC Management
                 </span>
               </h1>
-              <p className="text-xs sm:text-base lg:text-lg text-slate-200 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] text-justify">
+              <p className="text-xs sm:text-base lg:text-lg text-slate-100 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] text-justify">
                 Innovation in Action Project of Municipal Environment and Natural Resources Office in Collaboration with Public Employment Service Office.
               </p>
-              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3.5 py-2 rounded-xl sm:rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md text-center sm:text-left">
+              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3.5 py-2 rounded-xl sm:rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] sm:text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md text-center sm:text-left">
                 <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="leading-tight">PESO & MENRO INTEGRATED OPERATIONS PLATFORM</span>
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 rounded-3xl bg-slate-950/60 border border-slate-700/80 backdrop-blur-xl shadow-2xl space-y-3 max-w-xl">
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans text-justify">
+            <div className="p-4 sm:p-6 rounded-3xl bg-slate-950/45 hover:bg-slate-950/50 border border-slate-700/60 backdrop-blur-xl shadow-2xl space-y-3 max-w-xl transition-colors">
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans text-justify">
                 Activity-based participants' inventory monitoring with photographic compliance and real-time GPS watermarking across 11 coastal and river Barangays with Offline First to Online Sync Feature.
               </p>
               <div className="flex items-center justify-between sm:justify-start space-x-4 pt-2 border-t border-slate-800 text-xs font-mono text-emerald-400">
@@ -648,15 +668,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {/* --------------------------------------------------------------------- */}
-          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (ALWAYS ORDER-2) */}
+          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (ORDER-1 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start order-2 ${!isUnfolded ? 'hidden lg:block' : ''}`}>
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0' : 'order-2 hidden lg:block'}`}>
             {isUnfolded ? (
               activeView === 'event' && eventBroadcast ? (
                 /* ========================================================================= */
                 /* EVENT BROADCAST CARD (POPPED UP ABOVE LINIS DINGALAN ON MOBILE)          */
                 /* ========================================================================= */
-                <div className="relative rounded-3xl border-2 border-emerald-500/70 shadow-[0_0_50px_rgba(16,185,129,0.4),inset_0_0_25px_rgba(16,185,129,0.15)] bg-slate-950/50 hover:bg-slate-950/55 backdrop-blur-md p-5 sm:p-8 space-y-5 sm:space-y-6 transition-all duration-500 hover:shadow-[0_0_55px_rgba(16,185,129,0.45)] hover:border-emerald-400 animate-scaleIn w-full">
+                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_55px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/40 hover:bg-slate-950/45 backdrop-blur-md p-5 sm:p-8 space-y-5 sm:space-y-6 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
                   <div className="flex items-center justify-between border-b border-white/10 pb-3.5 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
@@ -752,7 +772,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               ) : (
                 /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD (SEMI-TRANSPARENT FROSTED GLASS) */
                 <div
-                  className="relative rounded-3xl border-2 border-emerald-500/70 shadow-[0_0_50px_rgba(16,185,129,0.4),inset_0_0_25px_rgba(16,185,129,0.15)] bg-slate-950/50 hover:bg-slate-950/55 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
+                  className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_60px_rgba(16,185,129,0.5),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/40 hover:bg-slate-950/45 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
                   style={{
                     perspective: '1200px',
                     transformStyle: 'preserve-3d',
@@ -1143,7 +1163,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <div className="md:col-span-5 relative hidden md:flex flex-col justify-center items-center p-6 text-center text-white overflow-hidden min-h-[360px]">
                       {/* Diagonal Green Panel Background */}
                       <div
-                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/60 via-emerald-600/50 to-teal-950/70 backdrop-blur-sm shadow-[inset_0_0_30px_rgba(0,0,0,0.3)]"
+                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/75 via-emerald-600/60 to-teal-900/65 backdrop-blur-sm shadow-[inset_0_0_30px_rgba(0,0,0,0.2)]"
                         style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)' }}
                       />
 

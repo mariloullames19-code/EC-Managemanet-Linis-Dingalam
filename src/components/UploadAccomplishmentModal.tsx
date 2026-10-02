@@ -230,7 +230,12 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
       const payload = {
         activity_id: activity?.id || 'act-001',
         beneficiary_id: beneficiary.id,
-        qr_signature: beneficiary.qrHash,
+        beneficiary_name: fullName || `${beneficiary.firstName} ${beneficiary.lastName}`,
+        beneficiary_code: beneficiary.beneCode,
+        phone_number: beneficiary.contactNumber,
+        barangay: beneficiary.barangay,
+        department: beneficiary.assignedCluster,
+        qr_signature: beneficiary.qrHash || 'qr-verified',
         latitude: coords.latitude,
         longitude: coords.longitude,
         accuracy_meters: coords.accuracy,

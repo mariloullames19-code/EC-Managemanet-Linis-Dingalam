@@ -31,6 +31,8 @@ import { EventQrNoticeModal } from './components/EventQrNoticeModal';
 import { GeneratePersonalQrModal } from './components/GeneratePersonalQrModal';
 import { EventQrBroadcast } from './types';
 import systemWallpaper from './assets/images/dingalan_system_wallpaper.jpg';
+import { db } from './firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const DINGALAN_SYSTEM_BG = systemWallpaper || 'https://i.ibb.co/YBstSFGf/1b06179e-22f5-43a2-9755-40255190d134-1.jpg';
 
@@ -166,8 +168,6 @@ export default function App() {
 
   // Listen to mobile QR Code scans redirecting directly to the app URL
   useEffect(() => {
-    if (beneficiaries.length === 0 || activities.length === 0) return;
-
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     if (action === 'upload') {
@@ -181,55 +181,129 @@ export default function App() {
       const barangay = urlParams.get('barangay') || '';
       const qrHash = urlParams.get('qrHash') || '';
 
-      if (id && name) {
-        let foundBene = beneficiaries.find(b => b.id === id || b.beneCode === beneCode);
+      if (name || beneCode || id) {
+        let foundBene = beneficiaries.find(b => (id && b.id === id) || (beneCode && b.beneCode === beneCode));
         if (!foundBene) {
-          const firstName = name.split(' ')[0] || 'Participant';
-          const lastName = name.split(' ').slice(1).join(' ') || 'Dingalan';
+          const cleanName = name || 'Participant Dingalan';
+          const firstName = cleanName.split(' ')[0] || 'Participant';
+          const lastName = cleanName.split(' ').slice(1).join(' ') || 'Dingalan';
           foundBene = {
-            id,
-            beneCode,
+            id: id || `bene-${Date.now()}`,
+            beneCode: beneCode || `LD-BEN-2026-${Math.floor(1000 + Math.random() * 9000)}`,
             firstName,
             lastName,
-            nationalOrLocalId: `LGU-DING-${(department || '').substring(0, 4).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
-            contactNumber: phoneNumber,
-            barangay: barangay as any,
-            assignedCluster: department,
+            nationalOrLocalId: `LGU-DING-${(department || '').substring(0, 4).toUpperCase() || 'GEN'}-${Math.floor(100 + Math.random() * 900)}`,
+            contactNumber: phoneNumber || '0917-000-0000',
+            barangay: (barangay as any) || 'Paltic',
+            assignedCluster: department || 'General Operations',
             emergencyContactName: `${lastName} Family`,
-            emergencyContactPhone: phoneNumber,
+            emergencyContactPhone: phoneNumber || '0917-000-0000',
             emergencyContactRelation: 'Relative',
-            photoUrl: `https://images.unsplash.com/photo-${1534528741775 + (Math.floor(Math.random() * 50))}?w=400&auto=format&fit=crop&q=80`,
+            photoUrl: `https://images.unsplash.com/photo-1534528741775?w=400&auto=format&fit=crop&q=80`,
             status: 'active',
-            qrHash,
+            qrHash: qrHash || 'qr-verified',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
         }
 
-        if (foundBene) {
-          // Set matching activity based on the beneficiary's barangay
-          const currentBarangay = foundBene.barangay;
-          const matchingAct =
-            activities.find(
-              (a) =>
-                (a.status === 'ongoing' || a.status === 'scheduled') &&
-                (a.barangay === currentBarangay || a.targetArea.toLowerCase().includes(currentBarangay.toLowerCase()))
-            ) || activities.find((a) => a.status === 'ongoing') || activities[0] || null;
+        // Set matching activity based on the beneficiary's barangay
+        const currentBarangay = foundBene.barangay;
+        const matchingAct =
+          activities.find(
+            (a) =>
+              (a.status === 'ongoing' || a.status === 'scheduled') &&
+              (a.barangay === currentBarangay || a.targetArea.toLowerCase().includes(currentBarangay.toLowerCase()))
+          ) || activities.find((a) => a.status === 'ongoing') || activities[0] || null;
 
-          if (matchingAct) {
-            setTargetActivity(matchingAct);
-          }
-
-          setUploadBeneficiaryTarget(foundBene);
-          setIsUploadAccomplishmentModalOpen(true);
-          showToast(`Na-scan mula sa QR Code: Mag-upload ng patunay para kay ${foundBene.firstName} ${foundBene.lastName}.`, 'success');
-          
-          // Clean up URL parameters so it doesn't pop up again on refresh
-          window.history.replaceState({}, document.title, window.location.pathname);
+        if (matchingAct) {
+          setTargetActivity(matchingAct);
         }
+
+        setUploadBeneficiaryTarget(foundBene);
+        setIsUploadAccomplishmentModalOpen(true);
+        showToast(`Na-scan mula sa QR Code: Mag-upload ng patunay para kay ${foundBene.firstName} ${foundBene.lastName}.`, 'success');
+        
+        // Clean up URL parameters so it doesn't pop up again on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
   }, [beneficiaries, activities]);
+
+  // Real-time synchronization #1: Firestore onSnapshot Listener
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = onSnapshot(
+        collection(db, 'attendances'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: AttendanceRecord[] = [];
+            snapshot.forEach((docSnap) => {
+              list.push(docSnap.data() as AttendanceRecord);
+            });
+            list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setAttendances((prev) => {
+              if (prev.length > 0 && list.length > prev.length) {
+                const newest = list[0];
+                if (!prev.some((p) => p.id === newest.id)) {
+                  showToast(`Bagong Accomplishment Attendance mula sa Mobile: ${newest.beneficiaryName}!`, 'success');
+                }
+              }
+              return list;
+            });
+          }
+        },
+        (error) => {
+          console.warn('Firestore onSnapshot attendances warning:', error);
+        }
+      );
+    } catch (err) {
+      console.warn('Firestore subscription exception:', err);
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Real-time synchronization #2: High-frequency Polling fallback (3.5s)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const latest = await api.getAttendances();
+        if (latest && latest.length > 0) {
+          setAttendances((prev) => {
+            if (latest.length > prev.length) {
+              const newest = latest[0];
+              if (!prev.some((p) => p.id === newest.id)) {
+                showToast(`Bagong Accomplishment Attendance mula sa Mobile: ${newest.beneficiaryName}!`, 'success');
+              }
+              return latest;
+            }
+            return prev;
+          });
+        }
+      } catch {}
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Real-time synchronization #3: Cross-tab / Window BroadcastChannel
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const bc = new BroadcastChannel('ld_sync');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_ATTENDANCE' && event.data.attendance) {
+          const newAtt = event.data.attendance as AttendanceRecord;
+          setAttendances((prev) => [newAtt, ...prev.filter((a) => a.id !== newAtt.id)]);
+          showToast(`Bagong Accomplishment Attendance: ${newAtt.beneficiaryName}!`, 'success');
+        }
+      };
+      return () => bc.close();
+    }
+  }, []);
 
   const handleBroadcastSuccess = async (broadcast: EventQrBroadcast) => {
     if (!broadcast || !broadcast.id) {
@@ -515,17 +589,18 @@ export default function App() {
           playsInline
           preload="auto"
           aria-hidden="true"
-          className="w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.05] brightness-[1.02] transform translate-z-0 opacity-100"
+          className="w-full h-full object-cover object-center filter contrast-[1.12] saturate-[1.15] brightness-[0.80] transform translate-z-0 opacity-100"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_tech_background.mp4"
+          src="/dingalan_sunset_background.mp4"
         >
+          <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
           <source src="/dingalan_tech_background.mp4" type="video/mp4" />
         </video>
 
         {/* System Color-Tuned Ambient Gradients for Text Contrast while preserving 1080p video clarity */}
-        <div className="absolute inset-0 bg-slate-950/25 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/25 to-slate-950/70" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/20 via-transparent to-slate-950/50" />
+        <div className="absolute inset-0 bg-slate-950/40 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-amber-950/15 to-slate-950/75" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-950/20 via-transparent to-slate-950/50" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-cyan-950/20 via-transparent to-transparent" />
 
         {/* Subtle Geometric System Grid */}
