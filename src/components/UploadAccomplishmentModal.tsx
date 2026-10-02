@@ -265,10 +265,6 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
         if (onSuccessSubmitted) {
           onSuccessSubmitted(res.attendance);
         }
-        // Automatically close after 1.5s and return to login page
-        setTimeout(() => {
-          onClose();
-        }, 1500);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Nagkaroon ng error sa pag-upload ng accomplishment pictures.');
@@ -278,7 +274,7 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-lg overflow-y-auto animate-fadeIn">
       <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
         
         {/* Header Bar */}

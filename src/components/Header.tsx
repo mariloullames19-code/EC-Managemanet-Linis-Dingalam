@@ -329,7 +329,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Active User Badge Pill */}
           <div
             onClick={onOpenLoginModal}
-            className={`hidden md:flex items-center space-x-1.5 border rounded-full py-1 px-2.5 cursor-pointer transition-all ${
+            className={`flex items-center space-x-1.5 border rounded-full py-1 px-3 cursor-pointer transition-all ${
               currentUser.role === 'superadmin'
                 ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
                 : 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
@@ -337,32 +337,10 @@ export const Header: React.FC<HeaderProps> = ({
             title={`Naka-login bilang: ${currentUser.name} (${currentUser.department})`}
           >
             <span className={`w-2 h-2 rounded-full animate-pulse ${currentUser.role === 'superadmin' ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
-            <span className="text-[11px] font-mono font-bold tracking-tight truncate max-w-[130px]">
+            <span className="text-[11px] font-mono font-bold tracking-tight truncate max-w-[140px]">
               {currentUser.name}
             </span>
           </div>
-
-          {/* LOGIN ICON BUTTON */}
-          <button
-            onClick={onOpenLoginModal}
-            className="px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.35)] transition-all cursor-pointer shrink-0"
-            title="I-click para lumabas ang Admin & Super Admin Login Box"
-          >
-            <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Login Box</span>
-          </button>
-
-          {/* REGISTER ICON BUTTON */}
-          {onOpenPersonalQrModal && (
-            <button
-              onClick={onOpenPersonalQrModal}
-              className="px-3 py-1 rounded-full bg-cyan-950/80 hover:bg-cyan-900/80 border border-cyan-500/50 text-cyan-300 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all cursor-pointer shrink-0"
-              title="I-click para lumabas ang Register & Generate Attendance QR Code"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Register & QR</span>
-            </button>
-          )}
 
           {/* Log Out Button */}
           <button

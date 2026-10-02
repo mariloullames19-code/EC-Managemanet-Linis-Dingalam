@@ -30,6 +30,7 @@ import { GenerateQrEventModal } from './components/GenerateQrEventModal';
 import { EventQrNoticeModal } from './components/EventQrNoticeModal';
 import { GeneratePersonalQrModal } from './components/GeneratePersonalQrModal';
 import { EventQrBroadcast } from './types';
+import { checkEventCutoff } from './utils/watermarkEngine';
 import systemWallpaper from './assets/images/dingalan_system_wallpaper.jpg';
 import { db } from './firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -184,6 +185,14 @@ export default function App() {
       if (name || beneCode || id) {
         let foundBene = beneficiaries.find(b => (id && b.id === id) || (beneCode && b.beneCode === beneCode));
         if (!foundBene) {
+          try {
+            const savedBeneStr = localStorage.getItem('LD_LAST_REGISTERED_BENE');
+            if (savedBeneStr) {
+              foundBene = JSON.parse(savedBeneStr);
+            }
+          } catch(e) {}
+        }
+        if (!foundBene) {
           const cleanName = name || 'Participant Dingalan';
           const firstName = cleanName.split(' ')[0] || 'Participant';
           const lastName = cleanName.split(' ').slice(1).join(' ') || 'Dingalan';
@@ -220,12 +229,18 @@ export default function App() {
           setTargetActivity(matchingAct);
         }
 
+        // STRICT TIME GATE: Check if event is active or if cut-off is already reached
+        const cutoff = checkEventCutoff(matchingAct, latestEventBroadcast);
+        if (cutoff.isExpired) {
+          showToast(`SARADO NA ANG SUBMISSION: Tapos na ang nakatakdang oras ng event (${cutoff.endTimeFormatted}). Hindi na maaaring mag-scan o magpasa ng attendance.`, 'error');
+          setIsUploadAccomplishmentModalOpen(false);
+          setUploadBeneficiaryTarget(null);
+          return;
+        }
+
         setUploadBeneficiaryTarget(foundBene);
         setIsUploadAccomplishmentModalOpen(true);
-        showToast(`Na-scan mula sa QR Code: Mag-upload ng patunay para kay ${foundBene.firstName} ${foundBene.lastName}.`, 'success');
-        
-        // Clean up URL parameters so it doesn't pop up again on refresh
-        window.history.replaceState({}, document.title, window.location.pathname);
+        showToast(`Na-scan ang Opisyal na Event QR: Mag-upload ng accomplishment pictures para sa paglilinis.`, 'success');
       }
     }
   }, [beneficiaries, activities]);
@@ -811,20 +826,50 @@ export default function App() {
         )}
 
         {/* Upload Accomplishment Pictures Modal (From QR Code Scan) */}
-        {uploadBeneficiaryTarget && (
+        {isUploadAccomplishmentModalOpen && (
           <UploadAccomplishmentModal
             isOpen={isUploadAccomplishmentModalOpen}
             onClose={() => {
               setIsUploadAccomplishmentModalOpen(false);
               setUploadBeneficiaryTarget(null);
             }}
-            beneficiary={uploadBeneficiaryTarget}
-            activity={activities.find((a) => a.barangay === uploadBeneficiaryTarget.barangay) || activities[0] || null}
+            beneficiary={
+              uploadBeneficiaryTarget ||
+              beneficiaries[0] || {
+                id: 'ben-001',
+                beneCode: 'LD-BEN-2025-0107',
+                firstName: 'Juan',
+                lastName: 'Dela Cruz',
+                nationalOrLocalId: 'LGU-DING-2025-0107',
+                contactNumber: '0917-123-4567',
+                barangay: 'Paltic',
+                assignedCluster: 'Municipal Administrator',
+                emergencyContactName: 'Family',
+                emergencyContactPhone: '0917-123-4567',
+                emergencyContactRelation: 'Spouse',
+                photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                status: 'active',
+                qrHash: 'qr-verified',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              }
+            }
+            activity={
+              targetActivity ||
+              (uploadBeneficiaryTarget
+                ? activities.find((a) => a.barangay === uploadBeneficiaryTarget.barangay)
+                : null) ||
+              activities[0] ||
+              null
+            }
             currentUser={currentUser}
             onSubmitAttendance={handleSubmitAttendance}
             onSuccessSubmitted={(att) => {
-              setAttendances((prev) => [att, ...prev.filter(a => a.id !== att.id)]);
+              setAttendances((prev) => [att, ...prev.filter((a) => a.id !== att.id)]);
               showToast(`Nai-upload ang accomplishment pictures ni ${att.beneficiaryName}!`, 'success');
+              try {
+                window.history.replaceState({}, document.title, window.location.pathname);
+              } catch(e){}
             }}
           />
         )}
@@ -923,7 +968,12 @@ export default function App() {
           }}
           onClose={() => setIsLoginModalOpen(false)}
           onOpenRegisterModal={() => setIsPersonalQrModalOpen(true)}
-          onOpenUploadAccomplishment={() => setIsUploadAccomplishmentModalOpen(true)}
+          onOpenUploadAccomplishment={(bene) => {
+            if (bene) {
+              setUploadBeneficiaryTarget(bene);
+            }
+            setIsUploadAccomplishmentModalOpen(true);
+          }}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
           onRegisterSuccess={(newBene) => {
             setBeneficiaries((prev) => [newBene, ...prev]);

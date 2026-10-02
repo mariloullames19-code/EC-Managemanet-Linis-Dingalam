@@ -128,9 +128,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
-    const payload = eventBroadcast.qrPayload && eventBroadcast.qrPayload.startsWith('http')
-      ? eventBroadcast.qrPayload
-      : `${currentOrigin}/?action=personal_qr&act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
+    const payload = `${currentOrigin}/?action=upload&act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
 
     QRCode.toDataURL(payload, {
       width: 320,
@@ -771,21 +769,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <ShieldCheck className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-white'}`} />
             <span className="tracking-wide">Admin Login Portal</span>
             <LogIn className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
-          </button>
-
-          {/* Registration Button */}
-          <button
-            type="button"
-            onClick={handleRegisterPortalClick}
-            className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
-              isUnfolded && activeView === 'register'
-                ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
-                : 'text-slate-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 border-cyan-300/80 shadow-[0_0_20px_rgba(6,182,212,0.5)]'
-            }`}
-            title="Mag-rehistro ng Personal Details at Mag-generate ng QR Code"
-          >
-            <QrCode className="w-4 h-4 shrink-0 text-slate-950" />
-            <span className="tracking-wide">Registration / Generate QR</span>
           </button>
 
           {/* EVENT / PAALALA & QR CODE Button (Visible on both Mobile and Desktop when active) */}

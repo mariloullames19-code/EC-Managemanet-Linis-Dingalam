@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Beneficiary, Activity } from '../types';
 import { verifyQrSignature } from '../utils/crypto';
+import { checkEventCutoff } from '../utils/watermarkEngine';
 import {
   QrCode,
   Camera,
@@ -105,6 +106,12 @@ export const ScanQrModal: React.FC<ScanQrModalProps> = ({
             (a.status === 'ongoing' || a.status === 'scheduled') &&
             (a.barangay === bene.barangay || a.targetArea.toLowerCase().includes(bene.barangay.toLowerCase()))
         ) || activities.find((a) => a.status === 'ongoing') || activities[0] || null;
+
+      const cutoff = checkEventCutoff(matchingAct, null);
+      if (cutoff.isExpired) {
+        setErrorNotice(`SARADO NA ANG SUBMISSION: Tapos na ang oras ng event (${cutoff.endTimeFormatted}). Hindi na tatanggapin ang attendance.`);
+        return;
+      }
 
       stopCamera();
       onScanSuccess(bene, matchingAct);

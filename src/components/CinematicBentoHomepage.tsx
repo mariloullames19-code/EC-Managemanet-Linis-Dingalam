@@ -236,9 +236,9 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
                 Innovation in Action Project of MENRO in Collaboration with PESO. Activity-based participants' inventory monitoring with photographic compliance and real-time GPS watermarking across 11 coastal & river Barangays.
               </p>
 
-              {/* Primary Dual Call-To-Action Buttons */}
+              {/* Primary Call-To-Action Button */}
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                {/* 1. Admin & Super Admin Login Button */}
+                {/* Admin & Super Admin Login Button */}
                 <button
                   onClick={onOpenLoginModal}
                   className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-[0_0_25px_rgba(16,185,129,0.45)] flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
@@ -247,17 +247,6 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
                   <span>Admin & Super Admin Login</span>
                   <ArrowRight className="w-4 h-4 ml-0.5" />
                 </button>
-
-                {/* 2. Register & Generate Personal QR Code Button */}
-                {onOpenPersonalQrModal && (
-                  <button
-                    onClick={onOpenPersonalQrModal}
-                    className="px-5 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border-2 border-emerald-500/60 hover:border-emerald-400 text-emerald-300 hover:text-white font-black text-xs sm:text-sm tracking-wide shadow-xl flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
-                  >
-                    <QrCode className="w-4 h-4 text-emerald-400 animate-pulse" />
-                    <span>Register & Generate Personal QR Code</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>
