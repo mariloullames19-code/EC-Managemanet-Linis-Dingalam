@@ -970,15 +970,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
                           </p>
                           
-                          {/* Action buttons: Download & Print */}
-                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {/* Action buttons: Upload Accomplishment Attendance, Download & Print */}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onOpenUploadAccomplishment) {
+                                  onOpenUploadAccomplishment();
+                                }
+                              }}
+                              className="w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs flex items-center justify-center space-x-1.5 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all transform hover:scale-[1.02] active:scale-95 cursor-pointer"
+                              title="Pindutin para mag-upload ng patunay at accomplishment pictures"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                              <span>Mag-Upload ng Accomplishment Attendance</span>
+                            </button>
+
                             {(eventQrUrl || eventBroadcast.qrDataUrl) && (
                               <a
                                 href={eventQrUrl || eventBroadcast.qrDataUrl}
                                 download={`Dingalan_Event_QR_${eventBroadcast.barangay}_${eventBroadcast.eventDate}.png`}
-                                className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
+                                className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-emerald-500/50 text-emerald-300 font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
                               >
-                                <Download className="w-3 h-3 text-slate-950" />
+                                <Download className="w-3 h-3 text-emerald-400" />
                                 <span>I-Download ang QR</span>
                               </a>
                             )}
@@ -1121,281 +1135,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <X className="w-5 h-5 text-emerald-400" />
                   </button>
 
-                {activeView === 'register' ? (
-                  /* ========================================================================= */
-                  /* INTEGRATED FULL-WIDTH REGISTRATION FORM / QR CODE DISPLAY                */
-                  /* ========================================================================= */
-                  <div className="col-span-12 p-6 sm:p-8 flex flex-col space-y-5 relative z-10 animate-fadeIn">
-                    
-                    {/* Header */}
-                    <div className="flex items-start justify-between pb-3 border-b border-white/10">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 backdrop-blur-sm">
-                          <QrCode className="w-6 h-6 animate-pulse" />
-                        </div>
-                        <div className="text-left">
-                          <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
-                            Register & Generate Personal QR Code
-                          </h2>
-                          <p className="text-[11px] sm:text-xs text-slate-300">
-                            Pang-isahang Personal QR Code para sa Accomplishment Attendance
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Step 1: Input Form */}
-                    {!regGeneratedBene ? (
-                      <form onSubmit={handleRegisterSubmit} className="space-y-4 pt-2">
-                        
-                        {/* 1. Department / Office */}
-                        <div className="space-y-1.5 text-left">
-                          <label className="block text-xs font-mono font-bold text-slate-300">
-                            Department / Office <span className="text-rose-400">*</span>
-                          </label>
-                          <select
-                            value={regDepartment}
-                            onChange={(e) => setRegDepartment(e.target.value)}
-                            className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
-                          >
-                            {DEPARTMENT_OFFICES.map((dept) => (
-                              <option key={dept} value={dept} className="bg-slate-900 text-white">
-                                {dept}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* 2. Full Name */}
-                        <div className="space-y-1.5 text-left">
-                          <label className="block text-xs font-mono font-bold text-slate-300">
-                            Full Name (Buong Pangalan) <span className="text-rose-400">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="hal. Juan Dela Cruz"
-                            value={regFullName}
-                            onChange={(e) => setRegFullName(e.target.value)}
-                            className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
-                          />
-                        </div>
-
-                        {/* 3. Grid for Age, Gender, Phone Number */}
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-                          {/* Age */}
-                          <div className="sm:col-span-3 space-y-1.5 text-left">
-                            <label className="block text-xs font-mono font-bold text-slate-300">
-                              Age <span className="text-rose-400">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              required
-                              placeholder="hal. 34"
-                              value={regAge}
-                              onChange={(e) => setRegAge(e.target.value)}
-                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
-                            />
-                          </div>
-
-                          {/* Gender */}
-                          <div className="sm:col-span-4 space-y-1.5 text-left">
-                            <label className="block text-xs font-mono font-bold text-slate-300">
-                              Gender <span className="text-rose-400">*</span>
-                            </label>
-                            <select
-                              value={regGender}
-                              onChange={(e) => setRegGender(e.target.value)}
-                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
-                            >
-                              <option value="Male (Lalaki)" className="bg-slate-900 text-white">Male (Lalaki)</option>
-                              <option value="Female (Babae)" className="bg-slate-900 text-white">Female (Babae)</option>
-                            </select>
-                          </div>
-
-                          {/* Phone Number */}
-                          <div className="sm:col-span-5 space-y-1.5 text-left">
-                            <label className="block text-xs font-mono font-bold text-slate-300">
-                              Phone Number <span className="text-rose-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="0917-123-4567"
-                              value={regPhoneNumber}
-                              onChange={(e) => setRegPhoneNumber(e.target.value)}
-                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
-                            />
-                          </div>
-                        </div>
-
-                        {/* 4. Grid for Barangay and Street/Purok Address */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* Barangay */}
-                          <div className="space-y-1.5 text-left">
-                            <label className="block text-xs font-mono font-bold text-slate-300">
-                              Barangay in Dingalan <span className="text-rose-400">*</span>
-                            </label>
-                            <select
-                              value={regBarangay}
-                              onChange={(e) => setRegBarangay(e.target.value)}
-                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
-                            >
-                              {DINGALAN_BARANGAYS.map((brgy) => (
-                                <option key={brgy} value={brgy} className="bg-slate-900 text-white">
-                                  Brgy. {brgy}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Street Address */}
-                          <div className="space-y-1.5 text-left">
-                            <label className="block text-xs font-mono font-bold text-slate-300">
-                              Street / Purok Address <span className="text-rose-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="hal. Purok 3, Feeder Port Area"
-                              value={regAddress}
-                              onChange={(e) => setRegAddress(e.target.value)}
-                              className="w-full bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none transition-all font-sans backdrop-blur-sm"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Submit Button */}
-                        <button
-                          type="submit"
-                          disabled={isRegisterLoading}
-                          className="w-full mt-4 py-3.5 px-4 bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-sm rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.45)] transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {isRegisterLoading ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                              <span>Nino-generate ang QR Code...</span>
-                            </>
-                          ) : (
-                            <>
-                              <QrCode className="w-4 h-4 text-slate-950" />
-                              <span>Generate Attendance QR Code</span>
-                            </>
-                          )}
-                        </button>
-                        
-                        {/* Redirection link to Login */}
-                        <div className="space-y-1.5 text-center text-xs font-mono text-slate-300 pt-1">
-                          <div>
-                            May account ka na?{' '}
-                            <button
-                              type="button"
-                              onClick={() => setActiveView('login')}
-                              className="text-cyan-400 hover:text-cyan-300 font-bold underline cursor-pointer ml-0.5 transition-colors"
-                            >
-                              Mag-login Dito
-                            </button>
-                          </div>
-                        </div>
-                      </form>
-                    ) : (
-                      /* ========================================================================= */
-                      /* SUCCESS DISPLAY WITH THE GENERATED QR CODE FRAME                         */
-                      /* ========================================================================= */
-                      <div className="flex flex-col items-center text-center space-y-4 pt-2 animate-scaleIn">
-                        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>NAGENERATED NA ANG IYONG PERSONAL QR CODE!</span>
-                        </div>
-
-                        {/* QR Code Canvas Frame */}
-                        <div className="p-4 bg-white/95 rounded-3xl shadow-2xl border-4 border-emerald-500/30 flex flex-col items-center backdrop-blur-sm">
-                          <img src={regQrCodeDataUrl} alt="Personal QR Code" className="w-52 h-52 object-contain" />
-                          <div className="mt-2 text-center">
-                            <p className="font-mono text-xs font-extrabold text-slate-900 tracking-wider">
-                              {regGeneratedBene.beneCode}
-                            </p>
-                            <p className="text-[11px] text-slate-600 font-bold font-sans">
-                              {regGeneratedBene.firstName} {regGeneratedBene.lastName}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Details Summary */}
-                        <div className="w-full bg-slate-950/50 border border-slate-800/80 backdrop-blur-sm rounded-2xl p-4 text-left text-xs space-y-2 font-mono">
-                          <div className="flex justify-between border-b border-slate-800 pb-1.5">
-                            <span className="text-slate-400">Department:</span>
-                            <span className="text-emerald-400 font-bold truncate max-w-[240px]">
-                              {regGeneratedBene.assignedCluster}
-                            </span>
-                          </div>
-                          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-                            <span className="text-slate-400">Pangalan:</span>
-                            <span className="text-white font-extrabold">
-                              {regGeneratedBene.firstName} {regGeneratedBene.lastName}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Barangay:</span>
-                            <span className="text-slate-200">Brgy. {regGeneratedBene.barangay}, Dingalan</span>
-                          </div>
-                        </div>
-
-                        {/* Primary Action Button: Immediate Accomplishment Attendance Upload with the Generated Personal QR */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onOpenUploadAccomplishment) {
-                              onOpenUploadAccomplishment(regGeneratedBene);
-                            }
-                            setIsUnfolded(false);
-                          }}
-                          className="w-full py-4 px-4 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-[1.02] active:scale-95"
-                        >
-                          <Upload className="w-5 h-5 text-slate-950" />
-                          <span>Gamitin ang QR na Ito Para Magpasa ng Accomplishment</span>
-                        </button>
-
-                        {/* Download & Secondary Action Buttons */}
-                        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <a
-                            href={regQrCodeDataUrl}
-                            download={`Personal_QR_${regGeneratedBene.firstName}_${regGeneratedBene.lastName}.png`}
-                            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-extrabold text-xs rounded-xl border border-emerald-500/40 shadow transition-all flex items-center justify-center space-x-2"
-                          >
-                            <Download className="w-4 h-4 text-emerald-400" />
-                            <span>I-download ang QR Image</span>
-                          </a>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (onOpenScanQrModal) {
-                                onOpenScanQrModal();
-                              }
-                              setIsUnfolded(false);
-                            }}
-                            className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-extrabold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
-                          >
-                            <Camera className="w-4 h-4 text-slate-400" />
-                            <span>Mag-Scan ng Ibang QR</span>
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={handleResetRegistration}
-                          className="text-xs text-slate-400 hover:text-cyan-400 underline pt-1 font-mono cursor-pointer"
-                        >
-                          Gumawa ng panibagong QR Code
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* ========================================================================= */
-                  /* STEP 1: CLASSIC LOGIN FORM (7 COLS PANEL + 5 COLS PANEL)                 */
-                  /* ========================================================================= */
+                  {/* ========================================================================= */}
+                  {/* STEP 1: CLASSIC LOGIN FORM (7 COLS PANEL + 5 COLS PANEL)                 */}
+                  {/* ========================================================================= */}
                   <>
                     {/* LEFT SIDE FORM PANEL */}
                     <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5 relative z-10 animate-fadeIn">
@@ -1489,20 +1231,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <span>Login</span>
                           )}
                         </button>
-
-                        {/* Bottom Redirects & Links */}
-                        <div className="space-y-1.5 text-center text-xs font-mono text-slate-300 pt-1">
-                          <div>
-                            Don't have an account?{' '}
-                            <button
-                              type="button"
-                              onClick={() => setActiveView('register')}
-                              className="text-emerald-400 hover:text-emerald-300 font-bold underline cursor-pointer ml-0.5 transition-colors"
-                            >
-                              Sign Up / Personal QR
-                            </button>
-                          </div>
-                        </div>
                       </form>
                     </div>
 
@@ -1530,7 +1258,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </div>
                     </div>
                   </>
-                )}
 
                 </div>
               )

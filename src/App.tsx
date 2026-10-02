@@ -979,7 +979,7 @@ export default function App() {
             setBeneficiaries((prev) => [newBene, ...prev]);
             showToast(`Naka-register na si ${newBene.firstName} ${newBene.lastName}! Na-generate na ang kanyang Personal QR Code.`, 'success');
           }}
-          eventBroadcast={isBroadcastActive(latestEventBroadcast) ? latestEventBroadcast : null}
+          eventBroadcast={latestEventBroadcast}
         />
 
         {/* Standalone Personal QR Generator & Registration Modal */}

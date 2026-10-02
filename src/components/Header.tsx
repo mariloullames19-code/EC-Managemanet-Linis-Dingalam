@@ -311,37 +311,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Approvals Reminder Notification Badge - STRICTLY ADMIN & SUPERADMIN ONLY */}
-          {isAdminOrSuperAdmin && pendingApprovalsCount > 0 && onOpenApprovalsModal && (
-            <button
-              onClick={onOpenApprovalsModal}
-              className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_15px_rgba(245,158,11,0.35)] transition-all animate-pulse cursor-pointer shrink-0"
-              title={`May ${pendingApprovalsCount} bagong nag-register na account na naghihintay ng inyong approval`}
-            >
-              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Approvals</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[10px]">
-                {pendingApprovalsCount}
-              </span>
-            </button>
-          )}
-
-          {/* Active User Badge Pill */}
-          <div
-            onClick={onOpenLoginModal}
-            className={`flex items-center space-x-1.5 border rounded-full py-1 px-3 cursor-pointer transition-all ${
-              currentUser.role === 'superadmin'
-                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
-                : 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
-            }`}
-            title={`Naka-login bilang: ${currentUser.name} (${currentUser.department})`}
-          >
-            <span className={`w-2 h-2 rounded-full animate-pulse ${currentUser.role === 'superadmin' ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
-            <span className="text-[11px] font-mono font-bold tracking-tight truncate max-w-[140px]">
-              {currentUser.name}
-            </span>
-          </div>
-
           {/* Log Out Button */}
           <button
             onClick={onLogout || onOpenLoginModal}

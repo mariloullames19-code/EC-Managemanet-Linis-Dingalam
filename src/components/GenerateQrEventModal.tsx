@@ -97,7 +97,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const [targetArea, setTargetArea] = useState<string>('Pacific Seawall & Mangrove Buffer Strip');
   const [eventDate, setEventDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState<string>('06:00 AM');
-  const [estimatedEndTime, setEstimatedEndTime] = useState<string>('10:00 AM');
+  const [estimatedEndTime, setEstimatedEndTime] = useState<string>('11:59 PM');
   const [totalHours, setTotalHours] = useState<string>('4 na Oras');
   const [requiredTools, setRequiredTools] = useState<string>(
     'Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes (gloves)'
