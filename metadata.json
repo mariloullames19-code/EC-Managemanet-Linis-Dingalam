@@ -1,0 +1,11 @@
+{
+  "name": "Remix Linis Dingalan EC Management",
+  "description": "Activity-based attendance, geotagged compliance monitoring, and beneficiary work program tracking platform for PESO \u0026 MENRO Dingalan, Aurora.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Test connection doc
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if false;
+    }
+
+    // Beneficiaries Collection
+    match /beneficiaries/{beneficiaryId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Activities Collection
+    match /activities/{activityId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Attendances Collection
+    match /attendances/{attendanceId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Event Broadcasts Collection
+    match /broadcasts/{broadcastId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Audit Logs Collection
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+  }
+}

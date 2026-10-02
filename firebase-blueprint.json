@@ -1,0 +1,155 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user profiles, roles, and status for RBAC access control",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["superadmin", "admin", "menro_officer", "staff"] },
+        "department": { "type": "string", "maxLength": 128 },
+        "position": { "type": "string", "maxLength": 128 },
+        "badgeNumber": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["active", "inactive", "pending", "rejected"] },
+        "createdAt": { "type": "string" },
+        "approvedBy": { "type": "string", "maxLength": 128 },
+        "approvedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "department", "status"]
+    },
+    "Beneficiary": {
+      "title": "Beneficiary",
+      "description": "Masterlist of Linis Dingalan and TUPAD community participants",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "beneCode": { "type": "string", "maxLength": 64 },
+        "firstName": { "type": "string", "maxLength": 64 },
+        "lastName": { "type": "string", "maxLength": 64 },
+        "nationalOrLocalId": { "type": "string", "maxLength": 64 },
+        "contactNumber": { "type": "string", "maxLength": 32 },
+        "barangay": { "type": "string", "maxLength": 64 },
+        "assignedCluster": { "type": "string", "maxLength": 64 },
+        "emergencyContactName": { "type": "string", "maxLength": 128 },
+        "emergencyContactPhone": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "qrHash": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "beneCode", "firstName", "lastName", "barangay", "status"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Coastal and river clean-up activity schedules and programs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "programType": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "date": { "type": "string", "maxLength": 32 },
+        "callTime": { "type": "string", "maxLength": 32 },
+        "targetArea": { "type": "string", "maxLength": 256 },
+        "barangay": { "type": "string", "maxLength": 64 },
+        "supervisorName": { "type": "string", "maxLength": 128 },
+        "targetBeneficiariesCount": { "type": "number" },
+        "assignedBeneficiariesCount": { "type": "number" },
+        "attendedBeneficiariesCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["scheduled", "ongoing", "completed", "cancelled"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "barangay", "status"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Geotagged photographic proof and check-in records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "activityId": { "type": "string", "maxLength": 128 },
+        "beneficiaryId": { "type": "string", "maxLength": 128 },
+        "beneficiaryName": { "type": "string", "maxLength": 128 },
+        "beneCode": { "type": "string", "maxLength": 64 },
+        "barangay": { "type": "string", "maxLength": 64 },
+        "timestamp": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "status": { "type": "string", "enum": ["verified", "flagged", "pending"] },
+        "verifiedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "activityId", "beneficiaryId", "timestamp", "photoUrl"]
+    },
+    "EventBroadcast": {
+      "title": "EventBroadcast",
+      "description": "Official Admin QR codes and paalala announcements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "activityId": { "type": "string", "maxLength": 128 },
+        "activityTitle": { "type": "string", "maxLength": 256 },
+        "barangay": { "type": "string", "maxLength": 64 },
+        "targetArea": { "type": "string", "maxLength": 256 },
+        "qrDataUrl": { "type": "string" },
+        "qrPayload": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "startTime": { "type": "string" },
+        "estimatedEndTime": { "type": "string" },
+        "totalHours": { "type": "string" },
+        "requiredTools": { "type": "string" },
+        "waterTumblerReminder": { "type": "string" },
+        "recommendedAttire": { "type": "string" },
+        "additionalNotes": { "type": "string" },
+        "sentByAdminName": { "type": "string" },
+        "sentAt": { "type": "string" }
+      },
+      "required": ["id", "activityTitle", "barangay", "sentAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Security and RBAC action audit trail",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string" },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 128 },
+        "userRole": { "type": "string", "maxLength": 64 },
+        "action": { "type": "string", "maxLength": 128 },
+        "entity": { "type": "string", "maxLength": 64 },
+        "entityId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["id", "timestamp", "userName", "action"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Registered system user profiles and approvals"
+    },
+    "/beneficiaries/{beneficiaryId}": {
+      "schema": { "$ref": "#/entities/Beneficiary" },
+      "description": "Registered community beneficiaries"
+    },
+    "/activities/{activityId}": {
+      "schema": { "$ref": "#/entities/Activity" },
+      "description": "Clean-up activities and programs"
+    },
+    "/attendances/{attendanceId}": {
+      "schema": { "$ref": "#/entities/Attendance" },
+      "description": "Photographic attendance geotag records"
+    },
+    "/broadcasts/{broadcastId}": {
+      "schema": { "$ref": "#/entities/EventBroadcast" },
+      "description": "Admin broadcasted event QR codes and notices"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "System audit trail entries"
+    }
+  }
+}
