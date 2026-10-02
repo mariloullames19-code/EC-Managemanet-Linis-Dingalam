@@ -167,17 +167,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('login');
-      setTimeout(() => {
-        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
     } else {
       if (activeView === 'login') {
         setIsUnfolded(false);
       } else {
         setActiveView('login');
-        setTimeout(() => {
-          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 50);
       }
     }
   };
@@ -188,17 +182,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('register');
-      setTimeout(() => {
-        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
     } else {
       if (activeView === 'register') {
         setIsUnfolded(false);
       } else {
         setActiveView('register');
-        setTimeout(() => {
-          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 50);
       }
     }
   };
@@ -209,17 +197,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!isUnfolded) {
       setIsUnfolded(true);
       setActiveView('event');
-      setTimeout(() => {
-        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
     } else {
       if (activeView === 'event') {
         setIsUnfolded(false);
       } else {
         setActiveView('event');
-        setTimeout(() => {
-          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 50);
       }
     }
   };
@@ -630,12 +612,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       {/* MAIN CENTER HERO CONTAINER (MOVED HIGHER FOR CLEANER VISUAL BALANCE) */}
       {/* ========================================================================= */}
       <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-3 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 mt-1 sm:mt-2 mb-auto">
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start lg:items-center">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">
           
           {/* --------------------------------------------------------------------- */}
-          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
+          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (PERMANENTLY ANCHORED AT TOP-LEFT) */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full ${isUnfolded ? 'order-2 lg:order-1' : 'order-1'}`}>
+          <div className="lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full order-1">
             <div className="space-y-3">
               <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.08] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
                 Linis Dingalan <br />
@@ -666,9 +648,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {/* --------------------------------------------------------------------- */}
-          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (ORDER-1 ON MOBILE WHEN BUTTON OPENED) */}
+          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (ALWAYS ORDER-2) */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0' : 'order-2 hidden lg:block'}`}>
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start order-2 ${!isUnfolded ? 'hidden lg:block' : ''}`}>
             {isUnfolded ? (
               activeView === 'event' && eventBroadcast ? (
                 /* ========================================================================= */
