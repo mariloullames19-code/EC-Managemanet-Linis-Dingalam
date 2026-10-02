@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, UserRole, Beneficiary } from '../types';
+import { User, UserRole, Beneficiary, EventQrBroadcast } from '../types';
 import { api } from '../services/api';
 import QRCode from 'qrcode';
+import { checkEventCutoff } from '../utils/watermarkEngine';
 import {
   Lock,
   Mail,
@@ -143,6 +144,101 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       setIsUnfolded(true);
       setActiveView('event');
     }
+  }, [eventBroadcast]);
+
+  // Live Countdown Timer State for Event Advisory
+  const [eventTimeLeft, setEventTimeLeft] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+    totalSeconds: number;
+    isExpired: boolean;
+    isPast24Hours: boolean;
+    formatted: string;
+  }>({
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    totalSeconds: 0,
+    isExpired: false,
+    isPast24Hours: false,
+    formatted: '00h : 00m : 00s',
+  });
+
+  useEffect(() => {
+    if (!eventBroadcast) return;
+
+    const calculateCountdown = () => {
+      const cutoff = checkEventCutoff(null, eventBroadcast);
+
+      // Current Time in Asia/Manila PST
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(new Date());
+      const partMap = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+      const manilaNow = new Date(
+        parseInt(partMap.year, 10),
+        parseInt(partMap.month, 10) - 1,
+        parseInt(partMap.day, 10),
+        parseInt(partMap.hour, 10) === 24 ? 0 : parseInt(partMap.hour, 10),
+        parseInt(partMap.minute, 10),
+        parseInt(partMap.second, 10)
+      );
+
+      if (!cutoff.deadlineDate) {
+        setEventTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          totalSeconds: 0,
+          isExpired: true,
+          isPast24Hours: false,
+          formatted: '00h : 00m : 00s',
+        });
+        return;
+      }
+
+      const diffMs = cutoff.deadlineDate.getTime() - manilaNow.getTime();
+      if (diffMs <= 0) {
+        const pastCutoffMs = Math.abs(diffMs);
+        const isPast24Hours = pastCutoffMs >= 24 * 60 * 60 * 1000;
+        setEventTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          totalSeconds: 0,
+          isExpired: true,
+          isPast24Hours,
+          formatted: '00h : 00m : 00s',
+        });
+      } else {
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const minutes = Math.floor((totalSecs % 3600) / 60);
+        const seconds = totalSecs % 60;
+        setEventTimeLeft({
+          hours,
+          minutes,
+          seconds,
+          totalSeconds: totalSecs,
+          isExpired: false,
+          isPast24Hours: false,
+          formatted: `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(seconds).padStart(2, '0')}s`,
+        });
+      }
+    };
+
+    calculateCountdown();
+    const timer = setInterval(calculateCountdown, 1000);
+    return () => clearInterval(timer);
   }, [eventBroadcast]);
 
   // Precision 5-second video loop controller & guaranteed autoplay
@@ -701,18 +797,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* --------------------------------------------------------------------- */}
           <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0' : 'order-2 hidden lg:block'}`}>
             {isUnfolded ? (
-              activeView === 'event' && eventBroadcast ? (
+              activeView === 'event' && eventBroadcast && !eventTimeLeft.isPast24Hours ? (
                 /* ========================================================================= */
-                /* EVENT BROADCAST CARD (POPPED UP ABOVE LINIS DINGALAN ON MOBILE)          */
+                /* EVENT BROADCAST CARD / CONCLUDED NOTICE (HIDES AUTOMATICALLY AFTER 24H)   */
                 /* ========================================================================= */
-                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/45 hover:bg-slate-950/50 backdrop-blur-md p-4 sm:p-5 space-y-3 sm:space-y-3.5 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
+                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/55 hover:bg-slate-950/65 backdrop-blur-md p-4 sm:p-5 space-y-3 sm:space-y-3.5 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
                   <div className="flex items-center justify-between border-b border-white/10 pb-2.5 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
                       <span className="px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
                         <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
-                        <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
+                        <span className="truncate">
+                          {eventTimeLeft.isExpired ? 'Opisyal na Pabatid ng Admin' : 'Opisyal na Patnubay at Paalala ng Admin'}
+                        </span>
                       </span>
                     </div>
 
@@ -740,130 +838,213 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Event Title & Location/Time Row */}
-                  <div className="space-y-1.5 text-left">
-                    <h3 className="text-base sm:text-lg font-black text-white leading-snug drop-shadow-md">
-                      {eventBroadcast.activityTitle}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
-                      <p className="text-emerald-300 font-semibold flex items-center gap-1.5 drop-shadow">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
-                      </p>
-                      <p className="text-cyan-300 font-medium flex items-center gap-1.5 drop-shadow">
-                        <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                        <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Compact High-Resolution Event Attendance QR Code Box */}
-                  <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-row items-center gap-3 sm:gap-4">
-                    {/* Compact White Framed QR Canvas */}
-                    <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
-                      {eventQrUrl || eventBroadcast.qrDataUrl ? (
-                        <img
-                          src={eventQrUrl || eventBroadcast.qrDataUrl}
-                          alt="Official Event Attendance QR Code"
-                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
-                        />
-                      ) : (
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-slate-100 rounded-lg">
-                          <QrCode className="w-14 h-14 text-slate-800" />
-                        </div>
-                      )}
-                      <span className="text-[8px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
-                        SCAN ATTENDANCE
-                      </span>
-                    </div>
-
-                    {/* QR Details and Action Buttons */}
-                    <div className="space-y-1.5 text-left flex-1 min-w-0">
-                      <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold">
-                        <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
-                        <span>EVENT ATTENDANCE QR CODE</span>
+                  {/* ========================================================================= */}
+                  {/* REALTIME COUNTDOWN TIMER AT THE VERY TOP INSIDE THE BOX                   */}
+                  {/* ========================================================================= */}
+                  {!eventTimeLeft.isExpired && (
+                    <div className="p-2 sm:p-2.5 rounded-2xl bg-slate-950/80 border border-emerald-400/50 backdrop-blur-md shadow-inner flex flex-col sm:flex-row items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2 text-xs font-mono font-bold text-emerald-300">
+                        <Clock className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+                        <span>ORAS NA NATITIRA (REALTIME COUNTDOWN):</span>
                       </div>
-                      <p className="text-[11px] sm:text-xs text-slate-200 font-sans leading-snug">
-                        I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
-                      </p>
-                      
-                      {/* Action buttons: Download & Print */}
-                      <div className="flex flex-wrap gap-1.5 pt-0.5">
-                        {(eventQrUrl || eventBroadcast.qrDataUrl) && (
-                          <a
-                            href={eventQrUrl || eventBroadcast.qrDataUrl}
-                            download={`Dingalan_Event_QR_${eventBroadcast.barangay}_${eventBroadcast.eventDate}.png`}
-                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
-                          >
-                            <Download className="w-3 h-3 text-slate-950" />
-                            <span>I-Download ang QR</span>
-                          </a>
+
+                      <div className="flex items-center space-x-1 sm:space-x-1.5 font-mono font-black text-xs sm:text-sm text-white">
+                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-sm">
+                          {String(eventTimeLeft.hours).padStart(2, '0')}h
+                        </span>
+                        <span className="text-emerald-400 animate-pulse">:</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-sm">
+                          {String(eventTimeLeft.minutes).padStart(2, '0')}m
+                        </span>
+                        <span className="text-emerald-400 animate-pulse">:</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 shadow-sm">
+                          {String(eventTimeLeft.seconds).padStart(2, '0')}s
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ========================================================================= */}
+                  {/* STATE A: ONGOING EVENT (SHOW TITLE, QR CODE, AND 2X2 GUIDELINE ADVISORIES) */}
+                  {/* ========================================================================= */}
+                  {!eventTimeLeft.isExpired ? (
+                    <>
+                      {/* Event Title & Location/Time Row */}
+                      <div className="space-y-1.5 text-left">
+                        <h3 className="text-base sm:text-lg font-black text-white leading-snug drop-shadow-md">
+                          {eventBroadcast.activityTitle}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
+                          <p className="text-emerald-300 font-semibold flex items-center gap-1.5 drop-shadow">
+                            <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
+                          </p>
+                          <p className="text-cyan-300 font-medium flex items-center gap-1.5 drop-shadow">
+                            <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Compact High-Resolution Event Attendance QR Code Box */}
+                      <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-row items-center gap-3 sm:gap-4 animate-fadeIn">
+                        {/* Compact White Framed QR Canvas */}
+                        <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
+                          {eventQrUrl || eventBroadcast.qrDataUrl ? (
+                            <img
+                              src={eventQrUrl || eventBroadcast.qrDataUrl}
+                              alt="Official Event Attendance QR Code"
+                              className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-slate-100 rounded-lg">
+                              <QrCode className="w-14 h-14 text-slate-800" />
+                            </div>
+                          )}
+                          <span className="text-[8px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
+                            SCAN ATTENDANCE
+                          </span>
+                        </div>
+
+                        {/* QR Details and Action Buttons */}
+                        <div className="space-y-1.5 text-left flex-1 min-w-0">
+                          <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold">
+                            <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
+                            <span>EVENT ATTENDANCE QR CODE</span>
+                          </div>
+                          <p className="text-[11px] sm:text-xs text-slate-200 font-sans leading-snug">
+                            I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
+                          </p>
+                          
+                          {/* Action buttons: Download & Print */}
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {(eventQrUrl || eventBroadcast.qrDataUrl) && (
+                              <a
+                                href={eventQrUrl || eventBroadcast.qrDataUrl}
+                                download={`Dingalan_Event_QR_${eventBroadcast.barangay}_${eventBroadcast.eventDate}.png`}
+                                className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
+                              >
+                                <Download className="w-3 h-3 text-slate-950" />
+                                <span>I-Download ang QR</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => window.print()}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-white font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
+                            >
+                              <Printer className="w-3 h-3 text-slate-300" />
+                              <span>I-Print</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Compact 2-Column Advisories Grid (Fits Cleanly Without Scrolling) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
+                        {eventBroadcast.requiredTools && (
+                          <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
+                            <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Kagamitan / Tools:</span>
+                              <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.requiredTools}>
+                                {eventBroadcast.requiredTools}
+                              </span>
+                            </div>
+                          </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => window.print()}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-white font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
-                        >
-                          <Printer className="w-3 h-3 text-slate-300" />
-                          <span>I-Print</span>
-                        </button>
+
+                        {eventBroadcast.waterTumblerReminder && (
+                          <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
+                            <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Hydration / Tubig:</span>
+                              <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.waterTumblerReminder}>
+                                {eventBroadcast.waterTumblerReminder}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {eventBroadcast.recommendedAttire && (
+                          <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
+                            <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Kasuotan (Attire):</span>
+                              <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.recommendedAttire}>
+                                {eventBroadcast.recommendedAttire}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {eventBroadcast.additionalNotes && (
+                          <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-emerald-500/30 backdrop-blur-sm transition-colors">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <span className="text-emerald-300 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Admin Note:</span>
+                              <span className="text-slate-200 text-[11px] sm:text-xs leading-snug block italic line-clamp-2" title={eventBroadcast.additionalNotes}>
+                                {eventBroadcast.additionalNotes}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    /* ========================================================================= */
+                    /* STATE B: EVENT CONCLUDED (NO RED EFFECT - CLEAN PROFESSIONAL ENGLISH NOTICE) */
+                    /* ========================================================================= */
+                    <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-cyan-500/40 backdrop-blur-md shadow-lg space-y-3.5 text-left animate-fadeIn">
+                      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5 gap-2">
+                        <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[10px] sm:text-xs font-mono font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          <span>EVENT CONCLUDED • SUBMISSION CLOSED</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          Cut-Off: <strong>{eventBroadcast.estimatedEndTime || 'Passed'}</strong>
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <h4 className="text-sm sm:text-base font-black text-white leading-snug">
+                          Official Notice: This Environmental Cleanup Operation Has Concluded
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed text-justify">
+                          Please be advised that the official scheduled period and cut-off time for <strong>{eventBroadcast.activityTitle}</strong> has ended. The portal is no longer accepting attendance submissions or accomplishment photo uploads for this activity.
+                        </p>
+                      </div>
+
+                      {/* Official Inquiries Contact Card */}
+                      <div className="p-3 sm:p-3.5 rounded-xl bg-slate-900/90 border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-teal-400 flex items-center justify-center text-slate-950 font-black font-mono text-xs shrink-0 shadow-md">
+                            JMO
+                          </div>
+                          <div>
+                            <p className="text-[9px] sm:text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                              For inquiries and concerns, please contact:
+                            </p>
+                            <p className="text-xs sm:text-sm font-black text-white">
+                              ENGR. JOHN MARK N. ORLASAN
+                            </p>
+                            <p className="text-[10px] sm:text-[11px] text-slate-300 font-mono">
+                              Municipal Administrator / MENRO Head
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-1.5 self-start sm:self-center">
+                          <span className="px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono font-bold">
+                            LGU Dingalan, Aurora
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Compact 2-Column Advisories Grid (Fits Cleanly Without Scrolling) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
-                    {eventBroadcast.requiredTools && (
-                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
-                        <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Kagamitan / Tools:</span>
-                          <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.requiredTools}>
-                            {eventBroadcast.requiredTools}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.waterTumblerReminder && (
-                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
-                        <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Hydration / Tubig:</span>
-                          <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.waterTumblerReminder}>
-                            {eventBroadcast.waterTumblerReminder}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.recommendedAttire && (
-                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
-                        <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Kasuotan (Attire):</span>
-                          <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.recommendedAttire}>
-                            {eventBroadcast.recommendedAttire}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.additionalNotes && (
-                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-emerald-500/30 backdrop-blur-sm transition-colors">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-emerald-300 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Admin Note:</span>
-                          <span className="text-slate-200 text-[11px] sm:text-xs leading-snug block italic line-clamp-2" title={eventBroadcast.additionalNotes}>
-                            {eventBroadcast.additionalNotes}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
 
                   <div className="text-[9px] sm:text-[10px] font-mono text-slate-400 pt-1 text-right border-t border-white/10">
-                    Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName}</strong>
+                    Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
                   </div>
                 </div>
               ) : (
