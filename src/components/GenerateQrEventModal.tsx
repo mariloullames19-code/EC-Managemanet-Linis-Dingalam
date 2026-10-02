@@ -146,7 +146,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     let isMounted = true;
     async function makeQr() {
       const selectedAct = activities.find((a) => a.id === selectedActivityId) || activities[0];
-      const payloadUrl = `https://linis-dingalan.aurora.gov.ph/attendance/checkin?act_id=${selectedAct?.id || 'act-001'}&brgy=${encodeURIComponent(barangay)}&date=${encodeURIComponent(eventDate)}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
+      const payloadUrl = `${currentOrigin}/?action=personal_qr&act_id=${selectedAct?.id || 'act-001'}&brgy=${encodeURIComponent(barangay)}&date=${encodeURIComponent(eventDate)}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
       
       setQrRawPayload(payloadUrl);
 

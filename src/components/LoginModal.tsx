@@ -127,7 +127,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       setEventQrUrl(eventBroadcast.qrDataUrl);
       return;
     }
-    const payload = eventBroadcast.qrPayload || `https://linis-dingalan.aurora.gov.ph/attendance/checkin?act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
+    const payload = eventBroadcast.qrPayload && eventBroadcast.qrPayload.startsWith('http')
+      ? eventBroadcast.qrPayload
+      : `${currentOrigin}/?action=personal_qr&act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
+
     QRCode.toDataURL(payload, {
       width: 320,
       margin: 1,
@@ -266,24 +270,86 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
 
-  // Clear fields on open
+  // Check for scanned URL actions (e.g. from mobile phone camera scan) or saved registration
   useEffect(() => {
-    if (isOpen) {
-      setErrorMessage(null);
-      setPendingNotice(null);
-      setEmail('');
-      setPassword('');
-      setActiveView('login');
-      setRegFullName('');
-      setRegAge('');
-      setRegGender('Male (Lalaki)');
-      setRegPhoneNumber('');
-      setRegDepartment(DEPARTMENT_OFFICES[0]);
-      setRegBarangay('Paltic');
-      setRegAddress('');
-      setRegGeneratedBene(null);
-      setRegQrCodeDataUrl('');
+    if (!isOpen) return;
+
+    setErrorMessage(null);
+    setPendingNotice(null);
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      const actId = params.get('act_id');
+      const brgyParam = params.get('brgy');
+
+      if (action === 'personal_qr' || action === 'register' || actId) {
+        setIsUnfolded(true);
+        setActiveView('register');
+
+        if (brgyParam && DINGALAN_BARANGAYS.includes(brgyParam)) {
+          setRegBarangay(brgyParam);
+        }
+
+        // Auto-load last registered beneficiary or generate personal QR
+        try {
+          const savedBeneStr = localStorage.getItem('LD_LAST_REGISTERED_BENE');
+          let targetBene: Beneficiary | null = null;
+          if (savedBeneStr) {
+            targetBene = JSON.parse(savedBeneStr);
+          } else {
+            // Default active participant profile so Picture 2 opens instantly
+            targetBene = {
+              id: 'ben-001',
+              beneCode: 'LD-BEN-2025-0107',
+              firstName: 'Juan',
+              lastName: 'Dela Cruz',
+              nationalOrLocalId: 'LGU-DING-2025-0107',
+              contactNumber: '0917-123-4567',
+              barangay: (brgyParam as any) || 'Paltic',
+              assignedCluster: 'Municipal Administrator',
+              emergencyContactName: 'Family',
+              emergencyContactPhone: '0917-123-4567',
+              emergencyContactRelation: 'Spouse',
+              photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+              status: 'active',
+              qrHash: 'qr-hash-verified-0107',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+          }
+
+          if (targetBene) {
+            setRegGeneratedBene(targetBene);
+            const qrPayloadString = `${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(targetBene.beneCode)}&id=${encodeURIComponent(targetBene.id)}&name=${encodeURIComponent(targetBene.firstName + ' ' + targetBene.lastName)}&department=${encodeURIComponent(targetBene.assignedCluster)}&barangay=${encodeURIComponent(targetBene.barangay)}&qrHash=${encodeURIComponent(targetBene.qrHash || 'qr-hash')}`;
+            QRCode.toDataURL(qrPayloadString, {
+              width: 320,
+              margin: 2,
+              color: { dark: '#022c22', light: '#ffffff' },
+            }).then((url) => {
+              setRegQrCodeDataUrl(url);
+            });
+          }
+        } catch (e) {
+          console.warn('Error reading saved beneficiary:', e);
+        }
+        return;
+      }
     }
+
+    // Default reset when no scan URL is triggered
+    setEmail('');
+    setPassword('');
+    setActiveView('login');
+    setRegFullName('');
+    setRegAge('');
+    setRegGender('Male (Lalaki)');
+    setRegPhoneNumber('');
+    setRegDepartment(DEPARTMENT_OFFICES[0]);
+    setRegBarangay('Paltic');
+    setRegAddress('');
+    setRegGeneratedBene(null);
+    setRegQrCodeDataUrl('');
   }, [isOpen]);
 
   const handleAdminPortalClick = () => {
@@ -519,6 +585,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
       setRegQrCodeDataUrl(qrUrl);
       setRegGeneratedBene(newBene);
+      try {
+        localStorage.setItem('LD_LAST_REGISTERED_BENE', JSON.stringify(newBene));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
       
       if (onRegisterSuccess) {
         onRegisterSuccess(newBene);
