@@ -705,11 +705,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 /* ========================================================================= */
                 /* EVENT BROADCAST CARD (POPPED UP ABOVE LINIS DINGALAN ON MOBILE)          */
                 /* ========================================================================= */
-                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_55px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/40 hover:bg-slate-950/45 backdrop-blur-md p-5 sm:p-8 space-y-5 sm:space-y-6 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3.5 gap-2">
+                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/45 hover:bg-slate-950/50 backdrop-blur-md p-4 sm:p-5 space-y-3 sm:space-y-3.5 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
+                  {/* Top Bar inside Card */}
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2.5 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider sm:tracking-widest flex items-center gap-1.5 backdrop-blur-sm truncate">
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
                         <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
                         <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
                       </span>
@@ -720,18 +721,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setIsUnfolded(false)}
-                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/60 hover:border-emerald-500/60 text-slate-300 hover:text-white text-xs font-mono font-semibold transition-all cursor-pointer backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 shrink-0"
+                        className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 hover:border-emerald-500/60 text-slate-300 hover:text-white text-[11px] font-mono font-semibold transition-all cursor-pointer backdrop-blur-sm shadow-sm hover:scale-105 active:scale-95 shrink-0"
                         title="I-hide / Itago ang paalala"
                       >
                         <EyeOff className="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400 shrink-0" />
-                        <span>Itago / Hide</span>
+                        <span>Itago</span>
                       </button>
 
                       {/* Close Button X */}
                       <button
                         type="button"
                         onClick={() => setIsUnfolded(false)}
-                        className="p-1.5 rounded-xl bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm hover:scale-105 shrink-0"
+                        className="p-1 rounded-xl bg-slate-900/70 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm hover:scale-105 shrink-0"
                         title="Isara ang Event Advisory"
                       >
                         <X className="w-4 h-4 text-emerald-400" />
@@ -739,116 +740,129 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:gap-4">
-                    <div className="space-y-2 min-w-0 flex-1 text-left">
-                      <h3 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
-                        {eventBroadcast.activityTitle}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-emerald-300 font-mono font-semibold flex items-center gap-1.5 drop-shadow">
-                        <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                  {/* Event Title & Location/Time Row */}
+                  <div className="space-y-1.5 text-left">
+                    <h3 className="text-base sm:text-lg font-black text-white leading-snug drop-shadow-md">
+                      {eventBroadcast.activityTitle}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
+                      <p className="text-emerald-300 font-semibold flex items-center gap-1.5 drop-shadow">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
                       </p>
-                      <p className="text-xs sm:text-sm text-slate-300 font-mono flex items-center gap-1.5 drop-shadow">
-                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
+                      <p className="text-cyan-300 font-medium flex items-center gap-1.5 drop-shadow">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                         <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
                       </p>
                     </div>
                   </div>
 
-                  {/* High-Resolution Event Attendance QR Code Box with White Frame, Download & Print */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border-2 border-emerald-400/70 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
-                    {/* White Framed QR Canvas */}
-                    <div className="p-3 bg-white rounded-2xl shadow-2xl border-4 border-emerald-400/50 flex flex-col items-center shrink-0">
+                  {/* Compact High-Resolution Event Attendance QR Code Box */}
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-row items-center gap-3 sm:gap-4">
+                    {/* Compact White Framed QR Canvas */}
+                    <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
                       {eventQrUrl || eventBroadcast.qrDataUrl ? (
                         <img
                           src={eventQrUrl || eventBroadcast.qrDataUrl}
                           alt="Official Event Attendance QR Code"
-                          className="w-36 h-36 sm:w-44 sm:h-44 object-contain"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
                         />
                       ) : (
-                        <div className="w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center bg-slate-100 rounded-xl">
-                          <QrCode className="w-24 h-24 text-slate-800" />
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-slate-100 rounded-lg">
+                          <QrCode className="w-14 h-14 text-slate-800" />
                         </div>
                       )}
-                      <span className="text-[10px] font-mono font-black text-slate-900 mt-1 uppercase tracking-wider">
-                        SCAN FOR ATTENDANCE
+                      <span className="text-[8px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
+                        SCAN ATTENDANCE
                       </span>
                     </div>
 
                     {/* QR Details and Action Buttons */}
-                    <div className="space-y-2.5 text-left flex-1 min-w-0">
-                      <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 text-[10px] sm:text-xs font-mono font-bold">
-                        <QrCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>OPISYAL NA EVENT ATTENDANCE QR CODE</span>
+                    <div className="space-y-1.5 text-left flex-1 min-w-0">
+                      <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold">
+                        <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>EVENT ATTENDANCE QR CODE</span>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-100 font-sans leading-relaxed text-justify">
-                        I-scan ang QR Code na ito gamit ang camera ng inyong cellphone para mag-upload ng accomplishment attendance at mga larawan sa paglilinis.
+                      <p className="text-[11px] sm:text-xs text-slate-200 font-sans leading-snug">
+                        I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
                       </p>
                       
                       {/* Action buttons: Download & Print */}
-                      <div className="flex flex-wrap gap-2 pt-1">
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
                         {(eventQrUrl || eventBroadcast.qrDataUrl) && (
                           <a
                             href={eventQrUrl || eventBroadcast.qrDataUrl}
                             download={`Dingalan_Event_QR_${eventBroadcast.barangay}_${eventBroadcast.eventDate}.png`}
-                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95"
+                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
                           >
-                            <Download className="w-3.5 h-3.5 text-slate-950" />
+                            <Download className="w-3 h-3 text-slate-950" />
                             <span>I-Download ang QR</span>
                           </a>
                         )}
                         <button
                           type="button"
                           onClick={() => window.print()}
-                          className="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-white font-mono font-bold text-xs flex items-center space-x-1.5 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
+                          className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-white font-mono font-bold text-[10px] sm:text-[11px] flex items-center space-x-1 shadow transition-all cursor-pointer hover:scale-105 active:scale-95"
                         >
-                          <Printer className="w-3.5 h-3.5 text-slate-300" />
-                          <span>I-Print ang Paalala</span>
+                          <Printer className="w-3 h-3 text-slate-300" />
+                          <span>I-Print</span>
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Specific Advisories Grid with Modern Semi-Transparent Glass Styling & Justified Text */}
-                  <div className="space-y-3 sm:space-y-3.5 pt-3 sm:pt-4 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
+                  {/* Compact 2-Column Advisories Grid (Fits Cleanly Without Scrolling) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
                     {eventBroadcast.requiredTools && (
-                      <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
-                        <Wrench className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
+                        <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Dalhing Kagamitan:</span>
-                          <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.requiredTools}</span>
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Kagamitan / Tools:</span>
+                          <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.requiredTools}>
+                            {eventBroadcast.requiredTools}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     {eventBroadcast.waterTumblerReminder && (
-                      <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
-                        <Coffee className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
+                        <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Paalala sa Hydration / Tubig:</span>
-                          <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.waterTumblerReminder}</span>
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Hydration / Tubig:</span>
+                          <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.waterTumblerReminder}>
+                            {eventBroadcast.waterTumblerReminder}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     {eventBroadcast.recommendedAttire && (
-                      <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
-                        <Shirt className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
+                        <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[10px] uppercase tracking-wider mb-0.5">Dapat Kasuotan (Attire):</span>
-                          <span className="text-white text-xs leading-relaxed text-justify block">{eventBroadcast.recommendedAttire}</span>
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Kasuotan (Attire):</span>
+                          <span className="text-white text-[11px] sm:text-xs leading-snug block line-clamp-2" title={eventBroadcast.recommendedAttire}>
+                            {eventBroadcast.recommendedAttire}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     {eventBroadcast.additionalNotes && (
-                      <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/40 hover:bg-slate-950/50 border border-emerald-500/25 text-xs font-sans text-slate-200 italic leading-relaxed backdrop-blur-sm shadow-inner transition-colors text-justify">
-                        <strong className="text-emerald-300 not-italic font-semibold">Karagdagang Paalala ng LGU Admin:</strong> {eventBroadcast.additionalNotes}
+                      <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-emerald-500/30 backdrop-blur-sm transition-colors">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-emerald-300 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Admin Note:</span>
+                          <span className="text-slate-200 text-[11px] sm:text-xs leading-snug block italic line-clamp-2" title={eventBroadcast.additionalNotes}>
+                            {eventBroadcast.additionalNotes}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="text-[10px] font-mono text-slate-400 pt-2 text-right border-t border-white/10">
+                  <div className="text-[9px] sm:text-[10px] font-mono text-slate-400 pt-1 text-right border-t border-white/10">
                     Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName}</strong>
                   </div>
                 </div>
