@@ -411,10 +411,10 @@ export const GeneratePersonalQrModal: React.FC<GeneratePersonalQrModalProps> = (
                     onScanPersonalQr(generatedBene);
                     onClose();
                   }}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-[1.02] active:scale-95 col-span-1 sm:col-span-2"
                 >
-                  <Camera className="w-4 h-4" />
-                  <span>Scan QR & Upload Accomplishment</span>
+                  <Upload className="w-5 h-5 text-slate-950" />
+                  <span>Gamitin ang QR na Ito Para Magpasa ng Accomplishment</span>
                 </button>
 
                 <a
@@ -425,14 +425,14 @@ export const GeneratePersonalQrModal: React.FC<GeneratePersonalQrModalProps> = (
                   <Download className="w-4 h-4" />
                   <span>Download Image</span>
                 </a>
-              </div>
 
-              <button
-                onClick={handleReset}
-                className="text-xs text-slate-400 hover:text-emerald-400 underline pt-1"
-              >
-                Gumawa ng panibagong QR Code
-              </button>
+                <button
+                  onClick={handleReset}
+                  className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Gumawa ng Bago</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

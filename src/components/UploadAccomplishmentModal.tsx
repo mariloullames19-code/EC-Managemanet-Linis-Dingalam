@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Beneficiary, Activity, AttendanceRecord, User } from '../types';
-import { burnGeotagWatermark, getGpsCoordinates, detectDingalanAreaByCoordinates, formatCoordinatesDMS } from '../utils/watermarkEngine';
+import { Beneficiary, Activity, AttendanceRecord, User, EventQrBroadcast } from '../types';
+import { burnGeotagWatermark, getGpsCoordinates, detectDingalanAreaByCoordinates, formatCoordinatesDMS, checkEventCutoff } from '../utils/watermarkEngine';
 import {
   Camera,
   Upload,
@@ -27,6 +27,7 @@ interface UploadAccomplishmentModalProps {
   onClose: () => void;
   beneficiary: Beneficiary | null;
   activity: Activity | null;
+  eventBroadcast?: EventQrBroadcast | null;
   currentUser: User;
   onSubmitAttendance: (payload: any) => Promise<{ success: boolean; attendance: AttendanceRecord }>;
   onSuccessSubmitted?: (attendance: AttendanceRecord) => void;
@@ -37,6 +38,7 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
   onClose,
   beneficiary,
   activity,
+  eventBroadcast,
   currentUser,
   onSubmitAttendance,
   onSuccessSubmitted,
@@ -66,6 +68,9 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Validate event cutoff
+  const cutoffInfo = checkEventCutoff(activity, eventBroadcast);
 
   const refreshGps = async () => {
     setGpsLoading(true);
@@ -206,6 +211,11 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
 
   // Final Submit
   const handleSubmit = async () => {
+    if (cutoffInfo.isExpired) {
+      setErrorMessage(`Hindi na maaaring magpasa ng accomplishment attendance dahil tapos na ang nakatakdang oras ng event (${cutoffInfo.endTimeFormatted}).`);
+      return;
+    }
+
     if (!fullName.trim()) {
       setErrorMessage('Pakiusap ilagay ang inyong Full Name sa Number 1.');
       return;
@@ -350,6 +360,27 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
             </div>
           ) : (
             <>
+              {/* CUT-OFF WARNING BANNER (Shows when event time limit has passed) */}
+              {cutoffInfo.isExpired ? (
+                <div className="p-4 rounded-2xl bg-rose-950/90 border-2 border-rose-500/80 text-rose-200 text-xs font-sans space-y-1.5 shadow-[0_0_30px_rgba(244,63,94,0.35)] animate-pulse">
+                  <div className="flex items-center space-x-2 font-mono font-bold text-rose-300 text-sm">
+                    <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                    <span>TAPOS NA ANG NAKATAKDANG ORAS NG EVENT (Cut-Off Reached)</span>
+                  </div>
+                  <p className="leading-relaxed text-slate-200">
+                    Nakalipas na ang itinakdang oras ng event ({cutoffInfo.endTimeFormatted}). Ayon sa patakaran ng LGU, hindi na tatanggapin ang accomplishment attendance o mga larawan matapos ang nakatakdang cut-off time.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Event Cut-Off: <strong>{cutoffInfo.endTimeFormatted}</strong></span>
+                  </span>
+                  <span className="text-emerald-400 font-bold">BUKAS PARA SA SUBMISSION</span>
+                </div>
+              )}
+
               {errorMessage && (
                 <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs flex items-center space-x-2">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
@@ -592,13 +623,22 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isProcessing || uploadedPhotos.length === 0}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-sm sm:text-base tracking-wide shadow-[0_0_30px_rgba(16,185,129,0.4)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                disabled={isProcessing || uploadedPhotos.length === 0 || cutoffInfo.isExpired}
+                className={`w-full py-4 rounded-2xl font-black text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 transition-all shadow-xl ${
+                  cutoffInfo.isExpired
+                    ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                    : 'bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] cursor-pointer transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-50'
+                }`}
               >
                 {isProcessing ? (
                   <span className="flex items-center space-x-2">
                     <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                     <span>Ipinoproseso at Isinusumite ang mga Larawan...</span>
+                  </span>
+                ) : cutoffInfo.isExpired ? (
+                  <span className="flex items-center space-x-2 text-rose-300">
+                    <AlertCircle className="w-5 h-5 text-rose-400" />
+                    <span>SARADO NA ANG SUBMISSION (Nakalipas na ang Oras ng Event)</span>
                   </span>
                 ) : (
                   <span className="flex items-center space-x-2">

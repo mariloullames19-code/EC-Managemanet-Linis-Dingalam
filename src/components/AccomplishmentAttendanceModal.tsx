@@ -190,17 +190,17 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
-                      <span className="flex items-center space-x-1 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
-                        <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{att.localPhTime}</span>
+                      <span className="flex items-center space-x-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-cyan-500/40 text-cyan-300 font-bold shadow-sm" title="Eksaktong Oras ng Pagpasa (PST)">
+                        <Clock className="w-4 h-4 text-cyan-400 shrink-0 animate-pulse" />
+                        <span>Oras Naipasa: <strong>{att.localPhTime}</strong></span>
                       </span>
-                      <span className="flex items-center space-x-1 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="truncate max-w-[200px]">{att.locationDescription}</span>
+                      <span className="flex items-center space-x-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-700/80">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate max-w-[220px]">{att.locationDescription}</span>
                       </span>
-                      <span className="flex items-center space-x-1 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-500/40 text-emerald-300 font-bold">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Naka-Attend</span>
+                      <span className="flex items-center space-x-1.5 bg-emerald-950/70 px-3 py-1.5 rounded-xl border border-emerald-500/50 text-emerald-300 font-extrabold shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>VERIFIED ATTENDANCE</span>
                       </span>
                     </div>
                   </div>

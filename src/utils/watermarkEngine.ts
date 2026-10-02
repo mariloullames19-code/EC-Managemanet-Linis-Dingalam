@@ -154,7 +154,7 @@ export function formatCoordinatesDMS(lat: number, lng: number): string {
 }
 
 /**
- * Format date in Philippine Standard Time (PST - UTC+8)
+ * Format date in Philippine Standard Time (PST - UTC+8) with exact seconds
  */
 export function formatPSTDate(date: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-PH', {
@@ -167,6 +167,92 @@ export function formatPSTDate(date: Date = new Date()): string {
     second: '2-digit',
     hour12: true,
   }).format(date);
+}
+
+export interface EventCutoffInfo {
+  isExpired: boolean;
+  endTimeFormatted: string;
+  eventDateFormatted: string;
+  statusText: string;
+  deadlineDate: Date | null;
+}
+
+/**
+ * Validates whether the event/activity time has reached its cut-off limit in Asia/Manila PST
+ */
+export function checkEventCutoff(
+  act?: { date?: string; callTime?: string; status?: string } | null,
+  broadcast?: { eventDate?: string; estimatedEndTime?: string; startTime?: string } | null
+): EventCutoffInfo {
+  try {
+    const datePart = broadcast?.eventDate || act?.date || new Date().toISOString().split('T')[0];
+    let timePart = broadcast?.estimatedEndTime || act?.callTime || '12:00 PM';
+    timePart = timePart.trim().toUpperCase();
+
+    const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/);
+    let hours = 12;
+    let minutes = 0;
+    if (match) {
+      hours = parseInt(match[1], 10);
+      minutes = parseInt(match[2], 10);
+      const ampm = match[3];
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+    }
+
+    const [year, month, day] = datePart.split('-').map(Number);
+    if (!year || !month || !day) {
+      return {
+        isExpired: false,
+        endTimeFormatted: timePart,
+        eventDateFormatted: datePart,
+        statusText: 'Active',
+        deadlineDate: null,
+      };
+    }
+
+    const endDateTime = new Date(year, month - 1, day, hours, minutes, 0);
+
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(new Date());
+    const partMap = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+
+    const manilaNow = new Date(
+      parseInt(partMap.year, 10),
+      parseInt(partMap.month, 10) - 1,
+      parseInt(partMap.day, 10),
+      parseInt(partMap.hour, 10) === 24 ? 0 : parseInt(partMap.hour, 10),
+      parseInt(partMap.minute, 10),
+      parseInt(partMap.second, 10)
+    );
+
+    const isExpired = manilaNow.getTime() >= endDateTime.getTime();
+
+    return {
+      isExpired,
+      endTimeFormatted: `${timePart} (${datePart})`,
+      eventDateFormatted: datePart,
+      statusText: isExpired ? 'Cut-Off Reached (Tapos na ang Oras)' : 'Open for Attendance',
+      deadlineDate: endDateTime,
+    };
+  } catch (e) {
+    return {
+      isExpired: false,
+      endTimeFormatted: 'Standard Cut-Off',
+      eventDateFormatted: '',
+      statusText: 'Active',
+      deadlineDate: null,
+    };
+  }
 }
 
 /**

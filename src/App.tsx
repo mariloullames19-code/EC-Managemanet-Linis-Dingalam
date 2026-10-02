@@ -561,7 +561,12 @@ export default function App() {
           currentUser={currentUser}
           onLogin={handleLogin}
           onOpenRegisterModal={() => setIsPersonalQrModalOpen(true)}
-          onOpenUploadAccomplishment={() => setIsUploadAccomplishmentModalOpen(true)}
+          onOpenUploadAccomplishment={(bene) => {
+            if (bene) {
+              setUploadBeneficiaryTarget(bene);
+            }
+            setIsUploadAccomplishmentModalOpen(true);
+          }}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
           eventBroadcast={latestEventBroadcast}
         />
@@ -586,6 +591,7 @@ export default function App() {
           onClose={() => setIsUploadAccomplishmentModalOpen(false)}
           beneficiary={uploadBeneficiaryTarget}
           activity={targetActivity}
+          eventBroadcast={latestEventBroadcast}
           currentUser={currentUser}
           onSubmitAttendance={handleSubmitAttendance}
           onSuccessSubmitted={(att) => {

@@ -79,7 +79,7 @@ interface LoginModalProps {
   currentUser: User;
   onClose?: () => void;
   onOpenRegisterModal?: () => void;
-  onOpenUploadAccomplishment?: () => void;
+  onOpenUploadAccomplishment?: (beneficiary?: Beneficiary) => void;
   onOpenScanQrModal?: () => void;
   onRegisterSuccess?: (bene: Beneficiary) => void;
   eventBroadcast?: any;
@@ -1106,15 +1106,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           </div>
                         </div>
 
-                        {/* Download & Action Buttons */}
-                        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        {/* Primary Action Button: Immediate Accomplishment Attendance Upload with the Generated Personal QR */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onOpenUploadAccomplishment) {
+                              onOpenUploadAccomplishment(regGeneratedBene);
+                            }
+                            setIsUnfolded(false);
+                          }}
+                          className="w-full py-4 px-4 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-[1.02] active:scale-95"
+                        >
+                          <Upload className="w-5 h-5 text-slate-950" />
+                          <span>Gamitin ang QR na Ito Para Magpasa ng Accomplishment</span>
+                        </button>
+
+                        {/* Download & Secondary Action Buttons */}
+                        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <a
                             href={regQrCodeDataUrl}
                             download={`Personal_QR_${regGeneratedBene.firstName}_${regGeneratedBene.lastName}.png`}
-                            className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+                            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-extrabold text-xs rounded-xl border border-emerald-500/40 shadow transition-all flex items-center justify-center space-x-2"
                           >
-                            <Download className="w-4 h-4 text-slate-950" />
-                            <span>I-download ang Image</span>
+                            <Download className="w-4 h-4 text-emerald-400" />
+                            <span>I-download ang QR Image</span>
                           </a>
 
                           <button
@@ -1125,10 +1140,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               }
                               setIsUnfolded(false);
                             }}
-                            className="w-full py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-extrabold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
+                            className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-extrabold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
                           >
                             <Camera className="w-4 h-4 text-slate-400" />
-                            <span>Mag-Scan at Mag-upload</span>
+                            <span>Mag-Scan ng Ibang QR</span>
                           </button>
                         </div>
 
