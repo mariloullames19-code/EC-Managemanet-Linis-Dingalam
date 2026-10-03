@@ -127,6 +127,29 @@ async function startServer() {
   // API ROUTES
   // ----------------------------------------------------------------------------
 
+  // Authoritative Philippine Standard Time (PST UTC+8) for Dingalan, Aurora
+  app.get('/api/time', (req: Request, res: Response) => {
+    const now = new Date();
+    const dingalanFormatted = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    }).format(now);
+
+    res.json({
+      success: true,
+      epochMs: now.getTime(),
+      utcIso: now.toISOString(),
+      timezone: 'Asia/Manila',
+      timeZoneOffsetHours: 8,
+      location: 'Dingalan, Aurora, Philippines',
+      dingalanTime: dingalanFormatted,
+      fullFormatted: `${dingalanFormatted} PST`,
+    });
+  });
+
   // Current User / Session Switcher
   app.get('/api/auth/me', (req: Request, res: Response) => {
     res.json({

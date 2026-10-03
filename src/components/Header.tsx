@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
+import { useDingalanClock } from '../utils/philippineClock';
 import {
   ShieldCheck,
   QrCode,
@@ -53,27 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenGenerateQrModal,
   onOpenEventNoticeModal,
 }) => {
-  const [phTime, setPhTime] = useState<string>('');
+  const { time: phTime } = useDingalanClock();
   const isAdminOrSuperAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setPhTime(
-        new Intl.DateTimeFormat('en-PH', {
-          timeZone: 'Asia/Manila',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        }).format(now) + ' PST'
-      );
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const isSuperadmin = currentUser.role === 'superadmin';
 
@@ -290,10 +272,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Section: Small Live Clock & Glowing Action Pills */}
         <div className="flex items-center space-x-2 shrink-0">
-          {/* Small Live Clock */}
-          <div className="hidden lg:flex items-center space-x-1.5 text-[11px] font-mono text-slate-300 bg-slate-950/70 border border-slate-700/60 px-2.5 py-1 rounded-full shadow-inner">
-            <Clock className="w-3 h-3 text-emerald-400" />
-            <span>{phTime || 'Loading PST...'}</span>
+          {/* Small Live Clock - Synchronized for Dingalan, Aurora */}
+          <div
+            className="hidden lg:flex items-center space-x-1.5 text-[11px] font-mono text-emerald-300 bg-slate-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-full shadow-inner select-none"
+            title="Opisyal na Oras sa Dingalan, Aurora (PST • Philippine Standard Time UTC+8)"
+          >
+            <Clock className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
+            <span className="font-bold">{phTime || 'Loading Dingalan Time...'}</span>
           </div>
 
           {/* Accomplishment Attendance Records Button (For Admin & Super Admin) */}

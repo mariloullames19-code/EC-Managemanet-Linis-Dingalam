@@ -153,20 +153,14 @@ export function formatCoordinatesDMS(lat: number, lng: number): string {
   return `${formatDMS(lat, latDir)} ${formatDMS(lng, lngDir)}`;
 }
 
+import { getDingalanNow, formatDingalanFull } from './philippineClock';
+
 /**
- * Format date in Philippine Standard Time (PST - UTC+8) with exact seconds
+ * Format date in Philippine Standard Time (PST - UTC+8) with exact seconds, synchronized for Dingalan, Aurora
  */
-export function formatPSTDate(date: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-PH', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-  }).format(date);
+export function formatPSTDate(date?: Date): string {
+  const d = date || getDingalanNow();
+  return formatDingalanFull(d);
 }
 
 export interface EventCutoffInfo {
@@ -211,38 +205,20 @@ export function checkEventCutoff(
       };
     }
 
-    const endDateTime = new Date(year, month - 1, day, hours, minutes, 0);
+    // Absolute UTC epoch timestamp for the deadline in Dingalan, Aurora (UTC+8)
+    const deadlineUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
+    const deadlineDate = new Date(deadlineUtcMs);
 
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Manila',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
-    const parts = formatter.formatToParts(new Date());
-    const partMap = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-
-    const manilaNow = new Date(
-      parseInt(partMap.year, 10),
-      parseInt(partMap.month, 10) - 1,
-      parseInt(partMap.day, 10),
-      parseInt(partMap.hour, 10) === 24 ? 0 : parseInt(partMap.hour, 10),
-      parseInt(partMap.minute, 10),
-      parseInt(partMap.second, 10)
-    );
-
-    const isExpired = manilaNow.getTime() >= endDateTime.getTime();
+    // Synchronized current time in Dingalan, Aurora
+    const nowUtcMs = getDingalanNow().getTime();
+    const isExpired = nowUtcMs >= deadlineUtcMs;
 
     return {
       isExpired,
       endTimeFormatted: `${timePart} (${datePart})`,
       eventDateFormatted: datePart,
       statusText: isExpired ? 'Cut-Off Reached (Tapos na ang Oras)' : 'Open for Attendance',
-      deadlineDate: endDateTime,
+      deadlineDate,
     };
   } catch (e) {
     return {

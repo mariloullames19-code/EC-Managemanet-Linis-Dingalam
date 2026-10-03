@@ -20,7 +20,24 @@ import {
   ShieldCheck,
   Coffee,
   Trash2,
+  Edit3,
+  Save,
 } from 'lucide-react';
+import { getDingalanNow } from '../utils/philippineClock';
+
+const DINGALAN_BARANGAYS = [
+  'Aplaya',
+  'Butas na Bato',
+  'Cabischasan',
+  'Caragsacan',
+  'Davil-davilan',
+  'Dikapanikian',
+  'Ibona',
+  'Paltic',
+  'Poblacion',
+  'Tanawan',
+  'Umiray',
+];
 
 interface GenerateQrEventModalProps {
   isOpen: boolean;
@@ -47,34 +64,13 @@ const isBroadcastActive = (broadcast: any): boolean => {
       if (ampm === 'AM' && hours === 12) hours = 0;
     }
 
-    // Parse the event date and time using standard local browser date representation
     const [year, month, day] = datePart.split('-').map(Number);
-    const endDateTime = new Date(year, month - 1, day, hours, minutes, 0);
+    if (!year || !month || !day) return true;
 
-    // Get current Asia/Manila clock time as a local Date object
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Manila',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
-    const parts = formatter.formatToParts(new Date());
-    const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]));
-    
-    const manilaNow = new Date(
-      parseInt(partMap.year, 10),
-      parseInt(partMap.month, 10) - 1,
-      parseInt(partMap.day, 10),
-      parseInt(partMap.hour, 10) === 24 ? 0 : parseInt(partMap.hour, 10),
-      parseInt(partMap.minute, 10),
-      parseInt(partMap.second, 10)
-    );
+    const deadlineUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
+    const nowUtcMs = getDingalanNow().getTime();
 
-    return manilaNow.getTime() < endDateTime.getTime();
+    return nowUtcMs < deadlineUtcMs;
   } catch {
     return true;
   }
@@ -115,6 +111,21 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isSuccessSent, setIsSuccessSent] = useState<boolean>(false);
   const [broadcastHistory, setBroadcastHistory] = useState<EventQrBroadcast[]>([]);
+
+  // Edit Broadcast Modal States
+  const [editingBroadcast, setEditingBroadcast] = useState<EventQrBroadcast | null>(null);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editBarangay, setEditBarangay] = useState<string>('Paltic');
+  const [editTargetArea, setEditTargetArea] = useState<string>('');
+  const [editEventDate, setEditEventDate] = useState<string>('');
+  const [editStartTime, setEditStartTime] = useState<string>('');
+  const [editEstimatedEndTime, setEditEstimatedEndTime] = useState<string>('');
+  const [editTotalHours, setEditTotalHours] = useState<string>('');
+  const [editRequiredTools, setEditRequiredTools] = useState<string>('');
+  const [editWaterTumbler, setEditWaterTumbler] = useState<string>('');
+  const [editRecommendedAttire, setEditRecommendedAttire] = useState<string>('');
+  const [editAdditionalNotes, setEditAdditionalNotes] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
 
   // Load broadcast history when opened
   useEffect(() => {
@@ -241,6 +252,78 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
       await api.clearAllEventBroadcasts();
       setBroadcastHistory([]);
       onBroadcastSuccess({} as any);
+    }
+  };
+
+  const handleStartEditHistoryItem = (item: EventQrBroadcast, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingBroadcast(item);
+    setEditTitle(item.activityTitle || '');
+    setEditBarangay(item.barangay || 'Paltic');
+    setEditTargetArea(item.targetArea || '');
+    setEditEventDate(item.eventDate || new Date().toISOString().split('T')[0]);
+    setEditStartTime(item.startTime || '06:00 AM');
+    setEditEstimatedEndTime(item.estimatedEndTime || '05:20 PM');
+    setEditTotalHours(item.totalHours || '4 na Oras');
+    setEditRequiredTools(item.requiredTools || '');
+    setEditWaterTumbler(item.waterTumblerReminder || '');
+    setEditRecommendedAttire(item.recommendedAttire || '');
+    setEditAdditionalNotes(item.additionalNotes || '');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBroadcast) return;
+    setIsSavingEdit(true);
+
+    try {
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
+      const payloadUrl = `${currentOrigin}/?action=personal_qr&act_id=${editingBroadcast.activityId || 'act-001'}&brgy=${encodeURIComponent(editBarangay)}&date=${encodeURIComponent(editEventDate)}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
+      
+      let newQrDataUrl = editingBroadcast.qrDataUrl;
+      try {
+        newQrDataUrl = await QRCode.toDataURL(payloadUrl, {
+          width: 320,
+          margin: 1,
+          color: {
+            dark: '#022c22',
+            light: '#ffffff',
+          },
+          errorCorrectionLevel: 'H',
+        });
+      } catch (qrErr) {
+        console.warn('QR update fallback:', qrErr);
+      }
+
+      const updatedItem: EventQrBroadcast = {
+        ...editingBroadcast,
+        activityTitle: editTitle.trim(),
+        barangay: editBarangay,
+        targetArea: editTargetArea.trim(),
+        eventDate: editEventDate,
+        startTime: editStartTime.trim(),
+        estimatedEndTime: editEstimatedEndTime.trim(),
+        totalHours: editTotalHours.trim(),
+        requiredTools: editRequiredTools.trim(),
+        waterTumblerReminder: editWaterTumbler.trim(),
+        recommendedAttire: editRecommendedAttire.trim(),
+        additionalNotes: editAdditionalNotes.trim(),
+        qrDataUrl: newQrDataUrl,
+        qrPayload: payloadUrl,
+      };
+
+      await api.updateEventBroadcast(updatedItem);
+      const refreshed = await api.getAllEventBroadcasts();
+      setBroadcastHistory(refreshed);
+
+      // Notify parent to update active broadcast everywhere in the app
+      onBroadcastSuccess(updatedItem);
+
+      setEditingBroadcast(null);
+    } catch (err) {
+      console.error('Failed to update broadcast:', err);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -631,10 +714,19 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                           }`}>
                             {active ? '🟢 ACTIVE (Ongoing)' : '🔴 COMPLETED / EXPIRED'}
                           </span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-[10px] font-mono text-slate-500">
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-[10px] font-mono text-slate-500 mr-1">
                               {historyItem.eventDate || 'N/A'}
                             </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleStartEditHistoryItem(historyItem, e)}
+                              className="px-2 py-1 rounded-lg bg-slate-900/90 hover:bg-emerald-950/90 text-emerald-400 hover:text-emerald-300 border border-slate-700/80 hover:border-emerald-500/60 transition-all cursor-pointer flex items-center space-x-1 text-[10px] font-mono font-bold shadow-sm"
+                              title="I-edit ang mga nilalaman ng paalalang ito"
+                            >
+                              <Edit3 className="w-3 h-3 text-emerald-400" />
+                              <span>I-Edit</span>
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => handleDeleteHistoryItem(historyItem.id, e)}
@@ -664,6 +756,16 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                               <strong>Kagamitan:</strong> <span className="text-slate-300 text-[11px]">{historyItem.requiredTools}</span>
                             </div>
                           )}
+                          {historyItem.recommendedAttire && (
+                            <div className="flex items-start gap-1.5 pt-1 border-t border-slate-900/60 text-slate-400 font-sans">
+                              <strong>Kasuotan:</strong> <span className="text-slate-300 text-[11px]">{historyItem.recommendedAttire}</span>
+                            </div>
+                          )}
+                          {historyItem.additionalNotes && (
+                            <div className="flex items-start gap-1.5 pt-1 border-t border-slate-900/60 text-slate-400 font-sans italic">
+                              <strong>Paalala:</strong> <span className="text-amber-300/90 text-[11px]">{historyItem.additionalNotes}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -674,6 +776,227 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
           </div>
         )}
         </div>
+
+        {/* ========================================================================= */}
+        {/* EDIT BROADCAST / ADVISORY MODAL OVERLAY                                   */}
+        {/* ========================================================================= */}
+        {editingBroadcast && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto animate-fadeIn">
+            <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/80 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-400 flex items-center justify-center text-slate-950 shadow-md">
+                    <Edit3 className="w-5 h-5 text-slate-950" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+                      I-Edit ang Paalala at Nilalaman
+                    </span>
+                    <h3 className="text-base sm:text-lg font-black text-white">
+                      Baguhin ang Laman ng Box ({editingBroadcast.barangay})
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingBroadcast(null)}
+                  className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-left font-sans">
+                {/* Pamagat ng Gawain */}
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                    Pamagat ng Gawain / Activity Title <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all"
+                  />
+                </div>
+
+                {/* Barangay & Target Area */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                      Barangay <span className="text-rose-400">*</span>
+                    </label>
+                    <select
+                      value={editBarangay}
+                      onChange={(e) => setEditBarangay(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all cursor-pointer"
+                    >
+                      {DINGALAN_BARANGAYS.map((b) => (
+                        <option key={b} value={b}>
+                          Brgy. {b}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                      Target na Lugar / Lokasyon <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editTargetArea}
+                      onChange={(e) => setEditTargetArea(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Petsa, Simula, Tapos, Tagal */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                      Petsa (Date)
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={editEventDate}
+                      onChange={(e) => setEditEventDate(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                      Simula
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editStartTime}
+                      onChange={(e) => setEditStartTime(e.target.value)}
+                      placeholder="06:00 AM"
+                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                      Tapos / Cut-off
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editEstimatedEndTime}
+                      onChange={(e) => setEditEstimatedEndTime(e.target.value)}
+                      placeholder="05:20 PM"
+                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                      Tagal (Hours)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editTotalHours}
+                      onChange={(e) => setEditTotalHours(e.target.value)}
+                      placeholder="4 na Oras"
+                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Mga Kagamitan (Required Tools) */}
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                    <Wrench className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Mga Kagamitan (Required Tools)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editRequiredTools}
+                    onChange={(e) => setEditRequiredTools(e.target.value)}
+                    placeholder="Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
+                  />
+                </div>
+
+                {/* Hydration Reminder */}
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                    <Coffee className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Hydration / Tubig</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editWaterTumbler}
+                    onChange={(e) => setEditWaterTumbler(e.target.value)}
+                    placeholder="Magdala ng sariling tumbler o reusable water bottle..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none"
+                  />
+                </div>
+
+                {/* Kasuotan (Attire) */}
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                    <Shirt className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Kasuotan (Attire)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editRecommendedAttire}
+                    onChange={(e) => setEditRecommendedAttire(e.target.value)}
+                    placeholder="Linis Dingalan t-shirt o komportableng damit, bota/shoes, sombrero..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none"
+                  />
+                </div>
+
+                {/* Admin Note / Karagdagang Paalala */}
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Admin Note / Karagdagang Paalala</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editAdditionalNotes}
+                    onChange={(e) => setEditAdditionalNotes(e.target.value)}
+                    placeholder="Magtipon sa Covered Court bago mag-alas 6:00 ng umaga..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingBroadcast(null)}
+                    disabled={isSavingEdit}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-all cursor-pointer"
+                  >
+                    Kanselahin
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 text-xs font-mono font-black flex items-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
+                  >
+                    <Save className="w-4 h-4 text-slate-950" />
+                    <span>{isSavingEdit ? 'Sine-save ang Pagbabago...' : 'I-Save ang mga Pagbabago'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

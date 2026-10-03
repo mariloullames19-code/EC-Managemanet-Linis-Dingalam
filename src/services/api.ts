@@ -899,6 +899,34 @@ export class ApiService {
     return raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
   }
 
+  async updateEventBroadcast(updated: EventQrBroadcast): Promise<{ success: boolean; broadcast: EventQrBroadcast }> {
+    try {
+      await setDoc(doc(db, 'broadcasts', updated.id), updated);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
+    }
+
+    const raw = localStorage.getItem('ld_event_broadcasts_v1');
+    const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
+    const index = list.findIndex(b => b.id === updated.id);
+    if (index >= 0) {
+      list[index] = updated;
+    } else {
+      list.unshift(updated);
+    }
+    localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(list));
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'NEW_BROADCAST', broadcast: updated });
+        bc.close();
+      } catch {}
+    }
+
+    return { success: true, broadcast: updated };
+  }
+
   async deleteEventBroadcast(id: string): Promise<{ success: boolean }> {
     try {
       await deleteDoc(doc(db, 'broadcasts', id));

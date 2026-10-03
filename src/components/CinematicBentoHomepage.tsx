@@ -28,6 +28,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import { useDingalanClock } from '../utils/philippineClock';
 
 interface CinematicBentoHomepageProps {
   currentUser: User;
@@ -62,7 +63,7 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
   onOpenPersonalQrModal,
   eventBroadcast,
 }) => {
-  const [phTime, setPhTime] = useState<string>('');
+  const { time: phTime } = useDingalanClock();
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [radarAngle, setRadarAngle] = useState(0);
   const [watermarkSimulated, setWatermarkSimulated] = useState(false);
@@ -101,25 +102,6 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
     attendedBeneficiariesCount: 2,
     status: 'ongoing',
   };
-
-  // Clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setPhTime(
-        new Intl.DateTimeFormat('en-PH', {
-          timeZone: 'Asia/Manila',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        }).format(now) + ' PST'
-      );
-    };
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Radar sweep animation
   useEffect(() => {
