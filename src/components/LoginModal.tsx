@@ -97,13 +97,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   eventBroadcast,
 }) => {
   const [phTime, setPhTime] = useState<string>('');
-  const [isUnfolded, setIsUnfolded] = useState<boolean>(false);
+  const [isUnfolded, setIsUnfolded] = useState<boolean>(true);
   const [isBroadcastHidden, setIsBroadcastHidden] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
-  // Switchable Active View: 'login' | 'register' | 'event'
-  const [activeView, setActiveView] = useState<'login' | 'register' | 'event'>('login');
+  // Switchable Active View: 'login' | 'event' (Defaults to 'event' Paalala box if eventBroadcast exists, else 'login')
+  const [activeView, setActiveView] = useState<'login' | 'event'>(eventBroadcast ? 'event' : 'login');
 
   // Registration Form States
   const [regFullName, setRegFullName] = useState<string>('');
@@ -283,7 +283,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
       if (action === 'personal_qr' || action === 'register' || actId) {
         setIsUnfolded(true);
-        setActiveView('register');
+        setActiveView('event');
 
         if (brgyParam && DINGALAN_BARANGAYS.includes(brgyParam)) {
           setRegBarangay(brgyParam);
@@ -335,20 +335,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       }
     }
 
-    // Default reset when no scan URL is triggered
+    // Default initial open view logic:
+    // If eventBroadcast exists, automatically unfold and open the Paalala Box ('event') first!
+    // If no eventBroadcast exists, unfold and open the Login Box ('login').
     setEmail('');
     setPassword('');
-    setActiveView('login');
-    setRegFullName('');
-    setRegAge('');
-    setRegGender('Male (Lalaki)');
-    setRegPhoneNumber('');
-    setRegDepartment(DEPARTMENT_OFFICES[0]);
-    setRegBarangay('Paltic');
-    setRegAddress('');
-    setRegGeneratedBene(null);
-    setRegQrCodeDataUrl('');
-  }, [isOpen]);
+    setIsUnfolded(true);
+    if (eventBroadcast) {
+      setActiveView('event');
+    } else {
+      setActiveView('login');
+    }
+  }, [isOpen, eventBroadcast]);
 
   const handleAdminPortalClick = () => {
     setErrorMessage(null);
@@ -364,27 +362,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         setIsUnfolded(false);
       } else {
         setActiveView('login');
-        setTimeout(() => {
-          modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 50);
-      }
-    }
-  };
-
-  const handleRegisterPortalClick = () => {
-    setErrorMessage(null);
-    setPendingNotice(null);
-    if (!isUnfolded) {
-      setIsUnfolded(true);
-      setActiveView('register');
-      setTimeout(() => {
-        modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 50);
-    } else {
-      if (activeView === 'register') {
-        setIsUnfolded(false);
-      } else {
-        setActiveView('register');
         setTimeout(() => {
           modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         }, 50);
@@ -770,21 +747,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <LogIn className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
           </button>
 
-          {/* EVENT / PAALALA & QR CODE Button (Visible on both Mobile and Desktop when active) */}
+          {/* IPAKITA ANG PAALALA NG ADMIN Button (Positioned on the right side of Admin Login Portal) */}
           {eventBroadcast && (
             <button
               type="button"
               onClick={handleEventPortalClick}
-              className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
+              className={`w-full sm:w-auto flex items-center justify-center space-x-2.5 text-xs font-mono font-bold px-4 py-2.5 sm:py-2 rounded-full border transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-md ${
                 isUnfolded && activeView === 'event'
                   ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
-                  : 'text-emerald-100 bg-gradient-to-r from-teal-800/90 via-emerald-700/90 to-teal-900/90 hover:from-teal-700 hover:to-emerald-600 border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.45)]'
+                  : 'text-emerald-300 bg-slate-950/80 hover:bg-slate-900 border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
               }`}
-              title="Pindutin para tingnan ang Opisyal na Paalala at QR Code ng Event"
+              title="Pindutin para ipakita ang Paalala ng Admin"
             >
-              <Radio className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-300 animate-pulse'}`} />
-              <span className="tracking-wide font-extrabold uppercase">Paalala & QR Code</span>
-              <span className={`w-2 h-2 rounded-full shrink-0 ${isUnfolded && activeView === 'event' ? 'bg-slate-950' : 'bg-emerald-400 animate-ping'}`} />
+              <Radio className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-400 animate-pulse'}`} />
+              <span className="tracking-wide font-semibold">Ipakita ang Paalala ng Admin</span>
+              <Eye className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-300'}`} />
             </button>
           )}
 
