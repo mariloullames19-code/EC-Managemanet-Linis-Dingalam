@@ -95,6 +95,80 @@ export function formatDingalanFull(date?: Date): string {
   }
 }
 
+/**
+ * Calculates realtime remaining countdown against Dingalan server time (UTC+8)
+ */
+export function calculateDingalanRemainingTime(
+  eventDateStr?: string,
+  endTimeStr?: string
+): {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isExpired: boolean;
+  isPast24Hours: boolean;
+} {
+  if (!eventDateStr) {
+    return { hours: 0, minutes: 0, seconds: 0, isExpired: true, isPast24Hours: false };
+  }
+
+  const nowPst = getDingalanNow();
+  let [year, month, day] = (eventDateStr || '').split('-').map(Number);
+  if (!year || !month || !day) {
+    const todayPst = getDingalanNow();
+    year = todayPst.getFullYear();
+    month = todayPst.getMonth() + 1;
+    day = todayPst.getDate();
+  }
+
+  let hours = 17;
+  let minutes = 0;
+
+  if (endTimeStr) {
+    const cleanTime = endTimeStr.trim().toUpperCase();
+    const timeMatch = cleanTime.match(/(\d+):(\d+)\s*(AM|PM)?/);
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10);
+      const m = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3];
+
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+
+      hours = h;
+      minutes = m;
+    }
+  }
+
+  // Create UTC epoch for Dingalan target date/time
+  const targetEpochMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
+  const diffMs = targetEpochMs - nowPst.getTime();
+
+  if (diffMs <= 0) {
+    const isPast24Hours = Math.abs(diffMs) > 24 * 60 * 60 * 1000;
+    return {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isExpired: true,
+      isPast24Hours,
+    };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  return {
+    hours: h,
+    minutes: m,
+    seconds: s,
+    isExpired: false,
+    isPast24Hours: false,
+  };
+}
+
 import { useState, useEffect } from 'react';
 
 /**
@@ -104,7 +178,6 @@ export function useDingalanClock() {
   const [dingalanTime, setDingalanTime] = useState<string>(() => formatDingalanTime());
 
   useEffect(() => {
-    // Immediate sync
     syncDingalanTime().then(() => {
       setDingalanTime(formatDingalanTime());
     });
@@ -121,3 +194,5 @@ export function useDingalanClock() {
     isSynchronized,
   };
 }
+
+

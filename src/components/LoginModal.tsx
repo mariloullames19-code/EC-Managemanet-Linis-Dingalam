@@ -805,32 +805,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   </div>
 
                   {/* ========================================================================= */}
-                  {/* REALTIME COUNTDOWN TIMER AT THE VERY TOP INSIDE THE BOX                   */}
-                  {/* ========================================================================= */}
-                  {!eventTimeLeft.isExpired && (
-                    <div className="p-2 sm:p-2.5 rounded-2xl bg-slate-950/80 border border-emerald-400/50 backdrop-blur-md shadow-inner flex flex-col sm:flex-row items-center justify-between gap-2">
-                      <div className="flex items-center space-x-2 text-xs font-mono font-bold text-emerald-300">
-                        <Clock className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
-                        <span>ORAS NA NATITIRA (REALTIME COUNTDOWN):</span>
-                      </div>
-
-                      <div className="flex items-center space-x-1 sm:space-x-1.5 font-mono font-black text-xs sm:text-sm text-white">
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-sm">
-                          {String(eventTimeLeft.hours).padStart(2, '0')}h
-                        </span>
-                        <span className="text-emerald-400 animate-pulse">:</span>
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-sm">
-                          {String(eventTimeLeft.minutes).padStart(2, '0')}m
-                        </span>
-                        <span className="text-emerald-400 animate-pulse">:</span>
-                        <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 shadow-sm">
-                          {String(eventTimeLeft.seconds).padStart(2, '0')}s
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ========================================================================= */}
                   {/* STATE A: ONGOING EVENT (SHOW TITLE, QR CODE, AND 2X2 GUIDELINE ADVISORIES) */}
                   {/* ========================================================================= */}
                   {!eventTimeLeft.isExpired ? (

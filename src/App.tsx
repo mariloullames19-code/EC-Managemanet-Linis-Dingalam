@@ -574,6 +574,8 @@ export default function App() {
         <LoginModal
           isOpen={true}
           currentUser={currentUser}
+          users={allUsers}
+          activities={activities}
           onLogin={handleLogin}
           onOpenRegisterModal={() => setIsPersonalQrModalOpen(true)}
           onOpenUploadAccomplishment={(bene) => {
@@ -1008,6 +1010,8 @@ export default function App() {
         <LoginModal
           isOpen={isLoginModalOpen}
           currentUser={currentUser}
+          users={allUsers}
+          activities={activities}
           onLogin={(userOrRole) => {
             handleLogin(userOrRole);
             setIsLoginModalOpen(false);
