@@ -610,11 +610,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-slate-950 font-sans text-slate-100 flex flex-col justify-between">
+    <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-transparent font-sans text-slate-100 flex flex-col justify-between">
       {/* ========================================================================= */}
       {/* NATIVE HTML5 HD 1080P SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN TWILIGHT) */}
       {/* ========================================================================= */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-slate-950 flex items-center justify-center">
+      <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-transparent flex items-center justify-center">
         <video
           ref={videoRef}
           autoPlay
@@ -624,7 +624,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
           aria-hidden="true"
-          className="w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.14] brightness-[0.98] transform translate-z-0"
+          className="w-full h-full object-cover object-center filter contrast-[1.05] saturate-[1.12] brightness-[1.0] transform translate-z-0"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
           src="/dingalan_sunset_background.mp4"
         >
@@ -632,9 +632,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <source src="/dingalan_tech_background.mp4" type="video/mp4" />
         </video>
 
-        {/* Lighter, luminous ambient sunset veil for a brighter, warmer login page view */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/35 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/10 via-transparent to-slate-950/25 pointer-events-none" />
+        {/* Clear, natural ambient sunset glow - non-darkening */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}
@@ -970,8 +969,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
                           </p>
                           
-                          {/* Action buttons: Upload Accomplishment Attendance, Download & Print */}
-                          <div className="flex flex-wrap gap-2 pt-1">
+                          {/* Prominent Full-Width Upload Accomplishment Attendance Button */}
+                          <div className="pt-2 w-full">
                             <button
                               type="button"
                               onClick={() => {
@@ -979,13 +978,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                                   onOpenUploadAccomplishment();
                                 }
                               }}
-                              className="w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs flex items-center justify-center space-x-1.5 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all transform hover:scale-[1.02] active:scale-95 cursor-pointer"
+                              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-[0_0_25px_rgba(16,185,129,0.55)] transition-all transform hover:scale-[1.01] active:scale-95 cursor-pointer border border-emerald-300"
                               title="Pindutin para mag-upload ng patunay at accomplishment pictures"
                             >
-                              <Upload className="w-3.5 h-3.5 text-slate-950 shrink-0" />
-                              <span>Mag-Upload ng Accomplishment Attendance</span>
+                              <Camera className="w-5 h-5 text-slate-950 shrink-0" />
+                              <span className="tracking-wide uppercase">Mag-Upload ng Accomplishment Attendance Photo</span>
+                              <Upload className="w-4 h-4 text-slate-950 shrink-0 ml-1" />
                             </button>
+                          </div>
 
+                          {/* Secondary buttons: Download & Print */}
+                          <div className="flex flex-wrap gap-2 pt-1">
                             {(eventQrUrl || eventBroadcast.qrDataUrl) && (
                               <a
                                 href={eventQrUrl || eventBroadcast.qrDataUrl}
@@ -1108,6 +1111,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           </span>
                         </div>
                       </div>
+
+                      {/* Prominent Upload Accomplishment Attendance Button */}
+                      <div className="pt-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onOpenUploadAccomplishment) {
+                              onOpenUploadAccomplishment();
+                            }
+                          }}
+                          className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-[0_0_25px_rgba(16,185,129,0.55)] transition-all transform hover:scale-[1.01] active:scale-95 cursor-pointer border border-emerald-300"
+                          title="Pindutin para mag-upload ng patunay at accomplishment pictures"
+                        >
+                          <Camera className="w-5 h-5 text-slate-950 shrink-0" />
+                          <span className="tracking-wide uppercase">Mag-Upload ng Accomplishment Attendance Photo</span>
+                          <Upload className="w-4 h-4 text-slate-950 shrink-0 ml-1" />
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1179,8 +1200,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <form onSubmit={handleLoginSubmit} className="space-y-6">
                         {/* Underlined Username/Email Field */}
                         <div className="space-y-1 text-left">
-                          <div className="flex items-center border-b-2 border-slate-700 hover:border-emerald-500/80 focus-within:border-emerald-400 transition-colors py-2">
-                            <UserIcon className="w-5 h-5 text-slate-300 mr-2.5 shrink-0" />
+                          <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
+                            <UserIcon className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
                             <input
                               type="text"
                               autoComplete="username"
@@ -1188,15 +1209,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               placeholder="Username"
-                              className="w-full bg-transparent text-white placeholder-slate-400 text-sm font-sans focus:outline-none"
+                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
+                              className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
                             />
                           </div>
                         </div>
 
                         {/* Underlined Password Field */}
                         <div className="space-y-1 text-left">
-                          <div className="flex items-center border-b-2 border-slate-700 hover:border-emerald-500/80 focus-within:border-emerald-400 transition-colors py-2">
-                            <Lock className="w-5 h-5 text-slate-300 mr-2.5 shrink-0" />
+                          <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
+                            <Lock className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
                             <input
                               type={showPassword ? 'text' : 'password'}
                               autoComplete="current-password"
@@ -1204,12 +1226,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               placeholder="Password"
-                              className="w-full bg-transparent text-white placeholder-slate-400 text-sm font-sans focus:outline-none"
+                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
+                              className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
                             />
                             <button
                               type="button"
                               onClick={() => setShowPassword(!showPassword)}
-                              className="text-slate-400 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
+                              className="text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
                             >
                               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
