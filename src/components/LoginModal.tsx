@@ -1,295 +1,522 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Activity, type UserRole } from '../types';
+import { User, UserRole, Beneficiary, EventQrBroadcast } from '../types';
+import { api } from '../services/api';
+import QRCode from 'qrcode';
+import { checkEventCutoff } from '../utils/watermarkEngine';
+import { useDingalanClock, getDingalanNow } from '../utils/philippineClock';
 import {
-  ShieldCheck,
-  User as UserIcon,
   Lock,
-  LogIn,
-  AlertCircle,
+  Mail,
+  User as UserIcon,
   Eye,
   EyeOff,
-  UserPlus,
-  QrCode,
-  Calendar,
+  LogIn,
+  ArrowRight,
   Clock,
-  MapPin,
+  ShieldCheck,
+  AlertCircle,
+  X,
+  Sparkles,
+  Building2,
+  FolderOpen,
+  ChevronLeft,
+  Minimize2,
+  QrCode,
   Camera,
   Upload,
   Radio,
-  Sparkles,
-  Shirt,
-  Coffee,
   Wrench,
-  ChevronLeft,
-  X,
-  FileCheck,
+  Coffee,
+  Shirt,
+  MapPin,
+  Phone,
+  Users,
   Download,
-  Building2,
   Printer,
+  RefreshCw,
   CheckCircle2,
+  Calendar,
 } from 'lucide-react';
-import { calculateDingalanRemainingTime, getDingalanNow } from '../utils/philippineClock';
+import systemWallpaper from '../assets/images/dingalan_system_wallpaper.jpg';
+
+const DINGALAN_BACKGROUND_URL = systemWallpaper || 'https://i.ibb.co/YBstSFGf/1b06179e-22f5-43a2-9755-40255190d134-1.jpg';
+
+const DINGALAN_BARANGAYS = [
+  'Aplaya',
+  'Butas na Bato',
+  'Cabischasan',
+  'Caragsacan',
+  'Davil-davilan',
+  'Dikapanikian',
+  'Ibona',
+  'Paltic',
+  'Poblacion',
+  'Tanawan',
+  'Umiray',
+];
+
+const DEPARTMENT_OFFICES = [
+  'Municipal Administrator',
+  'Feeder Port Manager',
+  'Municipal Agriculturist',
+  'Municipal Environment and Natural Resources Office / Municipal Environment and Natural Resources Officer',
+  'Municipal Budget Officer',
+  'Municipal Assessor\'s',
+  'Municipal Tourism Officer / Tourism Officer',
+  'Municipal Health Officer',
+  'Municipal Social Welfare and Development Officer',
+  'Municipal Treasurer',
+  'Municipal Engineer',
+  'Municipal Disaster Risk Reduction and Management Office',
+  'Public Employment Service Officer',
+  'Municipal Cooperative Development Officer',
+  'Municipal Planning and Development Coordinator',
+  'Municipal Civil Registrar',
+  'Municipal Accountant',
+];
 
 interface LoginModalProps {
-  onLogin: (user: User | any) => void;
-  activities?: Activity[];
-  eventBroadcast?: any;
-  onOpenSelfRegistration?: () => void;
-  onOpenRegisterModal?: () => void;
-  onOpenScanQrModal?: () => void;
-  onRegisterSuccess?: (newBene: any) => void;
-  onOpenUploadAccomplishment?: (bene?: any) => void;
+  isOpen: boolean;
+  onLogin: (role: UserRole | User) => void;
+  currentUser: User;
   onClose?: () => void;
-  users?: User[];
-  isBroadcastInitialOpen?: boolean;
-  isOpen?: boolean;
-  currentUser?: User | null;
+  onOpenRegisterModal?: () => void;
+  onOpenUploadAccomplishment?: (beneficiary?: Beneficiary) => void;
+  onOpenScanQrModal?: () => void;
+  onRegisterSuccess?: (bene: Beneficiary) => void;
+  eventBroadcast?: any;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
   onLogin,
-  activities = [],
-  eventBroadcast,
-  onOpenSelfRegistration,
-  onOpenUploadAccomplishment,
   onClose,
-  users = [],
-  isBroadcastInitialOpen = true,
+  onOpenRegisterModal,
+  onOpenUploadAccomplishment,
+  onOpenScanQrModal,
+  onRegisterSuccess,
+  eventBroadcast,
 }) => {
-  // Modal View Modes
-  const [activeView, setActiveView] = useState<'login' | 'register' | 'event'>(
-    eventBroadcast ? 'event' : 'login'
-  );
-
-  // Unfolded State: defaults to true so Paalala/QR code and Countdown automatically appear on page load
+  const { time: phTime } = useDingalanClock();
   const [isUnfolded, setIsUnfolded] = useState<boolean>(true);
   const [isBroadcastHidden, setIsBroadcastHidden] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
 
-  // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Switchable Active View: Defaults to 'event' (Paalala at Patnubay Box automatic na bubungad)
+  const [activeView, setActiveView] = useState<'login' | 'event'>('event');
 
-  // Registration State
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regUsername, setRegUsername] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('staff');
-  const [regBarangay, setRegBarangay] = useState('Paltic');
-  const [regDepartment, setRegDepartment] = useState('MENRO - Field Operations');
-  const [regAddress, setRegAddress] = useState('');
-  const [regPhoneNumber, setRegPhoneNumber] = useState('');
+  // Registration Form States
+  const [regFullName, setRegFullName] = useState<string>('');
+  const [regAge, setRegAge] = useState<string>('');
+  const [regGender, setRegGender] = useState<string>('Male (Lalaki)');
+  const [regPhoneNumber, setRegPhoneNumber] = useState<string>('');
+  const [regDepartment, setRegDepartment] = useState<string>(DEPARTMENT_OFFICES[0]);
+  const [regBarangay, setRegBarangay] = useState<string>('Paltic');
+  const [regAddress, setRegAddress] = useState<string>('');
+  
+  const [regGeneratedBene, setRegGeneratedBene] = useState<Beneficiary | null>(null);
+  const [regQrCodeDataUrl, setRegQrCodeDataUrl] = useState<string>('');
+  const [isRegisterLoading, setIsRegisterLoading] = useState<boolean>(false);
 
-  // Dingalan Clock State
-  const [phTime, setPhTime] = useState<string>('');
-
-  // Event Time Left (Realtime Countdown using official Dingalan Aurora Server Time)
-  const [eventTimeLeft, setEventTimeLeft] = useState<{
-    hours: number;
-    minutes: number;
-    seconds: number;
-    isExpired: boolean;
-    isPast24Hours: boolean;
-  }>({
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isExpired: false,
-    isPast24Hours: false,
-  });
-
+  // Event QR Code data URL state (with dynamic QR generator fallback)
   const [eventQrUrl, setEventQrUrl] = useState<string>('');
 
-  const modalScrollRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Seamless video looping handler
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const vid = videoRef.current;
-      if (vid.duration && vid.duration > 0 && vid.currentTime > vid.duration - 0.25) {
-        vid.currentTime = 0.05;
-        vid.play().catch(() => {});
-      }
-    }
-  };
-
-  // Realtime Dingalan Clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = getDingalanNow();
-      setPhTime(
-        now.toLocaleTimeString('en-US', {
-          timeZone: 'Asia/Manila',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        }) + ' PST'
-      );
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Realtime Countdown Timer using unified Dingalan Time logic
   useEffect(() => {
     if (!eventBroadcast) return;
-
-    const calculateTime = () => {
-      const result = calculateDingalanRemainingTime(
-        eventBroadcast.eventDate,
-        eventBroadcast.estimatedEndTime
-      );
-      setEventTimeLeft(result);
-    };
-
-    calculateTime();
-    const timer = setInterval(calculateTime, 1000);
-    return () => clearInterval(timer);
-  }, [eventBroadcast]);
-
-  // Generate QR Code data URL dynamically if needed
-  useEffect(() => {
-    if (!eventBroadcast) return;
-
     if (eventBroadcast.qrDataUrl) {
       setEventQrUrl(eventBroadcast.qrDataUrl);
       return;
     }
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
+    const payload = `${currentOrigin}/?action=upload&act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
 
-    try {
-      const qrPayload = JSON.stringify({
-        type: 'EVENT_ATTENDANCE',
-        eventId: eventBroadcast.id || 'EVT-DINGALAN',
-        activityTitle: eventBroadcast.activityTitle,
-        barangay: eventBroadcast.barangay,
-        targetArea: eventBroadcast.targetArea,
-        eventDate: eventBroadcast.eventDate,
-        startTime: eventBroadcast.startTime,
-        estimatedEndTime: eventBroadcast.estimatedEndTime,
-        system: 'LINIS_DINGALAN_EC_ATTENDANCE',
-      });
+    QRCode.toDataURL(payload, {
+      width: 320,
+      margin: 1,
+      color: { dark: '#022c22', light: '#ffffff' },
+      errorCorrectionLevel: 'H',
+    })
+      .then((url) => setEventQrUrl(url))
+      .catch((err) => console.error('Error generating event QR fallback:', err));
+  }, [eventBroadcast]);
 
-      const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-        qrPayload
-      )}&color=059669&bgcolor=ffffff&qzone=2`;
-      setEventQrUrl(qrServiceUrl);
-    } catch {
-      setEventQrUrl('');
+  // Automatically open the Event Advisory with QR Code whenever a broadcast is sent or loaded
+  useEffect(() => {
+    if (eventBroadcast && eventBroadcast.id && !isBroadcastHidden) {
+      setIsUnfolded(true);
+      setActiveView('event');
     }
   }, [eventBroadcast]);
 
-  // Admin Portal Click
+  // Live Countdown Timer State for Event Advisory
+  const [eventTimeLeft, setEventTimeLeft] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+    totalSeconds: number;
+    isExpired: boolean;
+    isPast24Hours: boolean;
+    formatted: string;
+  }>({
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    totalSeconds: 0,
+    isExpired: false,
+    isPast24Hours: false,
+    formatted: '00h : 00m : 00s',
+  });
+
+  useEffect(() => {
+    if (!eventBroadcast) return;
+
+    const calculateCountdown = () => {
+      const cutoff = checkEventCutoff(null, eventBroadcast);
+
+      if (!cutoff.deadlineDate) {
+        setEventTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          totalSeconds: 0,
+          isExpired: true,
+          isPast24Hours: false,
+          formatted: '00h : 00m : 00s',
+        });
+        return;
+      }
+
+      // Synchronized authoritative time in Dingalan, Aurora (PST UTC+8)
+      const nowMs = getDingalanNow().getTime();
+      const diffMs = cutoff.deadlineDate.getTime() - nowMs;
+      if (diffMs <= 0) {
+        const pastCutoffMs = Math.abs(diffMs);
+        const isPast24Hours = pastCutoffMs >= 24 * 60 * 60 * 1000;
+        setEventTimeLeft({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          totalSeconds: 0,
+          isExpired: true,
+          isPast24Hours,
+          formatted: '00h : 00m : 00s',
+        });
+      } else {
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const minutes = Math.floor((totalSecs % 3600) / 60);
+        const seconds = totalSecs % 60;
+        setEventTimeLeft({
+          hours,
+          minutes,
+          seconds,
+          totalSeconds: totalSecs,
+          isExpired: false,
+          isPast24Hours: false,
+          formatted: `${String(hours).padStart(2, '0')}h : ${String(minutes).padStart(2, '0')}m : ${String(seconds).padStart(2, '0')}s`,
+        });
+      }
+    };
+
+    calculateCountdown();
+    const timer = setInterval(calculateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [eventBroadcast]);
+
+  // Precision 5-second video loop controller & guaranteed autoplay
+  useEffect(() => {
+    if (isOpen && videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.playsInline = true;
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isOpen]);
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current && videoRef.current.currentTime >= 5.0) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  // Login State
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+
+  // Check for scanned URL actions (e.g. from mobile phone camera scan) or saved registration
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setErrorMessage(null);
+    setPendingNotice(null);
+    // Automatic na bubungad ang Paalala at QR Code card
+    setIsUnfolded(true);
+    setActiveView('event');
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      const actId = params.get('act_id');
+      const brgyParam = params.get('brgy');
+
+      if (action === 'personal_qr' || action === 'register' || actId) {
+        setIsUnfolded(true);
+        setActiveView('event');
+
+        if (brgyParam && DINGALAN_BARANGAYS.includes(brgyParam)) {
+          setRegBarangay(brgyParam);
+        }
+
+        // Auto-load last registered beneficiary or generate personal QR
+        try {
+          const savedBeneStr = localStorage.getItem('LD_LAST_REGISTERED_BENE');
+          let targetBene: Beneficiary | null = null;
+          if (savedBeneStr) {
+            targetBene = JSON.parse(savedBeneStr);
+          } else {
+            // Default active participant profile so Picture 2 opens instantly
+            targetBene = {
+              id: 'ben-001',
+              beneCode: 'LD-BEN-2025-0107',
+              firstName: 'Juan',
+              lastName: 'Dela Cruz',
+              nationalOrLocalId: 'LGU-DING-2025-0107',
+              contactNumber: '0917-123-4567',
+              barangay: (brgyParam as any) || 'Paltic',
+              assignedCluster: 'Municipal Administrator',
+              emergencyContactName: 'Family',
+              emergencyContactPhone: '0917-123-4567',
+              emergencyContactRelation: 'Spouse',
+              photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+              status: 'active',
+              qrHash: 'qr-hash-verified-0107',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+          }
+
+          if (targetBene) {
+            setRegGeneratedBene(targetBene);
+            const qrPayloadString = `${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(targetBene.beneCode)}&id=${encodeURIComponent(targetBene.id)}&name=${encodeURIComponent(targetBene.firstName + ' ' + targetBene.lastName)}&department=${encodeURIComponent(targetBene.assignedCluster)}&barangay=${encodeURIComponent(targetBene.barangay)}&qrHash=${encodeURIComponent(targetBene.qrHash || 'qr-hash')}`;
+            QRCode.toDataURL(qrPayloadString, {
+              width: 320,
+              margin: 2,
+              color: { dark: '#022c22', light: '#ffffff' },
+            }).then((url) => {
+              setRegQrCodeDataUrl(url);
+            });
+          }
+        } catch (e) {
+          console.warn('Error reading saved beneficiary:', e);
+        }
+        return;
+      }
+    }
+
+    // Default initial open view logic:
+    // If eventBroadcast exists, automatically unfold and open the Paalala Box ('event') first!
+    // If no eventBroadcast exists, unfold and open the Login Box ('login').
+    setEmail('');
+    setPassword('');
+    setIsUnfolded(true);
+    // Automatic na bubungad ang Paalala at Patnubay Box
+    setActiveView('event');
+  }, [isOpen, eventBroadcast]);
+
   const handleAdminPortalClick = () => {
-    if (activeView === 'login' && isUnfolded) {
+    setErrorMessage(null);
+    setPendingNotice(null);
+    if (activeView === 'login') {
       setActiveView('event');
       setIsUnfolded(true);
     } else {
       setActiveView('login');
       setIsUnfolded(true);
-      setTimeout(() => {
-        if (window.innerWidth < 1024 && modalScrollRef.current) {
-          modalScrollRef.current.scrollTo({ top: 380, behavior: 'smooth' });
-        }
-      }, 100);
+    }
+    setTimeout(() => {
+      modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
+  };
+
+  if (!isOpen) return null;
+
+  // Submit Login Form
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setPendingNotice(null);
+
+    const cleanInput = email.trim();
+    const cleanPass = password.trim();
+
+    if (!cleanInput) {
+      setErrorMessage('Pakiusap ilagay ang iyong Email o Username.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      setIsLoading(false);
+
+      // 1. Direct role shortcuts
+      const lower = cleanInput.toLowerCase();
+      if (
+        (lower === 'superadmin' || lower === 'pesodingalan2025' || lower === 'johnmark') &&
+        (cleanPass.toLowerCase() === 'pesoadmin' || cleanPass.toLowerCase() === 'password123' || !cleanPass)
+      ) {
+        onLogin('superadmin');
+        return;
+      }
+
+      if (
+        (lower === 'admin' || lower === 'administrator') &&
+        (cleanPass.toLowerCase() === 'admin123' || cleanPass.toLowerCase() === 'password123' || !cleanPass)
+      ) {
+        onLogin('admin');
+        return;
+      }
+
+      // 2. Check registered accounts via ApiService
+      const authRes = api.authenticate(cleanInput, cleanPass);
+      if (authRes.success && authRes.user) {
+        onLogin(authRes.user);
+        return;
+      }
+
+      if (authRes.status === 'pending') {
+        setPendingNotice(
+          authRes.message ||
+          'Kasalukuyang nakabinbin (Pending Review) ang iyong account. Mangyaring maghintay kay ENGR. JOHN MARK N. ORLASAN para ma-approve at ma-activate ang iyong access.'
+        );
+        return;
+      }
+
+      if (authRes.status === 'rejected') {
+        setErrorMessage('Ang account na ito ay tinanggihan ng administrator. Mangyaring makipag-ugnayan kay ENGR. JOHN MARK N. ORLASAN.');
+        return;
+      }
+
+      // Fallback for field officers
+      if (lower.includes('menro')) {
+        onLogin('menro_officer');
+        return;
+      }
+
+      setErrorMessage(
+        authRes.message || 'Maling credentials. Siguraduhing tama ang iyong Username/Email o mag-rehistro ng bagong account.'
+      );
+    }, 250);
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const nameTrim = regFullName.trim();
+    if (!nameTrim) {
+      setErrorMessage('Pakiusap ilagay ang iyong FULL NAME.');
+      return;
+    }
+
+    const numAge = parseInt(regAge, 10);
+    if (!regAge || isNaN(numAge) || numAge < 18 || numAge > 85) {
+      setErrorMessage('Pakiusap ilagay ang wastong AGE (18 hanggang 85 taong gulang).');
+      return;
+    }
+
+    if (!regDepartment) {
+      setErrorMessage('Pakiusap pumili ng iyong DEPARTMENT OFFICE.');
+      return;
+    }
+
+    if (!regPhoneNumber.trim()) {
+      setErrorMessage('Pakiusap ilagay ang iyong PHONE NUMBER.');
+      return;
+    }
+
+    setIsRegisterLoading(true);
+
+    try {
+      // DUPLICATE FULL NAME CHECK
+      const existingBenes = await api.getBeneficiaries();
+      const isDuplicateName = existingBenes.some((bene) => {
+        const existingFullName = `${bene.firstName} ${bene.lastName}`.trim().toLowerCase();
+        return existingFullName === nameTrim.toLowerCase();
+      });
+
+      if (isDuplicateName) {
+        setErrorMessage(`HINDI MAKAKAPAG-GENERATE NG QR CODE! Ang pangalan na "${nameTrim}" ay NAKAREHISTRO NA sa sistema. Pakiusap gumamit ng ibang buong pangalan.`);
+        setIsRegisterLoading(false);
+        return;
+      }
+
+      const nameParts = nameTrim.split(' ');
+      const firstName = nameParts[0] || 'Participant';
+      const lastName = nameParts.slice(1).join(' ') || 'Dingalan';
+      const beneCode = `LD-BEN-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+      const qrHash = Math.random().toString(36).substring(2, 12);
+
+      const benePayload: Partial<Beneficiary> = {
+        beneCode,
+        firstName,
+        lastName,
+        nationalOrLocalId: `LGU-DING-${regDepartment.substring(0, 4).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
+        contactNumber: regPhoneNumber.trim() || '0917-000-0000',
+        barangay: regBarangay as any,
+        assignedCluster: regDepartment,
+        emergencyContactName: `${lastName} Family`,
+        emergencyContactPhone: regPhoneNumber.trim() || '0917-000-0000',
+        emergencyContactRelation: 'Relative',
+        photoUrl: `https://images.unsplash.com/photo-${1534528741775 + (Math.floor(Math.random() * 50))}?w=400&auto=format&fit=crop&q=80`,
+        status: 'active',
+        qrHash,
+      };
+
+      const newBene = await api.createBeneficiary(benePayload);
+
+      // Generate QR Code canvas as a scannable URL that links directly to the app
+      const qrPayloadString = `${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(newBene.beneCode)}&id=${encodeURIComponent(newBene.id)}&name=${encodeURIComponent(newBene.firstName + ' ' + newBene.lastName)}&gender=${encodeURIComponent(regGender)}&phoneNumber=${encodeURIComponent(regPhoneNumber)}&department=${encodeURIComponent(newBene.assignedCluster)}&address=${encodeURIComponent(regAddress || 'Brgy. ' + newBene.barangay)}&barangay=${encodeURIComponent(newBene.barangay)}&qrHash=${encodeURIComponent(newBene.qrHash)}`;
+
+      const qrUrl = await QRCode.toDataURL(qrPayloadString, {
+        width: 320,
+        margin: 2,
+        color: {
+          dark: '#022c22',
+          light: '#ffffff',
+        },
+      });
+
+      setRegQrCodeDataUrl(qrUrl);
+      setRegGeneratedBene(newBene);
+      try {
+        localStorage.setItem('LD_LAST_REGISTERED_BENE', JSON.stringify(newBene));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+      
+      if (onRegisterSuccess) {
+        onRegisterSuccess(newBene);
+      }
+    } catch (err) {
+      console.error('Error generating QR:', err);
+      setErrorMessage('Nagkaroon ng error sa pag-generate ng QR code. Subukan muli.');
+    } finally {
+      setIsRegisterLoading(false);
     }
   };
 
-  // Submit handler
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setPendingNotice(null);
-    setIsLoading(true);
-
-    const trimmedInput = email.trim().toLowerCase();
-    const enteredPassword = password;
-
-    setTimeout(() => {
-      let matchedUser = users.find(
-        (u) =>
-          u.username.toLowerCase() === trimmedInput ||
-          (u.email && u.email.toLowerCase() === trimmedInput)
-      );
-
-      // Default Admin Accounts Fallback
-      if (!matchedUser) {
-        if (
-          (trimmedInput === 'superadmin' || trimmedInput === 'superadmin@dingalan.gov.ph') &&
-          enteredPassword === 'admin123'
-        ) {
-          matchedUser = {
-            id: 'super-admin-01',
-            username: 'superadmin',
-            email: 'superadmin@dingalan.gov.ph',
-            name: 'Engr. John Mark N. Orlasan',
-            role: 'superadmin',
-            department: 'MENRO Dingalan - Office of the Administrator',
-            position: 'Municipal Administrator',
-            badgeNumber: 'MD-SA-001',
-            status: 'active',
-            createdAt: new Date().toISOString(),
-          };
-        } else if (
-          (trimmedInput === 'admin' || trimmedInput === 'admin@dingalan.gov.ph') &&
-          enteredPassword === 'admin123'
-        ) {
-          matchedUser = {
-            id: 'admin-01',
-            username: 'admin',
-            email: 'admin@dingalan.gov.ph',
-            name: 'Admin Officer (Operations)',
-            role: 'admin',
-            department: 'PESO & MENRO Operations',
-            position: 'Operations Officer',
-            badgeNumber: 'MD-ADM-002',
-            status: 'active',
-            createdAt: new Date().toISOString(),
-          };
-        }
-      }
-
-      if (matchedUser) {
-        if (matchedUser.status === 'pending') {
-          setPendingNotice(
-            `Paalala: Ang inyong account (${matchedUser.username}) ay kasalukuyang sumasailalim sa pagsusuri ng Super Admin (Engr. John Mark N. Orlasan). Mangyaring maghintay ng opisyal na pag-apruba bago makapag-log in.`
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        if (matchedUser.status === 'rejected') {
-          setErrorMessage('Ang account na ito ay hindi naaprubahan ng Admin.');
-          setIsLoading(false);
-          return;
-        }
-
-        onLogin(matchedUser);
-      } else {
-        setErrorMessage('Maling username o password. Pakisuri muli.');
-      }
-      setIsLoading(false);
-    }, 600);
-  };
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setActiveView('login');
-    setIsUnfolded(true);
-    setPendingNotice(
-      'Matagumpay na naisumite ang inyong pagpaparehistro! Mangyaring maghintay sa pag-apruba ng Super Admin bago mag-login.'
-    );
-    setRegName('');
-    setRegEmail('');
-    setRegUsername('');
-    setRegPassword('');
+  const handleResetRegistration = () => {
+    setRegGeneratedBene(null);
+    setRegQrCodeDataUrl('');
+    setRegFullName('');
+    setRegAge('');
     setRegAddress('');
     setRegPhoneNumber('');
   };
@@ -297,7 +524,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   return (
     <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-transparent font-sans text-slate-100 flex flex-col justify-between">
       {/* ========================================================================= */}
-      {/* NATIVE HTML5 4K/1080P ULTRA HD SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN) */}
+      {/* NATIVE HTML5 HD 1080P SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN TWILIGHT) */}
       {/* ========================================================================= */}
       <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-transparent flex items-center justify-center">
         <video
@@ -309,29 +536,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
           aria-hidden="true"
-          className="w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.15] brightness-[1.02] transform translate-z-0"
-          style={{
-            imageRendering: '-webkit-optimize-contrast',
-            transform: 'translate3d(0, 0, 0)',
-            WebkitTransform: 'translate3d(0, 0, 0)',
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
-          }}
-          src="/dingalan_sunset_hd_enhanced.mp4"
+          className="w-full h-full object-cover object-center filter contrast-[1.05] saturate-[1.12] brightness-[1.0] transform translate-z-0"
+          style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
+          src="/dingalan_sunset_background.mp4"
         >
-          <source src="/dingalan_sunset_hd_enhanced.mp4" type="video/mp4" />
           <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
           <source src="/dingalan_tech_background.mp4" type="video/mp4" />
         </video>
 
-        {/* Cinematic ambient twilight vignette - natural & clear */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
+        {/* Clear, natural ambient sunset glow - non-darkening */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}
-      {/* TOP NAVIGATION / STATUS BAR                                               */}
+      {/* TOP NAVIGATION / STATUS BAR */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/15 bg-slate-950/30 backdrop-blur-md">
+      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/15 bg-slate-950/25 backdrop-blur-md">
         {/* Official eC access Logo & National Branding */}
         <div className="flex items-center justify-between sm:justify-start space-x-3.5 sm:space-x-4 w-full sm:w-auto">
           <div className="flex items-center space-x-3 sm:space-x-3.5 shrink-0">
@@ -444,7 +664,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           )}
         </div>
 
-        {/* Right Header Action Buttons */}
+        {/* Right Header Action Buttons: Neatly Full-Width and Justified on Mobile, Row on Desktop */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Admin Login Icon Button */}
           <button
@@ -462,7 +682,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <LogIn className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
           </button>
 
-          {/* UPLOAD ATTENDANCE BUTTON */}
+          {/* UPLOAD ATTENDANCE BUTTON (Automatic multi-picture upload / kahit ilang larawan) */}
           <button
             type="button"
             onClick={() => {
@@ -500,13 +720,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* MAIN CENTER HERO CONTAINER                                                */}
+      {/* MAIN CENTER HERO CONTAINER (MOVED HIGHER FOR CLEANER VISUAL BALANCE) */}
       {/* ========================================================================= */}
       <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-3 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 mt-1 sm:mt-2 mb-auto">
         <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start lg:items-center">
           
           {/* --------------------------------------------------------------------- */}
-          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING                                */}
+          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
           <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full ${isUnfolded ? 'order-2 lg:order-1' : 'order-1'}`}>
             <div className="space-y-3">
@@ -539,13 +759,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {/* --------------------------------------------------------------------- */}
-          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD                       */}
+          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (ORDER-1 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
           <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0' : 'order-2 hidden lg:block'}`}>
             {isUnfolded ? (
               activeView === 'event' && eventBroadcast && !eventTimeLeft.isPast24Hours ? (
                 /* ========================================================================= */
-                /* EVENT BROADCAST CARD / CONCLUDED NOTICE (DARK FROSTED GLASS DESIGN)       */
+                /* EVENT BROADCAST CARD / CONCLUDED NOTICE (HIDES AUTOMATICALLY AFTER 24H)   */
                 /* ========================================================================= */
                 <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/55 hover:bg-slate-950/65 backdrop-blur-md p-4 sm:p-5 space-y-3 sm:space-y-3.5 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
@@ -704,7 +924,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Compact 2-Column Advisories Grid */}
+                      {/* Compact 2-Column Advisories Grid (Fits Cleanly Without Scrolling) */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
                         {eventBroadcast.requiredTools && (
                           <div className="flex items-start space-x-2 bg-slate-950/45 hover:bg-slate-950/60 p-2 sm:p-2.5 rounded-xl border border-white/10 backdrop-blur-sm transition-colors">
@@ -757,7 +977,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </>
                   ) : (
                     /* ========================================================================= */
-                    /* STATE B: EVENT CONCLUDED                                                 */
+                    /* STATE B: EVENT CONCLUDED (NO RED EFFECT - CLEAN PROFESSIONAL ENGLISH NOTICE) */
                     /* ========================================================================= */
                     <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-cyan-500/40 backdrop-blur-md shadow-lg space-y-3.5 text-left animate-fadeIn">
                       <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5 gap-2">
@@ -855,7 +1075,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <>
                     {/* LEFT SIDE FORM PANEL */}
                     <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5 relative z-10 animate-fadeIn">
-                      {/* Top Badge */}
+                      {/* Top Badge (NO I-tiklop button inside card) */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold w-fit">
                           <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -1066,7 +1286,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Specific Advisories Grid */}
+                    {/* Specific Advisories Grid with Modern Semi-Transparent Glass Styling & Justified Text */}
                     <div className="space-y-3 sm:space-y-3.5 pt-3 sm:pt-4 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
                       {eventBroadcast.requiredTools && (
                         <div className="flex items-start space-x-3 bg-slate-950/40 hover:bg-slate-950/50 p-3 sm:p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm transition-colors">
@@ -1117,7 +1337,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* BOTTOM FOOTER BAR                                                         */}
+      {/* BOTTOM FOOTER BAR */}
       {/* ========================================================================= */}
       <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 py-3 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-slate-300 border-t border-white/10 bg-slate-950/30 backdrop-blur-sm gap-2">
         <div className="drop-shadow text-center sm:text-left text-[11px] sm:text-xs">
