@@ -895,6 +895,26 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   )}
 
                   {/* ========================================================================= */}
+                  {/* HIGH-VISIBILITY PRIMARY ACTION UPLOAD BUTTON (CANNOT BE MISSED)           */}
+                  {/* ========================================================================= */}
+                  <div className="w-full pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onOpenUploadAccomplishment) {
+                          onOpenUploadAccomplishment();
+                        }
+                      }}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_30px_rgba(16,185,129,0.7)] transition-all transform hover:scale-[1.01] active:scale-95 cursor-pointer border-2 border-white/80"
+                      title="Pindutin para mag-upload ng patunay at accomplishment pictures"
+                    >
+                      <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 shrink-0" />
+                      <span className="tracking-wide uppercase font-extrabold">Mag-Upload ng Accomplishment Attendance Photo</span>
+                      <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 shrink-0 ml-1" />
+                    </button>
+                  </div>
+
+                  {/* ========================================================================= */}
                   {/* STATE A: ONGOING EVENT (SHOW TITLE, QR CODE, AND 2X2 GUIDELINE ADVISORIES) */}
                   {/* ========================================================================= */}
                   {!eventTimeLeft.isExpired ? (
