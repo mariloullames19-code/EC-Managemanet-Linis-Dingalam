@@ -515,20 +515,30 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isProcessing}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-slate-900 border-2 border-dashed border-emerald-500/50 hover:border-emerald-400 text-slate-200 hover:text-white flex items-center justify-center space-x-2.5 transition-all cursor-pointer group shadow-lg"
+                    className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/25 via-teal-500/20 to-slate-900 border-2 border-dashed border-emerald-400/80 hover:border-emerald-300 text-white flex flex-col items-center justify-center space-y-1 transition-all cursor-pointer group shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:scale-[1.01]"
                   >
-                    <Upload className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-xs sm:text-sm">Pumili ng mga Larawan</span>
+                    <div className="flex items-center space-x-2">
+                      <Upload className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      <span className="font-black text-xs sm:text-sm">Pumili ng mga Larawan</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-300 font-semibold">
+                      (Kahit Ilang Picture / Walang Limit)
+                    </span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={isProcessing}
-                    className="p-4 rounded-2xl bg-slate-950/80 border-2 border-slate-700 hover:border-cyan-400 text-slate-200 hover:text-white flex items-center justify-center space-x-2.5 transition-all cursor-pointer group shadow-lg"
+                    className="p-4 rounded-2xl bg-slate-950/80 border-2 border-slate-700 hover:border-cyan-400 text-slate-200 hover:text-white flex flex-col items-center justify-center space-y-1 transition-all cursor-pointer group shadow-lg hover:scale-[1.01]"
                   >
-                    <Camera className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-xs sm:text-sm">Kumuha ng Camera Snapshot</span>
+                    <div className="flex items-center space-x-2">
+                      <Camera className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                      <span className="font-black text-xs sm:text-sm">Kumuha ng Camera Snapshot</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-cyan-300 font-semibold">
+                      (Direct Camera with Realtime GPS)
+                    </span>
                   </button>
                 </div>
 

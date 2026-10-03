@@ -747,7 +747,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <LogIn className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
           </button>
 
-          {/* IPAKITA ANG PAALALA NG ADMIN Button (Positioned on the right side of Admin Login Portal) */}
+          {/* PAALALA & QR CODE Button (Positioned on the right side of Admin Login Portal) */}
           {eventBroadcast && (
             <button
               type="button"
@@ -757,13 +757,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
                   : 'text-emerald-300 bg-slate-950/80 hover:bg-slate-900 border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
               }`}
-              title="Pindutin para ipakita ang Paalala ng Admin"
+              title="Pindutin para ipakita ang Paalala at QR Code ng Admin"
             >
               <Radio className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-400 animate-pulse'}`} />
-              <span className="tracking-wide font-semibold">Ipakita ang Paalala ng Admin</span>
-              <Eye className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950' : 'text-emerald-300'}`} />
+              <span className="tracking-wide font-extrabold uppercase">PAALALA & QR CODE</span>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isUnfolded && activeView === 'event' ? 'bg-slate-950' : 'bg-emerald-400 animate-ping'}`} />
             </button>
           )}
+
+          {/* UPLOAD ATTENDANCE BUTTON (Automatic multi-picture upload / kahit ilang larawan) */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenUploadAccomplishment) {
+                onOpenUploadAccomplishment();
+              }
+            }}
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold px-4 py-2.5 sm:py-2 rounded-full border border-cyan-400/90 bg-gradient-to-r from-teal-700/90 via-emerald-600/90 to-cyan-700/90 hover:from-teal-600 hover:to-cyan-600 text-white shadow-[0_0_22px_rgba(6,182,212,0.55)] transition-all transform hover:scale-[1.02] sm:hover:scale-105 active:scale-95 cursor-pointer"
+            title="Pindutin para mag-upload ng Attendance Pictures (kahit ilang larawan / multiple photos)"
+          >
+            <Camera className="w-4 h-4 text-cyan-200 shrink-0" />
+            <span className="tracking-wide font-extrabold uppercase">Upload Attendance</span>
+            <Upload className="w-3.5 h-3.5 text-white shrink-0 ml-0.5" />
+          </button>
 
           <div className="hidden sm:flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/80 border border-emerald-500/40 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.25)]">
             <Clock className="w-3.5 h-3.5 text-emerald-400" />
@@ -1251,6 +1267,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <span>Login</span>
                           )}
                         </button>
+
+                        {/* Quick Direct Attendance Upload Button */}
+                        <div className="pt-1 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onOpenUploadAccomplishment) {
+                                onOpenUploadAccomplishment();
+                              }
+                            }}
+                            className="w-full py-2.5 px-4 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-emerald-400/60 hover:border-cyan-300 text-emerald-300 hover:text-white text-xs font-mono font-bold flex items-center justify-center space-x-2 transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-95"
+                            title="Pindutin para mag-upload ng attendance pictures (kahit ilang litrato)"
+                          >
+                            <Camera className="w-4 h-4 text-cyan-300 shrink-0" />
+                            <span className="uppercase tracking-wide">Mag-Upload ng Attendance (Kahit Ilang Picture)</span>
+                            <Upload className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                          </button>
+                        </div>
                       </form>
                     </div>
 

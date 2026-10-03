@@ -577,9 +577,25 @@ export default function App() {
           onLogin={handleLogin}
           onOpenRegisterModal={() => setIsPersonalQrModalOpen(true)}
           onOpenUploadAccomplishment={(bene) => {
-            if (bene) {
-              setUploadBeneficiaryTarget(bene);
-            }
+            const target = bene || uploadBeneficiaryTarget || beneficiaries[0] || {
+              id: 'ben-001',
+              beneCode: 'LD-BEN-2025-0107',
+              firstName: 'Juan',
+              lastName: 'Dela Cruz',
+              nationalOrLocalId: 'LGU-DING-2025-0107',
+              contactNumber: '0917-123-4567',
+              barangay: 'Paltic',
+              assignedCluster: 'Municipal Administrator',
+              emergencyContactName: 'Family',
+              emergencyContactPhone: '0917-123-4567',
+              emergencyContactRelation: 'Spouse',
+              photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+              status: 'active',
+              qrHash: 'qr-verified',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            setUploadBeneficiaryTarget(target);
             setIsUploadAccomplishmentModalOpen(true);
           }}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
@@ -603,15 +619,45 @@ export default function App() {
         {/* Upload Accomplishment Modal for public participant */}
         <UploadAccomplishmentModal
           isOpen={isUploadAccomplishmentModalOpen}
-          onClose={() => setIsUploadAccomplishmentModalOpen(false)}
-          beneficiary={uploadBeneficiaryTarget}
-          activity={targetActivity}
+          onClose={() => {
+            setIsUploadAccomplishmentModalOpen(false);
+            setUploadBeneficiaryTarget(null);
+          }}
+          beneficiary={
+            uploadBeneficiaryTarget ||
+            beneficiaries[0] || {
+              id: 'ben-001',
+              beneCode: 'LD-BEN-2025-0107',
+              firstName: 'Juan',
+              lastName: 'Dela Cruz',
+              nationalOrLocalId: 'LGU-DING-2025-0107',
+              contactNumber: '0917-123-4567',
+              barangay: 'Paltic',
+              assignedCluster: 'Municipal Administrator',
+              emergencyContactName: 'Family',
+              emergencyContactPhone: '0917-123-4567',
+              emergencyContactRelation: 'Spouse',
+              photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+              status: 'active',
+              qrHash: 'qr-verified',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          }
+          activity={
+            targetActivity ||
+            (uploadBeneficiaryTarget
+              ? activities.find((a) => a.barangay === uploadBeneficiaryTarget.barangay)
+              : null) ||
+            activities[0] ||
+            null
+          }
           eventBroadcast={latestEventBroadcast}
           currentUser={currentUser}
           onSubmitAttendance={handleSubmitAttendance}
           onSuccessSubmitted={(att) => {
             setAttendances((prev) => [att, ...prev.filter(a => a.id !== att.id)]);
-            showToast(`Matagumpay na na-upload ang accomplishment ni ${att.beneficiaryName}!`, 'success');
+            showToast(`Matagumpay na na-upload ang accomplishment ni ${att.beneficiaryName}! Makikita na ito sa Accomplishment Attendance ng Admin.`, 'success');
           }}
         />
 
@@ -969,9 +1015,25 @@ export default function App() {
           onClose={() => setIsLoginModalOpen(false)}
           onOpenRegisterModal={() => setIsPersonalQrModalOpen(true)}
           onOpenUploadAccomplishment={(bene) => {
-            if (bene) {
-              setUploadBeneficiaryTarget(bene);
-            }
+            const target = bene || uploadBeneficiaryTarget || beneficiaries[0] || {
+              id: 'ben-001',
+              beneCode: 'LD-BEN-2025-0107',
+              firstName: 'Juan',
+              lastName: 'Dela Cruz',
+              nationalOrLocalId: 'LGU-DING-2025-0107',
+              contactNumber: '0917-123-4567',
+              barangay: 'Paltic',
+              assignedCluster: 'Municipal Administrator',
+              emergencyContactName: 'Family',
+              emergencyContactPhone: '0917-123-4567',
+              emergencyContactRelation: 'Spouse',
+              photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+              status: 'active',
+              qrHash: 'qr-verified',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            setUploadBeneficiaryTarget(target);
             setIsUploadAccomplishmentModalOpen(true);
           }}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
