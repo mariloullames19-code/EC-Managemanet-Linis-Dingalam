@@ -22,6 +22,8 @@ import {
   Users,
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
+import { OfficialQrPassCard } from './OfficialQrPassCard';
 
 const DINGALAN_BARANGAYS: DingalanBarangay[] = [
   'Aplaya',
@@ -154,13 +156,11 @@ export const GeneratePersonalQrModal: React.FC<GeneratePersonalQrModalProps> = (
       // Generate QR Code canvas as a scannable URL that links directly to the app
       const qrPayloadString = `${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(newBene.beneCode)}&id=${encodeURIComponent(newBene.id)}&name=${encodeURIComponent(newBene.firstName + ' ' + newBene.lastName)}&gender=${encodeURIComponent(gender)}&phoneNumber=${encodeURIComponent(phoneNumber)}&department=${encodeURIComponent(newBene.assignedCluster)}&address=${encodeURIComponent(address || 'Brgy. ' + newBene.barangay)}&barangay=${encodeURIComponent(newBene.barangay)}&qrHash=${encodeURIComponent(newBene.qrHash)}`;
 
-      const qrUrl = await QRCode.toDataURL(qrPayloadString, {
-        width: 320,
-        margin: 2,
-        color: {
-          dark: '#022c22',
-          light: '#ffffff',
-        },
+      const qrUrl = await generateStyledLguQrDataUrl(qrPayloadString, {
+        width: 480,
+        title: 'LINIS DINGALAN',
+        code: newBene.beneCode,
+        includeCenterBadge: true,
       });
 
       setQrCodeDataUrl(qrUrl);
@@ -368,69 +368,34 @@ export const GeneratePersonalQrModal: React.FC<GeneratePersonalQrModalProps> = (
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>NAGENERATED NA ANG PERSONAL QR CODE!</span>
+                <span>NAGENERATED NA ANG OPISYAL NA PERSONAL QR CODE!</span>
               </div>
 
-              {/* QR Code Canvas Frame */}
-              <div className="p-4 bg-white rounded-2xl shadow-2xl border-4 border-emerald-500/30 flex flex-col items-center">
-                <img src={qrCodeDataUrl} alt="Personal QR Code" className="w-52 h-52 object-contain" />
-                <div className="mt-2 text-center">
-                  <p className="font-mono text-xs font-bold text-slate-900 tracking-wider">
-                    {generatedBene.beneCode}
-                  </p>
-                  <p className="text-[11px] text-slate-600 font-semibold">
-                    {generatedBene.firstName} {generatedBene.lastName}
-                  </p>
-                </div>
-              </div>
+              {/* Ultra Modern Official QR Pass Card */}
+              <OfficialQrPassCard
+                qrCodeUrl={qrCodeDataUrl}
+                payloadUrl={`${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(generatedBene.beneCode)}&id=${encodeURIComponent(generatedBene.id)}&name=${encodeURIComponent(generatedBene.firstName + ' ' + generatedBene.lastName)}&gender=${encodeURIComponent(gender)}&phoneNumber=${encodeURIComponent(phoneNumber)}&department=${encodeURIComponent(generatedBene.assignedCluster)}&address=${encodeURIComponent(address || 'Brgy. ' + generatedBene.barangay)}&barangay=${encodeURIComponent(generatedBene.barangay)}&qrHash=${encodeURIComponent(generatedBene.qrHash)}`}
+                title="PERSONAL ATTENDANCE PASS"
+                subtitle="Official Beneficiary Linis Dingalan Pass"
+                trackingCode={generatedBene.beneCode}
+                beneficiaryName={`${generatedBene.firstName} ${generatedBene.lastName}`}
+                departmentOrCluster={generatedBene.assignedCluster}
+                barangay={generatedBene.barangay}
+                securityHash={generatedBene.qrHash || `LD-SEC-${generatedBene.beneCode.slice(-4)}`}
+                onScanAction={() => {
+                  onScanPersonalQr(generatedBene);
+                  onClose();
+                }}
+                scanActionLabel="Gamitin ang QR Para Magpasa ng Accomplishment"
+              />
 
-              {/* Details Summary */}
-              <div className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-left text-xs space-y-1.5 font-mono">
-                <div className="flex justify-between border-b border-slate-800 pb-1">
-                  <span className="text-slate-400">Department:</span>
-                  <span className="text-emerald-400 font-semibold truncate max-w-[220px]">
-                    {generatedBene.assignedCluster}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-slate-800 pb-1">
-                  <span className="text-slate-400">Pangalan:</span>
-                  <span className="text-slate-200 font-bold">
-                    {generatedBene.firstName} {generatedBene.lastName}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Barangay:</span>
-                  <span className="text-slate-300">Brgy. {generatedBene.barangay}, Dingalan</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="w-full pt-2">
                 <button
-                  onClick={() => {
-                    onScanPersonalQr(generatedBene);
-                    onClose();
-                  }}
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center space-x-2 cursor-pointer hover:scale-[1.02] active:scale-95 col-span-1 sm:col-span-2"
-                >
-                  <Upload className="w-5 h-5 text-slate-950" />
-                  <span>Gamitin ang QR na Ito Para Magpasa ng Accomplishment</span>
-                </button>
-
-                <a
-                  href={qrCodeDataUrl}
-                  download={`Personal_QR_${generatedBene.firstName}_${generatedBene.lastName}.png`}
-                  className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Image</span>
-                </a>
-
-                <button
+                  type="button"
                   onClick={handleReset}
-                  className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
+                  className="w-full py-2.5 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center space-x-2"
                 >
-                  <span>Gumawa ng Bago</span>
+                  <span>Gumawa ng Isa Pang QR Code</span>
                 </button>
               </div>
             </div>

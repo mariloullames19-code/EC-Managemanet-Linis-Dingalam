@@ -1,5 +1,6 @@
 import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, StorageMetrics, UserRole, EventQrBroadcast, AnonymousMessage } from '../types';
 import { generateQrSignature } from '../utils/crypto';
+import { getDingalanNow, formatPhilippineDateTime } from '../utils/philippineClock';
 import { db, auth } from '../firebase';
 import { collection, doc, setDoc, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import {
@@ -692,7 +693,10 @@ export class ApiService {
       const acts = (await this.getActivities()).activities;
       const activity = acts.find(a => a.id === payload.activity_id) || acts[0];
 
-      const now = new Date();
+      const now = getDingalanNow();
+      const dtInfo = formatPhilippineDateTime(now);
+      const localPhTime = `${dtInfo.dayOfWeekTagalog}, ${dtInfo.monthTagalog} ${dtInfo.dayNum}, ${dtInfo.yearNum} • ${dtInfo.exactTimeWithSeconds} PST`;
+
       resultRecord = {
         id: `att-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         activityId: activity?.id || payload.activity_id,
@@ -701,16 +705,7 @@ export class ApiService {
         beneficiaryName: payload.beneficiary_name || `${beneficiary.firstName} ${beneficiary.lastName}`,
         beneficiaryCode: beneficiary.beneCode,
         timestamp: now.toISOString(),
-        localPhTime: new Intl.DateTimeFormat('en-PH', {
-          timeZone: 'Asia/Manila',
-          year: 'numeric',
-          month: 'short',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true,
-        }).format(now) + ' PST',
+        localPhTime,
         latitude: payload.latitude,
         longitude: payload.longitude,
         accuracyMeters: payload.accuracy_meters,

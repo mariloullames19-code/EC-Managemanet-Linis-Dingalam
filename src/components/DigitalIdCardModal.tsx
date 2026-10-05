@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Beneficiary } from '../types';
 import { buildUniversalQrUrl } from '../utils/crypto';
 import QRCode from 'qrcode';
+import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
 import { Printer, Download, X, QrCode as QrIcon, CheckCircle2, ShieldCheck, MapPin, Phone, Camera, Upload } from 'lucide-react';
 
 interface DigitalIdCardModalProps {
@@ -33,14 +34,11 @@ export const DigitalIdCardModal: React.FC<DigitalIdCardModalProps> = ({
       setQrUniversalUrl(url);
 
       try {
-        const qrUrl = await QRCode.toDataURL(url, {
-          width: 300,
-          margin: 1,
-          color: {
-            dark: '#0f172a',
-            light: '#ffffff',
-          },
-          errorCorrectionLevel: 'H',
+        const qrUrl = await generateStyledLguQrDataUrl(url, {
+          width: 380,
+          title: 'LINIS DINGALAN',
+          code: beneficiary.beneCode,
+          includeCenterBadge: true,
         });
         if (isMounted) {
           setQrDataUrl(qrUrl);

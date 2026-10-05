@@ -246,7 +246,7 @@ export async function burnGeotagWatermark(
 ): Promise<GeotagResult> {
   // 1. Resolve GPS Coordinates
   const coords = forcedCoords || await getGpsCoordinates(metadata.barangay);
-  const now = new Date();
+  const now = getDingalanNow();
   const timestampISO = now.toISOString();
   const dtInfo = formatPhilippineDateTime(now);
   const localPhTime = `${dtInfo.dayOfWeekTagalog}, ${dtInfo.monthTagalog} ${dtInfo.dayNum}, ${dtInfo.yearNum} • ${dtInfo.exactTimeWithSeconds} PST`;

@@ -25,6 +25,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import { getDingalanNow } from '../utils/philippineClock';
+import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
+import { OfficialQrPassCard } from './OfficialQrPassCard';
 
 const DINGALAN_BARANGAYS = [
   'Aplaya',
@@ -164,14 +166,11 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
       setQrRawPayload(payloadUrl);
 
       try {
-        const url = await QRCode.toDataURL(payloadUrl, {
-          width: 320,
-          margin: 1,
-          color: {
-            dark: '#022c22',
-            light: '#ffffff',
-          },
-          errorCorrectionLevel: 'H',
+        const url = await generateStyledLguQrDataUrl(payloadUrl, {
+          width: 480,
+          title: 'LINIS DINGALAN',
+          code: `LD-EVT-${barangay.slice(0, 3).toUpperCase()}`,
+          includeCenterBadge: true,
         });
         if (isMounted) {
           setQrDataUrl(url);
@@ -429,72 +428,28 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* LEFT COLUMN: QR CODE CARD & ACTIONS (Span 5) */}
               <div className="lg:col-span-5 space-y-4">
-                <div className="p-5 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/30 border-2 border-emerald-500/50 rounded-2xl text-center space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 tracking-wider">
-                      OFFICIAL EVENT QR CODE
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                      ADMIN GENERATED
-                    </span>
-                  </div>
-
-                  {/* QR Image Canvas */}
-                  <div className="p-3 bg-white rounded-2xl shadow-xl inline-block mx-auto border-2 border-emerald-400/40">
-                    {qrDataUrl ? (
-                      <img
-                        src={qrDataUrl}
-                        alt="Event QR Code"
-                        className="w-52 h-52 sm:w-56 sm:h-56 object-contain mx-auto"
-                      />
-                    ) : (
-                      <div className="w-52 h-52 flex items-center justify-center bg-slate-100 rounded-xl text-xs text-slate-500 animate-pulse">
-                        Generating QR...
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <h5 className="text-sm font-extrabold text-white">
-                      {currentAct?.title || 'Linis Dingalan Event'}
-                    </h5>
-                    <p className="text-xs text-emerald-300 font-mono">
-                      Brgy. {barangay} • {eventDate}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-mono">
-                      SCAN TO UPLOAD ACCOMPLISHMENT PROOF
-                    </p>
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-center space-x-2">
-                    {qrDataUrl && (
-                      <a
-                        href={qrDataUrl}
-                        download={`Linis-Dingalan-QR-${barangay}.png`}
-                        className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center space-x-1.5 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Download QR</span>
-                      </a>
-                    )}
-                    <button
-                      onClick={() => window.print()}
-                      className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer"
-                    >
-                      <Printer className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Print</span>
-                    </button>
-                  </div>
-                </div>
+                <OfficialQrPassCard
+                  qrCodeUrl={qrDataUrl}
+                  payloadUrl={qrRawPayload}
+                  title={activityTitle || currentAct?.title || 'Linis Dingalan Event'}
+                  subtitle={`Admin Broadcast Pass • Brgy. ${barangay}`}
+                  trackingCode={`LD-EVT-${barangay.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`}
+                  departmentOrCluster="PESO & MENRO Operations"
+                  barangay={barangay}
+                  eventDate={eventDate}
+                  timeSlot={`${startTime} - ${estimatedEndTime}`}
+                  isLiveEvent={true}
+                  securityHash={`SEC-EVT-${barangay.toUpperCase()}-2026`}
+                />
 
                 {/* Info Note */}
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 space-y-1">
+                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 space-y-1">
                   <div className="flex items-center space-x-1.5 font-bold text-emerald-400">
                     <ShieldCheck className="w-4 h-4" />
                     <span>Admin Broadcast Security</span>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Tanging ang Admin account lamang ang may kapangyarihang mag-generate ng Event QR code. Kapag pinindot ang <strong>Send</strong> sa ibaba, matatanggap ito ng lahat ng user account.
+                    Tanging ang Admin account lamang ang may kapangyarihang mag-generate ng Event QR code. Kapag pinindot ang <strong>Send to All</strong> sa ibaba, awtomatikong matatanggap ito ng lahat ng users.
                   </p>
                 </div>
               </div>

@@ -342,25 +342,45 @@ export function calculateDingalanRemainingTime(
 import { useState, useEffect } from 'react';
 
 /**
- * React hook to get real-time updating Dingalan, Aurora time
+ * React hook to get real-time updating Dingalan, Aurora authoritative time (PST - UTC+8)
+ * with full breakdown: segundo (seconds), minuto (minutes), oras (hours), date, month, and year.
  */
 export function useDingalanClock() {
-  const [dingalanTime, setDingalanTime] = useState<string>(() => formatDingalanTime());
+  const getClockState = () => {
+    const now = getDingalanNow();
+    const info = formatPhilippineDateTime(now);
+    return {
+      time: formatDingalanTime(now),
+      full: info.fullCombinedTagalog,
+      fullEn: `${info.dayAndDateEnglish} • ${info.exactTimeWithSeconds} PST`,
+      dayOfWeek: info.dayOfWeekTagalog,
+      weekdayEn: info.weekdayEn,
+      month: info.monthTagalog,
+      dayNum: info.dayNum,
+      year: info.yearNum,
+      dateFormatted: `${info.monthTagalog} ${info.dayNum}, ${info.yearNum}`,
+      timeWithSeconds: info.exactTimeWithSeconds,
+      info,
+      now,
+    };
+  };
+
+  const [clockState, setClockState] = useState(getClockState);
 
   useEffect(() => {
     syncDingalanTime().then(() => {
-      setDingalanTime(formatDingalanTime());
+      setClockState(getClockState());
     });
 
     const timer = setInterval(() => {
-      setDingalanTime(formatDingalanTime());
+      setClockState(getClockState());
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
 
   return {
-    time: dingalanTime,
+    ...clockState,
     isSynchronized,
   };
 }

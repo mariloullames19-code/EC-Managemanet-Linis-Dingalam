@@ -59,7 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenGenerateQrModal,
   onOpenEventNoticeModal,
 }) => {
-  const { time: phTime } = useDingalanClock();
+  const clock = useDingalanClock();
+  const phTime = clock.time;
   const isAdminOrSuperAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
 
   const isSuperadmin = currentUser.role === 'superadmin';
@@ -279,11 +280,15 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-2 shrink-0">
           {/* Small Live Clock - Synchronized for Dingalan, Aurora */}
           <div
-            className="hidden lg:flex items-center space-x-1.5 text-[11px] font-mono text-emerald-300 bg-slate-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-full shadow-inner select-none"
-            title="Opisyal na Oras sa Dingalan, Aurora (PST • Philippine Standard Time UTC+8)"
+            className="hidden lg:flex items-center space-x-1.5 text-[11px] font-mono text-emerald-300 bg-slate-950/90 border border-emerald-500/50 px-3 py-1 rounded-full shadow-inner select-none"
+            title="Opisyal at Awtorisadong Oras sa Dingalan, Aurora (Philippine Standard Time UTC+8)"
           >
-            <Clock className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
-            <span className="font-bold">{phTime || 'Loading Dingalan Time...'}</span>
+            <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+            <div className="flex items-center space-x-1.5 font-bold">
+              <span className="text-emerald-400">{clock.dayOfWeek}, {clock.month} {clock.dayNum}, {clock.year}</span>
+              <span className="text-slate-600 font-mono">•</span>
+              <span className="text-white font-mono font-extrabold">{clock.timeWithSeconds}</span>
+            </div>
           </div>
 
           {/* Anonymous Messages Inbox Button (For Admin & Super Admin) */}

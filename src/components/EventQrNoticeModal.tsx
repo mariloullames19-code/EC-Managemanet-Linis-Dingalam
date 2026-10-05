@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { EventQrBroadcast, Activity } from '../types';
 import QRCode from 'qrcode';
+import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
+import { OfficialQrPassCard } from './OfficialQrPassCard';
 import {
   QrCode,
   Wrench,
@@ -142,11 +144,11 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
         } else {
           try {
             const payload = `https://linis-dingalan.aurora.gov.ph/attendance/checkin?act_id=${evt.id}&brgy=${encodeURIComponent(evt.barangay)}&date=${encodeURIComponent(evt.date)}&sig=LD-ADMIN-GEN-${evt.id.slice(-4)}`;
-            const url = await QRCode.toDataURL(payload, {
-              width: 320,
-              margin: 1,
-              color: { dark: '#022c22', light: '#ffffff' },
-              errorCorrectionLevel: 'H',
+            const url = await generateStyledLguQrDataUrl(payload, {
+              width: 480,
+              title: 'LINIS DINGALAN',
+              code: `LD-EVT-${evt.barangay.slice(0, 3).toUpperCase()}`,
+              includeCenterBadge: true,
             });
             if (isMounted) {
               newMap[evt.id] = url;
@@ -345,39 +347,24 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
             {/* LEFT: QR CODE DISPLAY (Span 5) */}
-            <div className="md:col-span-5 bg-slate-950/70 border border-slate-800 rounded-2xl p-5 text-center space-y-3 shadow-md">
-              <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 tracking-wider block">
-                OFFICIAL ATTENDANCE QR CODE
-              </span>
-
+            <div className="md:col-span-5 space-y-4">
               {activeQrCodeUrl ? (
-                <div className="p-3 bg-white rounded-2xl shadow-xl inline-block mx-auto border-2 border-emerald-400/50">
-                  <img
-                    src={activeQrCodeUrl}
-                    alt={`Event QR - ${currentEvent.title}`}
-                    className="w-44 h-44 sm:w-48 sm:h-48 object-contain mx-auto"
-                  />
-                </div>
+                <OfficialQrPassCard
+                  qrCodeUrl={activeQrCodeUrl}
+                  payloadUrl={currentEvent.rawPayload}
+                  title={currentEvent.title}
+                  subtitle={`Linis Dingalan • Brgy. ${currentEvent.barangay}`}
+                  trackingCode={`LD-ACT-${currentEvent.id.slice(-6)}`}
+                  departmentOrCluster="PESO & MENRO Operations"
+                  barangay={currentEvent.barangay}
+                  eventDate={currentEvent.date}
+                  timeSlot={`${currentEvent.startTime} - ${currentEvent.endTime}`}
+                  isLiveEvent={currentEvent.isActive}
+                  securityHash={`LD-AUTH-${currentEvent.id.slice(-4)}`}
+                />
               ) : (
-                <div className="w-44 h-44 flex items-center justify-center bg-slate-900 rounded-2xl mx-auto text-xs text-slate-400">
-                  <QrCode className="w-10 h-10 text-emerald-400" />
-                </div>
-              )}
-
-              <p className="text-[11px] text-slate-300 font-mono">
-                Gamitin ang QR code na ito para sa pag-check-in at pag-upload ng accomplishment photos ng inyong paglilinis.
-              </p>
-
-              {activeQrCodeUrl && (
-                <div className="flex items-center justify-center space-x-2 pt-1">
-                  <a
-                    href={activeQrCodeUrl}
-                    download={`Linis-Dingalan-QR-${currentEvent.barangay}-${currentEvent.date}.png`}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center space-x-1"
-                  >
-                    <Download className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>I-save ang QR</span>
-                  </a>
+                <div className="w-full h-64 flex items-center justify-center bg-slate-900 rounded-3xl border border-slate-800 text-xs text-slate-400">
+                  <QrCode className="w-10 h-10 text-emerald-400 animate-pulse" />
                 </div>
               )}
             </div>
