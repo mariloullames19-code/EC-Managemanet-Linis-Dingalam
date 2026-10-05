@@ -22,6 +22,7 @@ import {
   Trash2,
   Edit3,
   Save,
+  Calendar,
 } from 'lucide-react';
 import { getDingalanNow } from '../utils/philippineClock';
 
@@ -196,6 +197,12 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     if (act) {
       setBarangay(act.barangay);
       setTargetArea(act.targetArea);
+      if (act.date) {
+        setEventDate(act.date);
+      }
+      if (act.callTime) {
+        setStartTime(act.callTime);
+      }
     }
   };
 
@@ -203,6 +210,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     setIsSending(true);
 
     try {
+      const cleanEventDate = eventDate || new Date().toISOString().split('T')[0];
       const broadcast: EventQrBroadcast = {
         id: `broadcast-${Date.now()}`,
         activityId: currentAct?.id || 'act-001',
@@ -211,10 +219,10 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         targetArea,
         qrDataUrl,
         qrPayload: qrRawPayload,
-        eventDate,
-        startTime,
-        estimatedEndTime,
-        totalHours,
+        eventDate: cleanEventDate,
+        startTime: startTime || '06:00 AM',
+        estimatedEndTime: estimatedEndTime || '11:59 PM',
+        totalHours: totalHours || '4 na Oras',
         requiredTools,
         waterTumblerReminder,
         recommendedAttire,
@@ -223,12 +231,26 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         sentAt: new Date().toISOString(),
       };
 
+      // 1. Immediately store in localStorage & BroadcastChannel for 0ms lag
+      try {
+        localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(broadcast));
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+          const bc = new BroadcastChannel('ld_sync');
+          bc.postMessage({ type: 'NEW_BROADCAST', broadcast });
+          bc.close();
+        }
+      } catch {}
+
+      // 2. Notify parent immediately so all views update
       onBroadcastSuccess(broadcast);
       setIsSuccessSent(true);
-      // Immediately refresh history list
-      api.getAllEventBroadcasts().then((res) => {
-        setBroadcastHistory(res);
-      });
+
+      // 3. Persist to API and Firestore
+      await api.broadcastEventQr(broadcast);
+
+      // 4. Immediately refresh history list
+      const res = await api.getAllEventBroadcasts();
+      setBroadcastHistory(res);
     } catch (err) {
       console.error('Broadcast failed', err);
     } finally {
@@ -542,7 +564,20 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                 </div>
 
                 {/* 3. Schedule, Time & Total Hours */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Petsa ng Event:</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-mono"
+                    />
+                  </div>
+
                   <div className="space-y-1">
                     <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1">
                       <Clock className="w-3.5 h-3.5 text-cyan-400" />
@@ -566,7 +601,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       type="text"
                       value={estimatedEndTime}
                       onChange={(e) => setEstimatedEndTime(e.target.value)}
-                      placeholder="10:00 AM"
+                      placeholder="11:59 PM"
                       className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none font-mono"
                     />
                   </div>

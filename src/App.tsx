@@ -108,7 +108,20 @@ export default function App() {
   const [isManualAccomplishmentModalOpen, setIsManualAccomplishmentModalOpen] = useState<boolean>(false);
   const [isGenerateQrModalOpen, setIsGenerateQrModalOpen] = useState<boolean>(false);
   const [isEventQrNoticeModalOpen, setIsEventQrNoticeModalOpen] = useState<boolean>(false);
-  const [latestEventBroadcast, setLatestEventBroadcast] = useState<EventQrBroadcast | null>(null);
+  const [latestEventBroadcast, setLatestEventBroadcast] = useState<EventQrBroadcast | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const direct = localStorage.getItem('ld_latest_event_broadcast');
+        if (direct) return JSON.parse(direct);
+        const raw = localStorage.getItem('ld_event_broadcasts_v1');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (list && list.length > 0) return list[0];
+        }
+      } catch {}
+    }
+    return null;
+  });
 
   // Core Data State
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
@@ -132,6 +145,13 @@ export default function App() {
 
   // Load Initial Data
   const loadAllData = async () => {
+    // 1. Fetch latest broadcast immediately for lightning-fast Login Page display
+    api.getLatestEventBroadcast().then((latestBroadcast) => {
+      if (latestBroadcast && latestBroadcast.id) {
+        setLatestEventBroadcast(latestBroadcast);
+      }
+    }).catch(() => {});
+
     try {
       // Sync initial data to Firestore so collections populate in Firebase Console
       api.seedFirestoreIfEmpty().catch(() => {});
@@ -153,11 +173,6 @@ export default function App() {
 
       const metrics = await api.getStorageMetrics();
       setStorageMetrics(metrics);
-
-      const latestBroadcast = await api.getLatestEventBroadcast();
-      if (latestBroadcast) {
-        setLatestEventBroadcast(latestBroadcast);
-      }
     } catch (err) {
       console.error('Error loading data:', err);
     }
@@ -376,8 +391,9 @@ export default function App() {
       setLatestEventBroadcast(latest && latest.id ? latest : null);
       return;
     }
-    await api.broadcastEventQr(broadcast);
+    // Instantly reflect the new broadcast in UI state
     setLatestEventBroadcast(broadcast);
+    api.broadcastEventQr(broadcast).catch(() => {});
 
     // Upsert activity into state so that all modals and views immediately update with the new broadcast details
     setActivities((prev) => {

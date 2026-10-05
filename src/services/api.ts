@@ -955,18 +955,17 @@ export class ApiService {
 
   // --- EVENT QR BROADCASTS & REMINDERS (ADMIN GENERATED) ---
   async broadcastEventQr(broadcast: EventQrBroadcast): Promise<{ success: boolean; broadcast: EventQrBroadcast }> {
+    // 1. Immediately save to LocalStorage (both single latest key and history list)
     try {
-      await setDoc(doc(db, 'broadcasts', broadcast.id), broadcast);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
-    }
+      localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(broadcast));
+      const raw = localStorage.getItem('ld_event_broadcasts_v1');
+      const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
+      const filtered = list.filter((b) => b.id !== broadcast.id);
+      filtered.unshift(broadcast);
+      localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(filtered));
+    } catch {}
 
-    const raw = localStorage.getItem('ld_event_broadcasts_v1');
-    const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
-    list.unshift(broadcast);
-    localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(list));
-
-    // Cross-tab/window Broadcast synchronization
+    // 2. Immediately sync across windows/tabs via BroadcastChannel
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const bc = new BroadcastChannel('ld_sync');
@@ -975,24 +974,78 @@ export class ApiService {
       }
     } catch {}
 
+    // 3. Post to Server API (asynchronous fallback)
+    try {
+      fetch('/api/broadcasts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(broadcast),
+      }).catch(() => {});
+    } catch {}
+
+    // 4. Write to Firestore (resilient write)
+    try {
+      setDoc(doc(db, 'broadcasts', broadcast.id), broadcast).catch((err) => {
+        handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
+    }
+
     return { success: true, broadcast };
   }
 
   async getLatestEventBroadcast(): Promise<EventQrBroadcast> {
+    // 1. Check LocalStorage first for instant responsive UI without network latency
+    let localCandidate: EventQrBroadcast | null = null;
+    try {
+      const direct = localStorage.getItem('ld_latest_event_broadcast');
+      if (direct) {
+        localCandidate = JSON.parse(direct);
+      } else {
+        const raw = localStorage.getItem('ld_event_broadcasts_v1');
+        if (raw) {
+          const list: EventQrBroadcast[] = JSON.parse(raw);
+          if (list.length > 0) localCandidate = list[0];
+        }
+      }
+    } catch {}
+
+    // 2. Try Server API in background or if needed
+    try {
+      const res = await fetch('/api/broadcasts/latest');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.broadcast && data.broadcast.id) {
+          // If server broadcast is newer or equal, use it; otherwise preserve recent local broadcast
+          if (!localCandidate || new Date(data.broadcast.sentAt || 0).getTime() >= new Date(localCandidate.sentAt || 0).getTime()) {
+            localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(data.broadcast));
+            return data.broadcast;
+          }
+        }
+      }
+    } catch {}
+
+    if (localCandidate && localCandidate.id) {
+      return localCandidate;
+    }
+
+    // 3. Try Firestore
     try {
       const snap = await getDocs(collection(db, 'broadcasts'));
       if (!snap.empty) {
         const docs = snap.docs.map(d => d.data() as EventQrBroadcast);
         docs.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
-        if (docs.length > 0) return docs[0];
+        if (docs.length > 0) {
+          localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(docs[0]));
+          return docs[0];
+        }
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.GET, 'broadcasts');
     }
 
-    const raw = localStorage.getItem('ld_event_broadcasts_v1');
-    const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
-    return list[0] || INITIAL_EVENT_BROADCAST;
+    return INITIAL_EVENT_BROADCAST;
   }
 
   async getAllEventBroadcasts(): Promise<EventQrBroadcast[]> {
@@ -1012,12 +1065,7 @@ export class ApiService {
   }
 
   async updateEventBroadcast(updated: EventQrBroadcast): Promise<{ success: boolean; broadcast: EventQrBroadcast }> {
-    try {
-      await setDoc(doc(db, 'broadcasts', updated.id), updated);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
-    }
-
+    // 1. Immediately persist to localStorage
     const raw = localStorage.getItem('ld_event_broadcasts_v1');
     const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
     const index = list.findIndex(b => b.id === updated.id);
@@ -1027,13 +1075,31 @@ export class ApiService {
       list.unshift(updated);
     }
     localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(list));
+    localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(updated));
 
+    // 2. BroadcastChannel
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
         const bc = new BroadcastChannel('ld_sync');
         bc.postMessage({ type: 'NEW_BROADCAST', broadcast: updated });
         bc.close();
       } catch {}
+    }
+
+    // 3. Server API
+    try {
+      fetch('/api/broadcasts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      }).catch(() => {});
+    } catch {}
+
+    // 4. Firestore
+    try {
+      await setDoc(doc(db, 'broadcasts', updated.id), updated);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
     }
 
     return { success: true, broadcast: updated };
@@ -1051,11 +1117,19 @@ export class ApiService {
       const list: EventQrBroadcast[] = JSON.parse(raw);
       const filtered = list.filter(b => b.id !== id);
       localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(filtered));
+      if (filtered.length > 0) {
+        localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(filtered[0]));
+      } else {
+        localStorage.removeItem('ld_latest_event_broadcast');
+      }
     }
     return { success: true };
   }
 
   async clearAllEventBroadcasts(): Promise<{ success: boolean }> {
+    try {
+      fetch('/api/broadcasts', { method: 'DELETE' }).catch(() => {});
+    } catch {}
     try {
       const snap = await getDocs(collection(db, 'broadcasts'));
       const batchPromises = snap.docs.map(d => deleteDoc(d.ref));
@@ -1063,8 +1137,8 @@ export class ApiService {
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
     }
-
     localStorage.removeItem('ld_event_broadcasts_v1');
+    localStorage.removeItem('ld_latest_event_broadcast');
     return { success: true };
   }
 }

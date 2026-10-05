@@ -10,8 +10,9 @@ import {
   INITIAL_ATTENDANCES,
   INITIAL_AUDIT_LOGS,
   INITIAL_STORAGE_METRICS,
+  INITIAL_EVENT_BROADCAST,
 } from './src/data/seedData';
-import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, UserRole } from './src/types';
+import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, UserRole, EventQrBroadcast } from './src/types';
 
 // In-Memory Database Store with Server Persistence
 let users: User[] = [...INITIAL_USERS];
@@ -21,6 +22,8 @@ let assignments: ActivityAssignment[] = [...INITIAL_ASSIGNMENTS];
 let attendances: AttendanceRecord[] = [...INITIAL_ATTENDANCES];
 let auditLogs: AuditLog[] = [...INITIAL_AUDIT_LOGS];
 let storageMetrics = { ...INITIAL_STORAGE_METRICS };
+let latestBroadcast: EventQrBroadcast | null = { ...INITIAL_EVENT_BROADCAST };
+let broadcastHistory: EventQrBroadcast[] = [{ ...INITIAL_EVENT_BROADCAST }];
 
 const HMAC_SECRET = 'LINIS-DINGALAN-LGU-AURORA-SEC-KEY-2025-V1';
 
@@ -649,6 +652,32 @@ async function startServer() {
       message: `Awtomatikong nabura ang ${prunedCount} records na lagpas na sa 1 buwan (30 araw).`,
       prunedCount
     });
+  });
+
+  // ----------------------------------------------------------------------------
+  // BROADCASTS & EVENT REMINDERS (PAALALA) API
+  // ----------------------------------------------------------------------------
+  app.get('/api/broadcasts/latest', (req: Request, res: Response) => {
+    res.json({ broadcast: latestBroadcast });
+  });
+
+  app.get('/api/broadcasts', (req: Request, res: Response) => {
+    res.json({ broadcasts: broadcastHistory });
+  });
+
+  app.post('/api/broadcasts', (req: Request, res: Response) => {
+    const broadcast = req.body as EventQrBroadcast;
+    if (broadcast && broadcast.id) {
+      latestBroadcast = broadcast;
+      broadcastHistory = [broadcast, ...broadcastHistory.filter(b => b.id !== broadcast.id)];
+    }
+    res.json({ success: true, broadcast: latestBroadcast });
+  });
+
+  app.delete('/api/broadcasts', (req: Request, res: Response) => {
+    latestBroadcast = null;
+    broadcastHistory = [];
+    res.json({ success: true, message: 'All broadcasts cleared.' });
   });
 
   // ----------------------------------------------------------------------------
