@@ -487,11 +487,14 @@ async function startServer() {
     // 5. Update or Create Attendance Record
     const duplicate = attendances.find(att => att.activityId === activity.id && att.beneficiaryId === beneficiary.id);
     if (duplicate) {
+      if (req.body.beneficiary_name) duplicate.beneficiaryName = req.body.beneficiary_name;
+      if (location_description) duplicate.locationDescription = location_description;
       duplicate.accomplishmentPhotos = Array.isArray(accomplishment_photos) && accomplishment_photos.length > 0
         ? accomplishment_photos
         : [photo_watermarked];
       duplicate.photoWatermarkedUrl = photo_watermarked;
       duplicate.accomplishmentNotes = accomplishment_notes || notes || duplicate.accomplishmentNotes;
+      duplicate.notes = notes || accomplishment_notes || duplicate.notes;
       duplicate.timestamp = new Date().toISOString();
       duplicate.localPhTime = new Intl.DateTimeFormat('en-PH', {
         timeZone: 'Asia/Manila',
@@ -545,9 +548,9 @@ async function startServer() {
     const newRecord: AttendanceRecord = {
       id: `att-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       activityId: activity.id,
-      activityTitle: activity.title,
+      activityTitle: req.body.activity_title || activity.title,
       beneficiaryId: beneficiary.id,
-      beneficiaryName: `${beneficiary.firstName} ${beneficiary.lastName}`,
+      beneficiaryName: req.body.beneficiary_name || `${beneficiary.firstName} ${beneficiary.lastName}`,
       beneficiaryCode: beneficiary.beneCode,
       timestamp: now.toISOString(),
       localPhTime,
@@ -566,7 +569,7 @@ async function startServer() {
       complianceStatus: 'verified',
       verifiedByOfficerId: user.id,
       verifiedByOfficerName: user.name,
-      notes: notes || 'Verified with on-site geotag photograph.',
+      notes: notes || accomplishment_notes || 'Verified with on-site geotag photograph.',
     };
 
     attendances.unshift(newRecord);
@@ -598,13 +601,54 @@ async function startServer() {
     });
   });
 
-  // Attendances List
+  // ----------------------------------------------------------------------------
+  // ATTENDANCES: AUTO-PRUNE (30 DAYS / 1 MONTH) & PERMANENT DELETE ALL
+  // ----------------------------------------------------------------------------
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+  function pruneAttendancesOlderThan30Days(): number {
+    const now = Date.now();
+    const beforeCount = attendances.length;
+    attendances = attendances.filter(att => {
+      const ts = new Date(att.timestamp).getTime();
+      return !isNaN(ts) && (now - ts) <= THIRTY_DAYS_MS;
+    });
+    return beforeCount - attendances.length;
+  }
+
+  // Attendances List (With Automatic 30-Day Auto-Prune)
   app.get('/api/attendances', (req: Request, res: Response) => {
+    pruneAttendancesOlderThan30Days();
     const { activity_id } = req.query;
     if (activity_id) {
       return res.json({ attendances: attendances.filter(a => a.activityId === activity_id) });
     }
     res.json({ attendances });
+  });
+
+  // Delete All Attendance Records (Permanent Delete as requested)
+  app.delete('/api/attendances', (req: Request, res: Response) => {
+    const deletedCount = attendances.length;
+    attendances = [];
+    storageMetrics.totalPhotos = 0;
+    storageMetrics.totalStorageBytes = 0;
+    storageMetrics.averagePhotoSizeBytes = 0;
+
+    res.json({
+      success: true,
+      message: `Matagumpay na permanenteng nabura ang lahat ng ${deletedCount} attendance records.`,
+      deletedCount
+    });
+  });
+
+  // Explicit Trigger for 30-Day Auto-Prune
+  app.post('/api/attendances/prune-monthly', (req: Request, res: Response) => {
+    const prunedCount = pruneAttendancesOlderThan30Days();
+    res.json({
+      success: true,
+      message: `Awtomatikong nabura ang ${prunedCount} records na lagpas na sa 1 buwan (30 araw).`,
+      prunedCount
+    });
   });
 
   // ----------------------------------------------------------------------------

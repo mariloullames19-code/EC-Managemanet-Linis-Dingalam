@@ -472,57 +472,6 @@ export const ManualAccomplishmentModal: React.FC<ManualAccomplishmentModalProps>
                 </div>
               </div>
 
-              {/* ========================================================================= */}
-              {/* REALTIME GPS BAR WITH LIVE SENSOR DETECTION & AREA LOCATOR */}
-              {/* ========================================================================= */}
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-950 via-emerald-950/30 to-slate-950 border border-emerald-500/40 text-xs font-mono text-slate-200 space-y-2 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="font-bold text-emerald-300">
-                      🟢 LIVE REALTIME GPS ACTIVE (±{gpsCoords?.accuracy || 4}m)
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={refreshGps}
-                    disabled={gpsLoading}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 font-bold border border-slate-700 flex items-center space-x-1 cursor-pointer"
-                  >
-                    <RefreshCw className={`w-3 h-3 text-emerald-400 ${gpsLoading ? 'animate-spin' : ''}`} />
-                    <span>I-Refresh ang GPS</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  <div className="p-2 rounded-xl bg-slate-900/80 border border-slate-800/90 flex items-center space-x-2">
-                    <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">GPS Coordinates:</span>
-                      <span className="text-white font-bold truncate block">
-                        {gpsCoords ? `${gpsCoords.latitude.toFixed(4)}°N, ${gpsCoords.longitude.toFixed(4)}°E` : (gpsLoading ? 'Kinukuha ang sensor...' : '15.3879°N, 121.3964°E')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-900/80 border border-slate-800/90 flex items-center space-x-2">
-                    <Compass className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Realtime Detected Area:</span>
-                      <span className="text-cyan-300 font-bold truncate block">
-                        {realtimeDetectedArea}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5 border-t border-slate-800/60">
-                  <span>Awtomatikong bina-burn sa watermark ng bawat litrato ang realtime coordinates at lugar.</span>
-                  <span className="text-emerald-400 font-bold uppercase">Auto-Watermarked</span>
-                </div>
-              </div>
-
               {/* 3. Upload Accomplishment Pictures: Kahit Ilang Picture */}
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">

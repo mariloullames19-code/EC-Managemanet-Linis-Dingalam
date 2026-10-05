@@ -252,10 +252,18 @@ export default function App() {
       unsubscribe = onSnapshot(
         collection(db, 'attendances'),
         (snapshot) => {
-          if (!snapshot.empty) {
+          if (snapshot.empty) {
+            setAttendances([]);
+          } else {
+            const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+            const cutoff = Date.now() - THIRTY_DAYS_MS;
             const list: AttendanceRecord[] = [];
             snapshot.forEach((docSnap) => {
-              list.push(docSnap.data() as AttendanceRecord);
+              const item = docSnap.data() as AttendanceRecord;
+              const time = new Date(item.timestamp).getTime();
+              if (isNaN(time) || time >= cutoff) {
+                list.push(item);
+              }
             });
             list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             setAttendances((prev) => {
@@ -287,7 +295,7 @@ export default function App() {
     const interval = setInterval(async () => {
       try {
         const latest = await api.getAttendances();
-        if (latest && latest.length > 0) {
+        if (latest) {
           setAttendances((prev) => {
             if (latest.length > prev.length) {
               const newest = latest[0];
@@ -295,6 +303,8 @@ export default function App() {
                 showToast(`Bagong Accomplishment Attendance mula sa Mobile: ${newest.beneficiaryName}!`, 'success');
               }
               return latest;
+            } else if (latest.length === 0 && prev.length > 0) {
+              return [];
             }
             return prev;
           });
@@ -314,6 +324,10 @@ export default function App() {
           const newAtt = event.data.attendance as AttendanceRecord;
           setAttendances((prev) => [newAtt, ...prev.filter((a) => a.id !== newAtt.id)]);
           showToast(`Bagong Accomplishment Attendance: ${newAtt.beneficiaryName}!`, 'success');
+        }
+        if (event.data?.type === 'CLEAR_ATTENDANCES') {
+          setAttendances([]);
+          showToast('Nabura ang lahat ng accomplishment attendance records.', 'info');
         }
         if (event.data?.type === 'NEW_BROADCAST' && event.data.broadcast) {
           const newBc = event.data.broadcast as EventQrBroadcast;
@@ -530,6 +544,29 @@ export default function App() {
 
     showToast('Geotagged compliance photograph verified & recorded!', 'success');
     return result;
+  };
+
+  // Permanent Delete All Accomplishment Attendance Records Handler
+  const handleDeleteAllAttendances = async () => {
+    try {
+      const res = await api.deleteAllAttendances();
+      setAttendances([]);
+      showToast(res.message || 'Lahat ng Accomplishment Attendance records ay matagumpay na permanenteng nabura!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Nagka-error sa pagbura ng records.', 'error');
+    }
+  };
+
+  // Auto-prune records older than 1 month (30 days)
+  const handleAutoPruneMonthlyAttendances = async () => {
+    try {
+      const pruned = await api.autoPruneMonthlyAttendances();
+      if (pruned > 0) {
+        const fresh = await api.getAttendances();
+        setAttendances(fresh);
+        showToast(`Awtomatikong nabura ang ${pruned} lumang tala na lagpas na sa 1 buwan (30 araw).`, 'info');
+      }
+    } catch {}
   };
 
   // Prune Photos Handler
@@ -928,6 +965,8 @@ export default function App() {
           onClose={() => setIsAccomplishmentModalOpen(false)}
           attendances={attendances}
           currentUser={currentUser}
+          onDeleteAll={handleDeleteAllAttendances}
+          onAutoPruneStale={handleAutoPruneMonthlyAttendances}
         />
 
         {/* Scan QR Modal (User Account Scans Admin QR Code) */}

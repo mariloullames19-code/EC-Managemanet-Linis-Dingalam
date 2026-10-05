@@ -18,6 +18,8 @@ import {
   Eye,
   FileText,
   Filter,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface AccomplishmentAttendanceModalProps {
@@ -25,6 +27,8 @@ interface AccomplishmentAttendanceModalProps {
   onClose: () => void;
   attendances: AttendanceRecord[];
   currentUser: User;
+  onDeleteAll?: () => Promise<void> | void;
+  onAutoPruneStale?: () => Promise<void> | void;
 }
 
 export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceModalProps> = ({
@@ -32,6 +36,8 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
   onClose,
   attendances,
   currentUser,
+  onDeleteAll,
+  onAutoPruneStale,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBarangay, setSelectedBarangay] = useState<string>('all');
@@ -48,6 +54,29 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
     photoIndex: number;
     totalPhotos: number;
   } | null>(null);
+
+  // Delete All State
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  // Trigger auto-prune of records older than 1 month (30 days) when modal is opened
+  useEffect(() => {
+    if (isOpen && onAutoPruneStale) {
+      onAutoPruneStale();
+    }
+  }, [isOpen]);
+
+  const handleExecuteDeleteAll = async () => {
+    if (!onDeleteAll) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteAll();
+      setIsConfirmDeleteOpen(false);
+      setSelectedRecordForPhotos(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Reset to page 1 whenever filters change
   useEffect(() => {
@@ -109,7 +138,7 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
               <Images className="w-6 h-6 text-slate-950" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
                   Admin Accomplishment Portal
                 </span>
@@ -119,8 +148,12 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                   {totalPhotosCount} Pictures
                 </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-1 shadow-sm">
+                  <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span>Awtomatikong nabubura matapos ang 1 buwan (30 araw)</span>
+                </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5">
                 Accomplishment Attendance Records
               </h2>
               <p className="text-xs text-slate-400">
@@ -129,7 +162,21 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 self-end sm:self-center">
+          <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
+            {/* Delete All Button as requested */}
+            {onDeleteAll && (
+              <button
+                type="button"
+                onClick={() => setIsConfirmDeleteOpen(true)}
+                disabled={attendances.length === 0 || isDeleting}
+                className="px-3.5 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/70 text-rose-200 hover:text-white font-mono text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(244,63,94,0.4)]"
+                title="Permanenteng burahin ang lahat ng Accomplishment Attendance records"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Burahin Lahat (Delete All)</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => window.print()}
@@ -435,26 +482,44 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
 
             {/* Details & Photos Content */}
             <div className="p-6 overflow-y-auto space-y-4 text-left">
-              {/* Event & Timestamp Metadata */}
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2 font-mono text-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-slate-300">
-                  <div className="flex items-center gap-1.5 font-bold text-white text-sm">
-                    <Sparkles className="w-4 h-4 text-emerald-400" />
-                    <span>{selectedRecordForPhotos.activityTitle}</span>
+              {/* Event & Submitted Data Summary (Matches 4-field structure from upload modal) */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-emerald-500/30 space-y-3 font-mono text-xs shadow-inner">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Field 1: Attendee Name & Badge */}
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                      1. Pangalan ng Attendee (Full Name):
+                    </span>
+                    <div className="text-white font-black text-sm flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{selectedRecordForPhotos.beneficiaryName}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        {selectedRecordForPhotos.beneficiaryCode}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-cyan-300 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/30">
-                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Oras Naipasa: <strong>{selectedRecordForPhotos.localPhTime}</strong></span>
+
+                  {/* Field 2: Cleaned Area */}
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                      2. Lugar kung Saang Area Nakapaglinis:
+                    </span>
+                    <div className="text-emerald-300 font-bold text-xs flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="leading-snug">{selectedRecordForPhotos.locationDescription}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-400 text-[11px] pt-1 border-t border-slate-900">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{selectedRecordForPhotos.locationDescription}</span>
-                  </span>
-                  <span>•</span>
-                  <span>Verified by: <strong className="text-white">{selectedRecordForPhotos.verifiedByOfficerName}</strong></span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-[11px] text-slate-300">
+                  <div className="flex items-center gap-1.5 text-slate-200">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Gawain: <strong className="text-white">{selectedRecordForPhotos.activityTitle}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-cyan-300 bg-cyan-950/50 px-2.5 py-1 rounded-lg border border-cyan-500/30 font-bold">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Oras Naipasa: {selectedRecordForPhotos.localPhTime}</span>
+                  </div>
                 </div>
               </div>
 
@@ -463,7 +528,7 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
                     <Images className="w-4 h-4 text-emerald-400" />
-                    <span>Mga Sinend na Accomplishment Pictures ({getRecordPhotos(selectedRecordForPhotos).length} na Larawan):</span>
+                    <span>3. Mga Sinend na Accomplishment Pictures ({getRecordPhotos(selectedRecordForPhotos).length} na Larawan):</span>
                   </h4>
                   <span className="text-[10px] font-mono text-slate-400">Pindutin ang picture para palakihin (fullscreen)</span>
                 </div>
@@ -507,14 +572,14 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                 )}
               </div>
 
-              {/* Ulat ng Paglilinis / Accomplishment Notes */}
+              {/* Field 4: Ulat sa Ginawang Paglilinis / Accomplishment Notes */}
               {(selectedRecordForPhotos.accomplishmentNotes || selectedRecordForPhotos.notes) && (
-                <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-1">
+                <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-1.5">
                   <div className="flex items-center gap-1.5 font-bold text-emerald-400 font-mono text-[11px] uppercase">
                     <FileText className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Ulat ng Paglilinis / Accomplishment Notes:</span>
+                    <span>4. Ulat sa Ginawang Paglilinis (Cleanup Accomplishment Notes):</span>
                   </div>
-                  <p className="leading-relaxed">
+                  <p className="leading-relaxed text-white/90 pl-5 font-sans">
                     {selectedRecordForPhotos.accomplishmentNotes || selectedRecordForPhotos.notes}
                   </p>
                 </div>
@@ -576,6 +641,65 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                 <span>{activePhotoLightbox.record.localPhTime}</span>
                 <span>{activePhotoLightbox.record.locationDescription}</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* CONFIRM PERMANENT DELETE ALL MODAL                                        */}
+      {/* ========================================================================= */}
+      {isConfirmDeleteOpen && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-900 border-2 border-rose-500/70 rounded-3xl p-6 text-center space-y-4 shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(244,63,94,0.3)] animate-scaleIn">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-500/20 border-2 border-rose-400 flex items-center justify-center text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.4)]">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2 text-left">
+              <h3 className="text-lg font-black text-white text-center">
+                Permanenteng Pagbura ng Lahat ng Records
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed text-center">
+                Sigurado ka bang nais mong permanenteng burahin ang lahat ng <strong>{attendances.length}</strong> accomplishment attendance records at ang mga larawan nito?
+              </p>
+              <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-500/50 text-[11px] font-mono text-rose-300 space-y-1">
+                <p className="font-bold flex items-center gap-1.5 text-rose-200">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>Babala: Hindi na maibabalik ang datos (Permanent)</span>
+                </p>
+                <p className="text-slate-300 text-[10px] leading-normal font-sans">
+                  Permanenteng mawawala ang lahat ng accomplishment photo proofs, geolocation logs, at attendance history mula sa server at database.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1 font-mono">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setIsConfirmDeleteOpen(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer"
+              >
+                Kanselahin
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleExecuteDeleteAll}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-black shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Binubura...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Oo, Burahin Lahat</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

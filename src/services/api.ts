@@ -695,9 +695,9 @@ export class ApiService {
       resultRecord = {
         id: `att-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         activityId: activity?.id || payload.activity_id,
-        activityTitle: activity?.title || 'Linis Dingalan Cleanup',
+        activityTitle: (payload as any).activity_title || activity?.title || 'Linis Dingalan Cleanup',
         beneficiaryId: beneficiary.id,
-        beneficiaryName: `${beneficiary.firstName} ${beneficiary.lastName}`,
+        beneficiaryName: payload.beneficiary_name || `${beneficiary.firstName} ${beneficiary.lastName}`,
         beneficiaryCode: beneficiary.beneCode,
         timestamp: now.toISOString(),
         localPhTime: now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }) + ' PST',
@@ -716,7 +716,7 @@ export class ApiService {
         complianceStatus: 'verified',
         verifiedByOfficerId: this.currentUser.id,
         verifiedByOfficerName: this.currentUser.name,
-        notes: payload.notes || 'Recorded on-site via field mobile terminal.',
+        notes: payload.notes || payload.accomplishment_notes || 'Recorded on-site via field mobile terminal.',
       };
 
       const updated = [resultRecord, ...attendances.filter(a => a.id !== resultRecord!.id)];
@@ -746,15 +746,117 @@ export class ApiService {
     };
   }
 
+  // --- ATTENDANCE MANAGEMENT: DELETE ALL & 30-DAY AUTO-PRUNE ---
+  async deleteAllAttendances(): Promise<{ success: boolean; message: string }> {
+    // 1. Delete on server API
+    try {
+      await fetch('/api/attendances', {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      });
+    } catch (e) {
+      console.warn('Server delete attendances warning:', e);
+    }
+
+    // 2. Delete all records from Firestore
+    try {
+      const snap = await getDocs(collection(db, 'attendances'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((docSnap) => {
+        deletePromises.push(deleteDoc(doc(db, 'attendances', docSnap.id)));
+      });
+      if (deletePromises.length > 0) {
+        await Promise.all(deletePromises);
+      }
+    } catch (fsErr) {
+      console.warn('Firestore deleteAll error:', fsErr);
+    }
+
+    // 3. Clear LocalStorage
+    localStorage.setItem(LS_ATTENDANCES, JSON.stringify([]));
+
+    // 4. Broadcast to other tabs/windows
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'CLEAR_ATTENDANCES' });
+        bc.close();
+      }
+    } catch {}
+
+    return {
+      success: true,
+      message: 'Matagumpay na permanenteng nabura ang lahat ng accomplishment attendance records.',
+    };
+  }
+
+  // Automatic 1-Month (30 Days) Retention Purge
+  async autoPruneMonthlyAttendances(): Promise<number> {
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    let prunedCount = 0;
+
+    // Trigger server prune endpoint
+    try {
+      fetch('/api/attendances/prune-monthly', {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+      }).catch(() => {});
+    } catch {}
+
+    // Prune Firestore records older than 30 days
+    try {
+      const snap = await getDocs(collection(db, 'attendances'));
+      const deletePromises: Promise<void>[] = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data?.timestamp) {
+          const time = new Date(data.timestamp).getTime();
+          if (!isNaN(time) && time < cutoff) {
+            deletePromises.push(deleteDoc(doc(db, 'attendances', docSnap.id)));
+            prunedCount++;
+          }
+        }
+      });
+      if (deletePromises.length > 0) {
+        await Promise.all(deletePromises);
+      }
+    } catch (fsErr) {
+      console.warn('Firestore autoPrune error:', fsErr);
+    }
+
+    // Prune LocalStorage
+    try {
+      const raw = localStorage.getItem(LS_ATTENDANCES);
+      if (raw) {
+        const list: AttendanceRecord[] = JSON.parse(raw);
+        const filtered = list.filter((a) => {
+          const time = new Date(a.timestamp).getTime();
+          return !isNaN(time) && time >= cutoff;
+        });
+        localStorage.setItem(LS_ATTENDANCES, JSON.stringify(filtered));
+      }
+    } catch {}
+
+    return prunedCount;
+  }
+
   async getAttendances(activityId?: string): Promise<AttendanceRecord[]> {
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+
     try {
       const url = activityId ? `/api/attendances?activity_id=${activityId}` : '/api/attendances';
       const res = await fetch(url, { headers: this.getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.attendances) && data.attendances.length > 0) {
-          localStorage.setItem(LS_ATTENDANCES, JSON.stringify(data.attendances));
-          return data.attendances;
+        if (Array.isArray(data.attendances)) {
+          const valid = data.attendances.filter((a: AttendanceRecord) => {
+            const time = new Date(a.timestamp).getTime();
+            return isNaN(time) || time >= cutoff;
+          });
+          localStorage.setItem(LS_ATTENDANCES, JSON.stringify(valid));
+          return valid;
         }
       }
     } catch {
@@ -766,7 +868,13 @@ export class ApiService {
       const snap = await getDocs(collection(db, 'attendances'));
       if (!snap.empty) {
         const list: AttendanceRecord[] = [];
-        snap.forEach(docSnap => list.push(docSnap.data() as AttendanceRecord));
+        snap.forEach(docSnap => {
+          const record = docSnap.data() as AttendanceRecord;
+          const time = new Date(record.timestamp).getTime();
+          if (isNaN(time) || time >= cutoff) {
+            list.push(record);
+          }
+        });
         if (list.length > 0) {
           list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
           localStorage.setItem(LS_ATTENDANCES, JSON.stringify(list));
@@ -777,7 +885,11 @@ export class ApiService {
 
     const raw = localStorage.getItem(LS_ATTENDANCES);
     const list: AttendanceRecord[] = raw ? JSON.parse(raw) : INITIAL_ATTENDANCES;
-    return activityId ? list.filter(a => a.activityId === activityId) : list;
+    const validList = list.filter((a) => {
+      const time = new Date(a.timestamp).getTime();
+      return isNaN(time) || time >= cutoff;
+    });
+    return activityId ? validList.filter(a => a.activityId === activityId) : validList;
   }
 
   // --- RESTRICTED AUDIT TRAIL (SUPERADMIN ONLY) ---
