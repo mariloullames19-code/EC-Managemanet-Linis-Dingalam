@@ -25,8 +25,6 @@ import {
   Calendar,
 } from 'lucide-react';
 import { getDingalanNow } from '../utils/philippineClock';
-import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
-import { OfficialQrPassCard } from './OfficialQrPassCard';
 
 const DINGALAN_BARANGAYS = [
   'Aplaya',
@@ -134,7 +132,10 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       api.getAllEventBroadcasts().then((res) => {
-        setBroadcastHistory(res);
+        setBroadcastHistory(Array.isArray(res) ? res : []);
+      }).catch((err) => {
+        console.warn('Failed to load broadcasts history:', err);
+        setBroadcastHistory([]);
       });
     }
   }, [isOpen]);
@@ -143,7 +144,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setIsSuccessSent(false);
-      const defaultAct = activities.find((a) => a.status === 'ongoing') || activities[0];
+      const safeActs = Array.isArray(activities) ? activities : [];
+      const defaultAct = safeActs.find((a) => a.status === 'ongoing') || safeActs[0];
       if (defaultAct) {
         setSelectedActivityId(defaultAct.id);
         setActivityTitle(defaultAct.title);
@@ -159,18 +161,22 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
     let isMounted = true;
     async function makeQr() {
-      const selectedAct = activities.find((a) => a.id === selectedActivityId) || activities[0];
+      const safeActs = Array.isArray(activities) ? activities : [];
+      const selectedAct = safeActs.find((a) => a.id === selectedActivityId) || safeActs[0];
       const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
       const payloadUrl = `${currentOrigin}/?action=personal_qr&act_id=${selectedAct?.id || 'act-001'}&brgy=${encodeURIComponent(barangay)}&date=${encodeURIComponent(eventDate)}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
       
       setQrRawPayload(payloadUrl);
 
       try {
-        const url = await generateStyledLguQrDataUrl(payloadUrl, {
-          width: 480,
-          title: 'LINIS DINGALAN',
-          code: `LD-EVT-${barangay.slice(0, 3).toUpperCase()}`,
-          includeCenterBadge: true,
+        const url = await QRCode.toDataURL(payloadUrl, {
+          width: 320,
+          margin: 1,
+          color: {
+            dark: '#022c22',
+            light: '#ffffff',
+          },
+          errorCorrectionLevel: 'H',
         });
         if (isMounted) {
           setQrDataUrl(url);
@@ -188,11 +194,13 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentAct = activities.find((a) => a.id === selectedActivityId) || activities[0];
+  const safeActs = Array.isArray(activities) ? activities : [];
+  const safeHistory = Array.isArray(broadcastHistory) ? broadcastHistory : [];
+  const currentAct = safeActs.find((a) => a.id === selectedActivityId) || safeActs[0];
 
   const handleActivityChange = (actId: string) => {
     setSelectedActivityId(actId);
-    const act = activities.find((a) => a.id === actId);
+    const act = safeActs.find((a) => a.id === actId);
     if (act) {
       setBarangay(act.barangay);
       setTargetArea(act.targetArea);
@@ -348,646 +356,678 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     }
   };
 
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[94vh]">
-        
-        {/* Header Bar */}
-        <div className="px-6 py-4.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md">
-              <QrCode className="w-5 h-5 text-slate-950" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
-                Admin Exclusive • Event QR Generator & Advisory
-              </span>
-              <h3 className="text-lg font-black text-white tracking-tight">
-                Generate Cleanup Event QR Code & Paalala
-              </h3>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
-          {/* SUCCESS BROADCAST CONFIRMATION */}
-          {isSuccessSent ? (
-            <div className="text-center py-8 space-y-4 animate-scaleIn">
-              <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)]">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+    <>
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
+        <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+          
+          {/* Header Bar */}
+          <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md">
+                <QrCode className="w-5 h-5 text-slate-950" />
               </div>
-              <div className="space-y-1">
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  Broadcast Sent Successfully
+              <div>
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+                  Admin Exclusive • Event QR Generator & Advisory
                 </span>
-                <h4 className="text-2xl font-black text-white">
-                  Naipadala na sa Lahat ng Naka-Register na User!
-                </h4>
-                <p className="text-xs text-slate-300 max-w-lg mx-auto">
-                  Ang opisyal na **Event QR Code** at lahat ng paalala (tools, tumbler, barangay, oras, kasuotan) ay awtomatikong natanggap ng lahat ng user account para magamit sa pag-submit ng kanilang accomplishment attendance.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs font-mono text-left space-y-2 max-w-md mx-auto">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Aktibidad:</span>
-                  <span className="text-emerald-400 font-bold">{currentAct?.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Lokasyon:</span>
-                  <span className="text-white font-bold">Brgy. {barangay} ({targetArea})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Oras ng Paglilinis:</span>
-                  <span className="text-cyan-400 font-bold">{startTime} – {estimatedEndTime} ({totalHours})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Nagpadala:</span>
-                  <span className="text-white">{currentUser.name}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-center space-x-3 pt-2">
-                <button
-                  onClick={onClose}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm shadow-[0_0_20px_rgba(16,185,129,0.35)] cursor-pointer"
-                >
-                  Tapos na (Done)
-                </button>
+                <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                  Generate Cleanup Event QR Code & Paalala
+                </h3>
               </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* LEFT COLUMN: QR CODE CARD & ACTIONS (Span 5) */}
-              <div className="lg:col-span-5 space-y-4">
-                <OfficialQrPassCard
-                  qrCodeUrl={qrDataUrl}
-                  payloadUrl={qrRawPayload}
-                  title={activityTitle || currentAct?.title || 'Linis Dingalan Event'}
-                  subtitle={`Admin Broadcast Pass • Brgy. ${barangay}`}
-                  trackingCode={`LD-EVT-${barangay.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`}
-                  departmentOrCluster="PESO & MENRO Operations"
-                  barangay={barangay}
-                  eventDate={eventDate}
-                  timeSlot={`${startTime} - ${estimatedEndTime}`}
-                  isLiveEvent={true}
-                  securityHash={`SEC-EVT-${barangay.toUpperCase()}-2026`}
-                />
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-                {/* Info Note */}
-                <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 space-y-1">
-                  <div className="flex items-center space-x-1.5 font-bold text-emerald-400">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Admin Broadcast Security</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Tanging ang Admin account lamang ang may kapangyarihang mag-generate ng Event QR code. Kapag pinindot ang <strong>Send to All</strong> sa ibaba, awtomatikong matatanggap ito ng lahat ng users.
+          {/* Modal Body */}
+          <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 text-left">
+            {/* SUCCESS BROADCAST CONFIRMATION */}
+            {isSuccessSent ? (
+              <div className="text-center py-8 space-y-4 animate-scaleIn">
+                <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div className="space-y-1">
+                  <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    Broadcast Sent Successfully
+                  </span>
+                  <h4 className="text-xl font-black text-white">
+                    Naipadala na sa Lahat ng Naka-Register na User!
+                  </h4>
+                  <p className="text-xs text-slate-300 max-w-lg mx-auto">
+                    Ang opisyal na <strong>Event QR Code</strong> at lahat ng paalala (tools, tumbler, barangay, oras, kasuotan) ay awtomatikong natanggap ng lahat ng user account para magamit sa pag-submit ng kanilang accomplishment attendance.
                   </p>
                 </div>
-              </div>
 
-              {/* RIGHT COLUMN: REMINDERS & EVENT ADVISORY FORM (Span 7) */}
-              <div className="lg:col-span-7 space-y-4">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-800">
-                  <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wide flex items-center space-x-1.5">
-                    <FileText className="w-4 h-4 text-emerald-400" />
-                    <span>Mga Paalala ng Admin sa mga Users (Optional):</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-emerald-400">Lahat ay Editable</span>
+                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs font-mono text-left space-y-1.5 max-w-md mx-auto">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Aktibidad:</span>
+                    <span className="text-emerald-400 font-bold">{activityTitle || currentAct?.title || 'Linis Dingalan Event'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Lokasyon:</span>
+                    <span className="text-white font-bold">Brgy. {barangay} ({targetArea})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Oras ng Paglilinis:</span>
+                    <span className="text-cyan-400 font-bold">{startTime} – {estimatedEndTime} ({totalHours})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Nagpadala:</span>
+                    <span className="text-white">{currentUser?.name || 'Admin Officer'}</span>
+                  </div>
                 </div>
 
-                {/* 1. Activity Title & Barangay */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono font-bold text-slate-300">
-                      Pangalan ng Cleanup Activity / Programa:
+                <div className="flex justify-center space-x-3 pt-2">
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm shadow-[0_0_20px_rgba(16,185,129,0.35)] cursor-pointer"
+                  >
+                    Tapos na (Done)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {/* Section 1: Choose Activity / Enter Title */}
+                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <label className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wide flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-emerald-400" />
+                      <span>Pumili ng Cleanup Activity o Maglagay ng Custom Title:</span>
+                    </label>
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      Synchronized sa Active Program List
+                    </span>
+                  </div>
+
+                  {safeActs.length > 0 && (
+                    <select
+                      value={selectedActivityId}
+                      onChange={(e) => handleActivityChange(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:border-emerald-400 focus:outline-none"
+                    >
+                      {safeActs.map((act) => (
+                        <option key={act.id} value={act.id}>
+                          {act.title} — Brgy. {act.barangay} ({act.targetArea})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                      Pangalan ng Cleanup Activity (Customizable Title):
                     </label>
                     <input
                       type="text"
                       value={activityTitle}
                       onChange={(e) => setActivityTitle(e.target.value)}
-                      placeholder="Ilagay ang pangalan ng aktibidad..."
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono font-bold text-slate-300">
-                      Barangay:
-                    </label>
-                    <select
-                      value={barangay}
-                      onChange={(e) => setBarangay(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
-                    >
-                      <option value="Paltic">Barangay Paltic</option>
-                      <option value="Poblacion">Barangay Poblacion</option>
-                      <option value="Ibona">Barangay Ibona</option>
-                      <option value="Aplaya">Barangay Aplaya</option>
-                      <option value="Umiray">Barangay Umiray</option>
-                      <option value="Tanawan">Barangay Tanawan</option>
-                      <option value="Butas Na Bato">Barangay Butas Na Bato</option>
-                      <option value="Cabog">Barangay Cabog</option>
-                      <option value="Caragsacan">Barangay Caragsacan</option>
-                      <option value="Davil-Davilan">Barangay Davil-Davilan</option>
-                      <option value="Dikapanikian">Barangay Dikapanikian</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 2. Target Barangay Area */}
-                <div className="space-y-1">
-                  <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Eksaktong Barangay Area / Cleanup Site:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={targetArea}
-                    onChange={(e) => setTargetArea(e.target.value)}
-                    placeholder="Hal. Pacific Seawall & Mangrove Buffer Strip, Purok 3 Coastline"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
-                  />
-                </div>
-
-                {/* 3. Schedule, Time & Total Hours */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Petsa ng Event:</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={eventDate}
-                      onChange={(e) => setEventDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Oras ng Simula:</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      placeholder="06:00 AM"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Posibleng Matapos:</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={estimatedEndTime}
-                      onChange={(e) => setEstimatedEndTime(e.target.value)}
-                      placeholder="11:59 PM"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono font-bold text-slate-300">
-                      Kabuuang Oras:
-                    </label>
-                    <input
-                      type="text"
-                      value={totalHours}
-                      onChange={(e) => setTotalHours(e.target.value)}
-                      placeholder="4 na Oras"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none font-mono"
+                      placeholder="Hal. Dingalan Feeder Port & Paltic Coastal Cleanliness Operation"
+                      className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-semibold"
                     />
                   </div>
                 </div>
 
-                {/* 4. Tools / Kagamitan na Dapat Dalhin */}
-                <div className="space-y-1">
-                  <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1.5">
-                    <Wrench className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Paalala sa mga Kagamitan / Tools na Dapat Dalhin:</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={requiredTools}
-                    onChange={(e) => setRequiredTools(e.target.value)}
-                    placeholder="Hal. Walis tingting, dustpan, sako, sipit/trash tongs, guwantes..."
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none font-sans"
-                  />
-                </div>
+                {/* Section 2: Location and Schedule Grids */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Barangay & Target Area */}
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <div className="flex items-center space-x-2 text-xs font-mono font-bold text-emerald-400 uppercase">
+                      <MapPin className="w-4 h-4 text-emerald-400" />
+                      <span>Lokasyon ng Paglilinis:</span>
+                    </div>
 
-                {/* 5. Tumbler / Inuming Tubig */}
-                <div className="space-y-1">
-                  <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1.5">
-                    <Coffee className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Paalala sa Tumbler / Hydration:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={waterTumblerReminder}
-                    onChange={(e) => setWaterTumblerReminder(e.target.value)}
-                    placeholder="Hal. Magdala ng sariling tumbler o reusable water bottle..."
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
-                  />
-                </div>
-
-                {/* 6. Dapat na Kasuotan / Attire */}
-                <div className="space-y-1">
-                  <label className="text-xs font-mono font-bold text-slate-300 flex items-center space-x-1.5">
-                    <Shirt className="w-3.5 h-3.5 text-teal-400" />
-                    <span>Dapat na Kasuotan (Attire):</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={recommendedAttire}
-                    onChange={(e) => setRecommendedAttire(e.target.value)}
-                    placeholder="Hal. Linis Dingalan shirt, komportableng pantalon, bota/rubber shoes, sombrero..."
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none"
-                  />
-                </div>
-
-                {/* 7. Karagdagang Paalala */}
-                <div className="space-y-1">
-                  <label className="text-xs font-mono font-bold text-slate-300">
-                    Karagdagang Paalala mula sa Admin (Optional Note):
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={additionalNotes}
-                    onChange={(e) => setAdditionalNotes(e.target.value)}
-                    placeholder="Hal. Magtipon sa Covered Court para sa orientation at cluster distribution..."
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none font-sans"
-                  />
-                </div>
-
-                {/* Primary SEND BUTTON */}
-                <button
-                  type="button"
-                  onClick={handleSendToAllUsers}
-                  disabled={isSending}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-sm sm:text-base tracking-wide shadow-[0_0_30px_rgba(16,185,129,0.45)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  {isSending ? (
-                    <span className="flex items-center space-x-2">
-                      <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Ipinapadala sa Lahat ng Users...</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center space-x-2">
-                      <Send className="w-5 h-5 text-slate-950" />
-                      <span>I-Send ang QR Code at mga Paalala sa Lahat ng Users</span>
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* ========================================================================= */}
-            {/* HISTORICAL ARCHIVE OF COMPLETED EVENT ADVISORIES */}
-            {/* ========================================================================= */}
-            <div className="pt-6 border-t border-slate-800 space-y-4 text-left">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-slate-800/80">
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-5 h-5 text-emerald-400" />
-                  <h4 className="text-base font-bold text-white uppercase tracking-wider">
-                    📋 History ng mga Natapos na Paalala (Historical Broadcast Archives)
-                  </h4>
-                </div>
-                {broadcastHistory.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAllHistory}
-                    className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-slate-950 border border-rose-500/30 hover:border-rose-400 text-rose-400 text-xs font-mono font-black flex items-center space-x-1.5 transition-all shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] cursor-pointer self-start sm:self-auto"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Burahin Lahat ng History (Clear All)</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {broadcastHistory.length === 0 ? (
-                  <div className="col-span-2 p-6 rounded-2xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-500 font-mono">
-                    Walang nakaraang paalala o broadcast sa history.
-                  </div>
-                ) : (
-                  broadcastHistory.map((historyItem) => {
-                    const active = isBroadcastActive(historyItem);
-                    return (
-                      <div
-                        key={historyItem.id}
-                        className={`p-4 rounded-2xl border transition-all duration-300 ${
-                          active
-                            ? 'bg-emerald-950/20 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                            : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700'
-                        }`}
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                        Barangay (11 Coastal Barangays):
+                      </label>
+                      <select
+                        value={barangay}
+                        onChange={(e) => setBarangay(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
                       >
-                        <div className="flex justify-between items-start gap-2 mb-2.5">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
-                            active
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                              : 'bg-slate-800 text-slate-400 border-slate-700/60'
-                          }`}>
-                            {active ? '🟢 ACTIVE (Ongoing)' : '🔴 COMPLETED / EXPIRED'}
-                          </span>
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-[10px] font-mono text-slate-500 mr-1">
-                              {historyItem.eventDate || 'N/A'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => handleStartEditHistoryItem(historyItem, e)}
-                              className="px-2 py-1 rounded-lg bg-slate-900/90 hover:bg-emerald-950/90 text-emerald-400 hover:text-emerald-300 border border-slate-700/80 hover:border-emerald-500/60 transition-all cursor-pointer flex items-center space-x-1 text-[10px] font-mono font-bold shadow-sm"
-                              title="I-edit ang mga nilalaman ng paalalang ito"
-                            >
-                              <Edit3 className="w-3 h-3 text-emerald-400" />
-                              <span>I-Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteHistoryItem(historyItem.id, e)}
-                              className="p-1 rounded bg-slate-950/80 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-500/50 transition-all cursor-pointer"
-                              title="Burahin ang paalalang ito"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
+                        {DINGALAN_BARANGAYS.map((b) => (
+                          <option key={b} value={b}>
+                            Barangay {b}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                        <h5 className="text-sm font-extrabold text-white mb-1.5 leading-snug">
-                          {historyItem.activityTitle}
-                        </h5>
-
-                        <div className="space-y-1 text-[11px] font-mono text-slate-300">
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span className="truncate">Brgy. {historyItem.barangay} • {historyItem.targetArea}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                            <span>{historyItem.startTime} – {historyItem.estimatedEndTime} ({historyItem.totalHours})</span>
-                          </div>
-                          {historyItem.requiredTools && (
-                            <div className="flex items-start gap-1.5 pt-1.5 border-t border-slate-900 mt-1.5 text-slate-400 font-sans">
-                              <strong>Kagamitan:</strong> <span className="text-slate-300 text-[11px]">{historyItem.requiredTools}</span>
-                            </div>
-                          )}
-                          {historyItem.recommendedAttire && (
-                            <div className="flex items-start gap-1.5 pt-1 border-t border-slate-900/60 text-slate-400 font-sans">
-                              <strong>Kasuotan:</strong> <span className="text-slate-300 text-[11px]">{historyItem.recommendedAttire}</span>
-                            </div>
-                          )}
-                          {historyItem.additionalNotes && (
-                            <div className="flex items-start gap-1.5 pt-1 border-t border-slate-900/60 text-slate-400 font-sans italic">
-                              <strong>Paalala:</strong> <span className="text-amber-300/90 text-[11px]">{historyItem.additionalNotes}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        </div>
-
-        {/* ========================================================================= */}
-        {/* EDIT BROADCAST / ADVISORY MODAL OVERLAY                                   */}
-        {/* ========================================================================= */}
-        {editingBroadcast && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto animate-fadeIn">
-            <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/80 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-400 flex items-center justify-center text-slate-950 shadow-md">
-                    <Edit3 className="w-5 h-5 text-slate-950" />
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                        Eksaktong Target Area / Site:
+                      </label>
+                      <input
+                        type="text"
+                        value={targetArea}
+                        onChange={(e) => setTargetArea(e.target.value)}
+                        placeholder="Hal. Pacific Seawall & Mangrove Buffer Strip"
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
-                      I-Edit ang Paalala at Nilalaman
-                    </span>
-                    <h3 className="text-base sm:text-lg font-black text-white">
-                      Baguhin ang Laman ng Box ({editingBroadcast.barangay})
-                    </h3>
+
+                  {/* Schedule Details */}
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <div className="flex items-center space-x-2 text-xs font-mono font-bold text-cyan-400 uppercase">
+                      <Clock className="w-4 h-4 text-cyan-400" />
+                      <span>Petsa at Oras ng Event:</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                        Petsa (Date of Cleanup):
+                      </label>
+                      <input
+                        type="date"
+                        value={eventDate}
+                        onChange={(e) => setEventDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                          Simula:
+                        </label>
+                        <input
+                          type="text"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          placeholder="06:00 AM"
+                          className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                          Matapos:
+                        </label>
+                        <input
+                          type="text"
+                          value={estimatedEndTime}
+                          onChange={(e) => setEstimatedEndTime(e.target.value)}
+                          placeholder="11:59 PM"
+                          className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                          Tagal:
+                        </label>
+                        <input
+                          type="text"
+                          value={totalHours}
+                          onChange={(e) => setTotalHours(e.target.value)}
+                          placeholder="4 na Oras"
+                          className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none font-mono"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingBroadcast(null)}
-                  className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+
+                {/* Section 3: Reminders and Advisories */}
+                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+                    <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wide flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Mga Paalala ng Admin sa mga Kalahok (Editable):</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400">Lahat ay Customizable</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 mb-1 flex items-center space-x-1.5">
+                        <Wrench className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Kagamitan / Tools na Dapat Dalhin:</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={requiredTools}
+                        onChange={(e) => setRequiredTools(e.target.value)}
+                        placeholder="Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes..."
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 mb-1 flex items-center space-x-1.5">
+                        <Coffee className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Paalala sa Tumbler / Hydration:</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={waterTumblerReminder}
+                        onChange={(e) => setWaterTumblerReminder(e.target.value)}
+                        placeholder="Magdala ng sariling tumbler o reusable water bottle..."
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 mb-1 flex items-center space-x-1.5">
+                        <Shirt className="w-3.5 h-3.5 text-teal-400" />
+                        <span>Dapat na Kasuotan (Attire):</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={recommendedAttire}
+                        onChange={(e) => setRecommendedAttire(e.target.value)}
+                        placeholder="Linis Dingalan t-shirt o komportableng damit, bota/shoes, sombrero..."
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono text-slate-300 mb-1">
+                        Karagdagang Note mula sa Admin:
+                      </label>
+                      <input
+                        type="text"
+                        value={additionalNotes}
+                        onChange={(e) => setAdditionalNotes(e.target.value)}
+                        placeholder="Magtipon sa Barangay Covered Court bago mag-alas 6:00 ng umaga..."
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 4: Event QR Code Canvas & Primary Action */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/40 border-2 border-emerald-500/50 shadow-xl flex flex-col sm:flex-row items-center gap-5">
+                  {/* QR Canvas Box */}
+                  <div className="p-2.5 bg-white rounded-2xl shadow-2xl border-2 border-emerald-400/50 shrink-0 text-center">
+                    {qrDataUrl ? (
+                      <img
+                        src={qrDataUrl}
+                        alt="Official Generated Event QR Code"
+                        className="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto"
+                      />
+                    ) : (
+                      <div className="w-40 h-40 sm:w-44 sm:h-44 flex items-center justify-center bg-slate-100 rounded-xl text-xs text-slate-500 animate-pulse">
+                        Generating QR Code...
+                      </div>
+                    )}
+                    <span className="text-[9px] font-mono font-black text-slate-950 uppercase tracking-tight block mt-1">
+                      SCAN ATTENDANCE
+                    </span>
+                  </div>
+
+                  {/* QR Info & Actions */}
+                  <div className="space-y-3 flex-1 text-center sm:text-left">
+                    <div>
+                      <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold mb-1">
+                        <QrCode className="w-3 h-3 text-emerald-400" />
+                        <span>OFFICIAL EVENT ATTENDANCE QR CODE</span>
+                      </div>
+                      <h4 className="text-base sm:text-lg font-black text-white leading-tight">
+                        {activityTitle || currentAct?.title || 'Linis Dingalan Cleanup Event'}
+                      </h4>
+                      <p className="text-xs text-emerald-300 font-mono mt-0.5">
+                        Brgy. {barangay} • {targetArea} • {eventDate}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                      {qrDataUrl && (
+                        <a
+                          href={qrDataUrl}
+                          download={`Linis-Dingalan-QR-${barangay}-${eventDate}.png`}
+                          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Download QR</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Print</span>
+                      </button>
+                    </div>
+
+                    {/* Primary Broadcast Send Button */}
+                    <button
+                      type="button"
+                      onClick={handleSendToAllUsers}
+                      disabled={isSending}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-sm tracking-wide shadow-[0_0_25px_rgba(16,185,129,0.5)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSending ? (
+                        <span className="flex items-center space-x-2">
+                          <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                          <span>Ipinapadala sa Lahat ng Users...</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center space-x-2">
+                          <Send className="w-4 h-4 text-slate-950" />
+                          <span>I-Send ang QR Code at mga Paalala sa Lahat ng Users</span>
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Section 5: Historical Broadcast Archives */}
+                <div className="pt-3 border-t border-slate-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-emerald-400" />
+                      <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                        📋 Kasaysayan ng mga Naunang Paalala ({safeHistory.length})
+                      </h4>
+                    </div>
+
+                    {safeHistory.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllHistory}
+                        className="px-3 py-1 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-slate-950 border border-rose-500/30 hover:border-rose-400 text-rose-400 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all cursor-pointer self-start sm:self-auto"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Burahin Lahat ng History</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                    {safeHistory.length === 0 ? (
+                      <div className="col-span-2 p-5 rounded-2xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400 font-mono">
+                        Walang nakaraang broadcast sa kasaysayan.
+                      </div>
+                    ) : (
+                      safeHistory.map((historyItem) => {
+                        const active = isBroadcastActive(historyItem);
+                        return (
+                          <div
+                            key={historyItem.id}
+                            className={`p-3.5 rounded-2xl border transition-all ${
+                              active
+                                ? 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                                : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start gap-2 mb-2">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${
+                                  active
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                                }`}
+                              >
+                                {active ? '🟢 AKTIBO (Active)' : '🔴 TAPOS NA'}
+                              </span>
+
+                              <div className="flex items-center space-x-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleStartEditHistoryItem(historyItem, e)}
+                                  className="px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-slate-700 text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center space-x-1"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                  <span>I-Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteHistoryItem(historyItem.id, e)}
+                                  className="p-1 rounded-lg bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 transition-all cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <h5 className="text-xs font-bold text-white line-clamp-1 leading-snug">
+                              {historyItem.activityTitle}
+                            </h5>
+                            <p className="text-[10px] font-mono text-emerald-300">
+                              Brgy. {historyItem.barangay} • {historyItem.targetArea}
+                            </p>
+                            <p className="text-[10px] font-mono text-slate-400">
+                              {historyItem.startTime} – {historyItem.estimatedEndTime} ({historyItem.totalHours})
+                            </p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* EDIT BROADCAST MODAL OVERLAY                                              */}
+      {/* ========================================================================= */}
+      {editingBroadcast && (
+        <div className="fixed inset-0 z-[1050] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
+          <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/80 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-400 flex items-center justify-center text-slate-950 shadow-md">
+                  <Edit3 className="w-5 h-5 text-slate-950" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+                    I-Edit ang Paalala at Nilalaman
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Baguhin ang Laman ng Box ({editingBroadcast.barangay})
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingBroadcast(null)}
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-left font-sans">
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                  Pamagat ng Gawain / Activity Title <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all"
+                />
               </div>
 
-              {/* Form Body */}
-              <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-left font-sans">
-                {/* Pamagat ng Gawain */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
-                    Pamagat ng Gawain / Activity Title <span className="text-rose-400">*</span>
+                    Barangay <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={editBarangay}
+                    onChange={(e) => setEditBarangay(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all cursor-pointer"
+                  >
+                    {DINGALAN_BARANGAYS.map((b) => (
+                      <option key={b} value={b}>
+                        Brgy. {b}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                    Target na Lugar / Lokasyon <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
+                    value={editTargetArea}
+                    onChange={(e) => setEditTargetArea(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all"
                   />
                 </div>
+              </div>
 
-                {/* Barangay & Target Area */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
-                      Barangay <span className="text-rose-400">*</span>
-                    </label>
-                    <select
-                      value={editBarangay}
-                      onChange={(e) => setEditBarangay(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all cursor-pointer"
-                    >
-                      {DINGALAN_BARANGAYS.map((b) => (
-                        <option key={b} value={b}>
-                          Brgy. {b}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
-                      Target na Lugar / Lokasyon <span className="text-rose-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editTargetArea}
-                      onChange={(e) => setEditTargetArea(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Petsa, Simula, Tapos, Tagal */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
-                      Petsa (Date)
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={editEventDate}
-                      onChange={(e) => setEditEventDate(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
-                      Simula
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editStartTime}
-                      onChange={(e) => setEditStartTime(e.target.value)}
-                      placeholder="06:00 AM"
-                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
-                      Tapos / Cut-off
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editEstimatedEndTime}
-                      onChange={(e) => setEditEstimatedEndTime(e.target.value)}
-                      placeholder="05:20 PM"
-                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
-                      Tagal (Hours)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editTotalHours}
-                      onChange={(e) => setEditTotalHours(e.target.value)}
-                      placeholder="4 na Oras"
-                      className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Mga Kagamitan (Required Tools) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div>
-                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
-                    <Wrench className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Mga Kagamitan (Required Tools)</span>
+                  <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                    Petsa (Date)
                   </label>
-                  <textarea
-                    rows={2}
-                    value={editRequiredTools}
-                    onChange={(e) => setEditRequiredTools(e.target.value)}
-                    placeholder="Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
+                  <input
+                    type="date"
+                    required
+                    value={editEventDate}
+                    onChange={(e) => setEditEventDate(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
                   />
                 </div>
 
-                {/* Hydration Reminder */}
                 <div>
-                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
-                    <Coffee className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Hydration / Tubig</span>
+                  <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                    Simula
                   </label>
                   <input
                     type="text"
-                    value={editWaterTumbler}
-                    onChange={(e) => setEditWaterTumbler(e.target.value)}
-                    placeholder="Magdala ng sariling tumbler o reusable water bottle..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none"
+                    required
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    placeholder="06:00 AM"
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
                   />
                 </div>
 
-                {/* Kasuotan (Attire) */}
                 <div>
-                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
-                    <Shirt className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Kasuotan (Attire)</span>
+                  <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                    Tapos / Cut-off
                   </label>
                   <input
                     type="text"
-                    value={editRecommendedAttire}
-                    onChange={(e) => setEditRecommendedAttire(e.target.value)}
-                    placeholder="Linis Dingalan t-shirt o komportableng damit, bota/shoes, sombrero..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none"
+                    required
+                    value={editEstimatedEndTime}
+                    onChange={(e) => setEditEstimatedEndTime(e.target.value)}
+                    placeholder="11:59 PM"
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
                   />
                 </div>
 
-                {/* Admin Note / Karagdagang Paalala */}
                 <div>
-                  <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Admin Note / Karagdagang Paalala</span>
+                  <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase mb-1">
+                    Tagal (Hours)
                   </label>
-                  <textarea
-                    rows={2}
-                    value={editAdditionalNotes}
-                    onChange={(e) => setEditAdditionalNotes(e.target.value)}
-                    placeholder="Magtipon sa Covered Court bago mag-alas 6:00 ng umaga..."
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
+                  <input
+                    type="text"
+                    required
+                    value={editTotalHours}
+                    onChange={(e) => setEditTotalHours(e.target.value)}
+                    placeholder="4 na Oras"
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs font-mono outline-none"
                   />
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditingBroadcast(null)}
-                    disabled={isSavingEdit}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-all cursor-pointer"
-                  >
-                    Kanselahin
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingEdit}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 text-xs font-mono font-black flex items-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
-                  >
-                    <Save className="w-4 h-4 text-slate-950" />
-                    <span>{isSavingEdit ? 'Sine-save ang Pagbabago...' : 'I-Save ang mga Pagbabago'}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                  <Wrench className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Mga Kagamitan (Required Tools)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editRequiredTools}
+                  onChange={(e) => setEditRequiredTools(e.target.value)}
+                  placeholder="Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                  <Coffee className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Hydration / Tubig</span>
+                </label>
+                <input
+                  type="text"
+                  value={editWaterTumbler}
+                  onChange={(e) => setEditWaterTumbler(e.target.value)}
+                  placeholder="Magdala ng sariling tumbler o reusable water bottle..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                  <Shirt className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Kasuotan (Attire)</span>
+                </label>
+                <input
+                  type="text"
+                  value={editRecommendedAttire}
+                  onChange={(e) => setEditRecommendedAttire(e.target.value)}
+                  placeholder="Linis Dingalan t-shirt o komportableng damit, bota/shoes, sombrero..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1 flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Admin Note / Karagdagang Paalala</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editAdditionalNotes}
+                  onChange={(e) => setEditAdditionalNotes(e.target.value)}
+                  placeholder="Magtipon sa Covered Court bago mag-alas 6:00 ng umaga..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingBroadcast(null)}
+                  disabled={isSavingEdit}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-all cursor-pointer"
+                >
+                  Kanselahin
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEdit}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 text-xs font-mono font-black flex items-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
+                >
+                  <Save className="w-4 h-4 text-slate-950" />
+                  <span>{isSavingEdit ? 'Sine-save ang Pagbabago...' : 'I-Save ang mga Pagbabago'}</span>
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 };

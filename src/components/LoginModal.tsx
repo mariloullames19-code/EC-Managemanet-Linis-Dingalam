@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, UserRole, Beneficiary, EventQrBroadcast } from '../types';
 import { api } from '../services/api';
+import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
 import QRCode from 'qrcode';
 import { checkEventCutoff } from '../utils/watermarkEngine';
 import { useDingalanClock, getDingalanNow } from '../utils/philippineClock';
@@ -125,7 +126,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     return null;
   });
 
-  const eventBroadcast = activeBroadcast || propEventBroadcast;
+  const eventBroadcast = activeBroadcast || propEventBroadcast || INITIAL_EVENT_BROADCAST;
 
   // Keep activeBroadcast synchronized with prop changes
   useEffect(() => {
@@ -382,14 +383,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setEmail('');
     setPassword('');
     setIsUnfolded(true);
-    setActiveView('login');
-  }, [isOpen]);
+    if (eventBroadcast) {
+      setActiveView('event');
+    } else {
+      setActiveView('login');
+    }
+  }, [isOpen, eventBroadcast]);
 
   const handleAdminPortalClick = () => {
     setErrorMessage(null);
     setPendingNotice(null);
-    setActiveView('login');
-    setIsUnfolded(!isUnfolded);
+    if (activeView === 'login') {
+      setActiveView('event');
+      setIsUnfolded(true);
+    } else {
+      setActiveView('login');
+      setIsUnfolded(true);
+    }
     setTimeout(() => {
       modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 50);
@@ -717,6 +727,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* Right Header Action Buttons: Neatly Full-Width and Justified on Mobile, Row on Desktop */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* Paalala & QR Code Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsUnfolded(true);
+              setActiveView('event');
+              setTimeout(() => {
+                modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 50);
+            }}
+            className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
+              isUnfolded && activeView === 'event'
+                ? 'text-slate-950 bg-emerald-400 border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.6)] font-extrabold'
+                : 'text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900/90 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+            }`}
+            title="Pindutin para makita ang Opisyal na Patnubay, Paalala at Event QR Code"
+          >
+            <Radio className="w-4 h-4 shrink-0 animate-pulse text-emerald-300" />
+            <span className="tracking-wide">Paalala & QR Code</span>
+          </button>
+
           {/* Admin Login Icon Button */}
           <button
             type="button"
@@ -838,153 +869,317 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {/* --------------------------------------------------------------------- */}
-          {/* RIGHT SIDE: POP-UP LOGIN BOX (ALIGNED WITH 'EC MANAGEMENT' TEXT)       */}
+          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD                         */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start lg:mt-12 xl:mt-16 ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0 block' : 'hidden'}`}>
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0 block' : 'hidden'}`}>
             {isUnfolded && (
-              /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD (SEMI-TRANSPARENT FROSTED GLASS) */
-              <div
-                className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_60px_rgba(16,185,129,0.5),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/40 hover:bg-slate-950/45 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
-                style={{
-                  perspective: '1200px',
-                  transformStyle: 'preserve-3d',
-                  animation: 'smoothPopup 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                }}
-              >
-                {/* Pop-Up Close Icon (X) on Top Right */}
-                <button
-                  type="button"
-                  onClick={() => setIsUnfolded(false)}
-                  className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer shadow-lg hover:scale-110 backdrop-blur-sm"
-                  title="Isara ang Login Box"
+              activeView === 'event' && eventBroadcast ? (
+                /* ========================================================================= */
+                /* EVENT BROADCAST CARD: OFFICIAL PATNUBAY AT PAALALA NG ADMIN                */
+                /* ========================================================================= */
+                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/55 hover:bg-slate-950/65 backdrop-blur-md p-5 sm:p-6 space-y-4 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
+                  {/* Top Bar inside Card */}
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                      <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
+                        <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
+                        <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setActiveView('login')}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-mono font-bold transition-all cursor-pointer backdrop-blur-sm shadow-md hover:scale-105 active:scale-95"
+                        title="Pumunta sa Admin Login Form"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                        <span>Admin Login</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsUnfolded(false)}
+                        className="p-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        title="Itago / Isara"
+                      >
+                        <X className="w-4 h-4 text-slate-400 hover:text-emerald-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Title & Location */}
+                  <div className="space-y-1.5 text-left">
+                    <h3 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                      {eventBroadcast.activityTitle}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
+                      <p className="text-emerald-300 font-semibold flex items-center gap-1.5 drop-shadow">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
+                      </p>
+                      <p className="text-cyan-300 font-medium flex items-center gap-1.5 drop-shadow">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Event QR Code Box & Attendance Upload */}
+                  <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-row items-center gap-3 sm:gap-4 animate-fadeIn">
+                    <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
+                      {eventQrUrl || eventBroadcast.qrDataUrl ? (
+                        <img
+                          src={eventQrUrl || eventBroadcast.qrDataUrl}
+                          alt="Official Event Attendance QR Code"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-slate-100 rounded-lg">
+                          <QrCode className="w-14 h-14 text-slate-800" />
+                        </div>
+                      )}
+                      <span className="text-[8px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
+                        SCAN ATTENDANCE
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-left flex-1 min-w-0">
+                      <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold">
+                        <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>EVENT ATTENDANCE QR CODE</span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-slate-200 font-sans leading-snug">
+                        I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
+                      </p>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenUploadAccomplishment) {
+                            onOpenUploadAccomplishment();
+                          }
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.45)] transition-all cursor-pointer border border-emerald-300"
+                      >
+                        <Camera className="w-4 h-4 text-slate-950 shrink-0" />
+                        <span className="uppercase font-extrabold">Upload Attendance Photo</span>
+                        <Upload className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Specific Advisories Grid */}
+                  <div className="space-y-2.5 pt-2 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
+                    {eventBroadcast.requiredTools && (
+                      <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
+                        <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Dapat Dalhing Kagamitan:</span>
+                          <span className="text-white text-xs leading-relaxed block">{eventBroadcast.requiredTools}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {eventBroadcast.waterTumblerReminder && (
+                      <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
+                        <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Paalala sa Hydration / Tubig:</span>
+                          <span className="text-white text-xs leading-relaxed block">{eventBroadcast.waterTumblerReminder}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {eventBroadcast.recommendedAttire && (
+                      <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
+                        <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Dapat Kasuotan (Attire):</span>
+                          <span className="text-white text-xs leading-relaxed block">{eventBroadcast.recommendedAttire}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {eventBroadcast.additionalNotes && (
+                      <div className="p-2.5 rounded-xl bg-slate-950/40 border border-emerald-500/25 text-xs font-sans text-slate-200 italic leading-relaxed">
+                        <strong className="text-emerald-300 not-italic font-semibold">Karagdagang Paalala ng LGU Admin:</strong> {eventBroadcast.additionalNotes}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-[10px] font-mono text-slate-400 pt-2 text-right border-t border-white/10">
+                    Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
+                  </div>
+                </div>
+              ) : (
+                /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD (SEMI-TRANSPARENT FROSTED GLASS) */
+                <div
+                  className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_60px_rgba(16,185,129,0.5),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/40 hover:bg-slate-950/45 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
+                  style={{
+                    perspective: '1200px',
+                    transformStyle: 'preserve-3d',
+                    animation: 'smoothPopup 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  }}
                 >
-                  <X className="w-5 h-5 text-emerald-400" />
-                </button>
+                  {/* Pop-Up Close Icon (X) on Top Right */}
+                  <button
+                    type="button"
+                    onClick={() => setIsUnfolded(false)}
+                    className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer shadow-lg hover:scale-110 backdrop-blur-sm"
+                    title="Isara ang Login Box"
+                  >
+                    <X className="w-5 h-5 text-emerald-400" />
+                  </button>
 
-                {/* ========================================================================= */}
-                {/* CLASSIC LOGIN FORM (7 COLS PANEL + 5 COLS PANEL)                          */}
-                {/* ========================================================================= */}
-                {/* LEFT SIDE FORM PANEL */}
-                <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5 relative z-10 animate-fadeIn">
-                  {/* Top Badge */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold w-fit">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      <span>ADMIN PORTAL</span>
-                    </div>
-                  </div>
-
-                  {/* Error Banner */}
-                  {errorMessage && (
-                    <div className="p-3 rounded-xl bg-rose-950/90 border border-rose-500/60 text-rose-200 text-xs font-semibold flex items-start space-x-2 animate-fadeIn">
-                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <span>{errorMessage}</span>
-                    </div>
-                  )}
-
-                  {/* Pending Notice Banner */}
-                  {pendingNotice && (
-                    <div className="p-3 rounded-xl bg-amber-950/90 border border-amber-500/60 text-amber-200 text-xs space-y-1 animate-fadeIn">
-                      <div className="flex items-center space-x-2 font-bold text-amber-300 font-mono">
-                        <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>ACCOUNT PENDING</span>
+                  {/* LEFT SIDE FORM PANEL */}
+                  <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5 relative z-10 animate-fadeIn">
+                    {/* Top Badge */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold w-fit">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                        <span>ADMIN PORTAL</span>
                       </div>
-                      <p className="leading-tight">{pendingNotice}</p>
-                    </div>
-                  )}
 
-                  {/* Form Heading */}
-                  <div className="text-left space-y-1">
-                    <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                      Login
-                    </h2>
-                  </div>
-
-                  {/* Form Fields */}
-                  <form onSubmit={handleLoginSubmit} className="space-y-6">
-                    {/* Underlined Username/Email Field */}
-                    <div className="space-y-1 text-left">
-                      <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
-                        <UserIcon className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
-                        <input
-                          type="text"
-                          autoComplete="username"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="Username"
-                          style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
-                          className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Underlined Password Field */}
-                    <div className="space-y-1 text-left">
-                      <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
-                        <Lock className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          autoComplete="current-password"
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Password"
-                          style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
-                          className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
-                        />
+                      {eventBroadcast && (
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
+                          onClick={() => setActiveView('event')}
+                          className="text-[11px] font-mono text-emerald-300 hover:text-white flex items-center space-x-1 bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          <ChevronLeft className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Paalala & QR</span>
                         </button>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Pill-Shaped Green Gradient Login Button */}
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.6)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <span className="flex items-center space-x-2">
-                          <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Logging in...</span>
-                        </span>
-                      ) : (
-                        <span>Login</span>
+                    {/* Error Banner */}
+                    {errorMessage && (
+                      <div className="p-3 rounded-xl bg-rose-950/90 border border-rose-500/60 text-rose-200 text-xs font-semibold flex items-start space-x-2 animate-fadeIn">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                        <span>{errorMessage}</span>
+                      </div>
+                    )}
+
+                    {/* Pending Notice Banner */}
+                    {pendingNotice && (
+                      <div className="p-3 rounded-xl bg-amber-950/90 border border-amber-500/60 text-amber-200 text-xs space-y-1 animate-fadeIn">
+                        <div className="flex items-center space-x-2 font-bold text-amber-300 font-mono">
+                          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>ACCOUNT PENDING</span>
+                        </div>
+                        <p className="leading-tight">{pendingNotice}</p>
+                      </div>
+                    )}
+
+                    {/* Form Heading */}
+                    <div className="text-left space-y-1">
+                      <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                        Login
+                      </h2>
+                    </div>
+
+                    {/* Form Fields */}
+                    <form onSubmit={handleLoginSubmit} className="space-y-6">
+                      {/* Underlined Username/Email Field */}
+                      <div className="space-y-1 text-left">
+                        <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
+                          <UserIcon className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
+                          <input
+                            type="text"
+                            autoComplete="username"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Username"
+                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
+                            className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Underlined Password Field */}
+                      <div className="space-y-1 text-left">
+                        <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
+                          <Lock className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password"
+                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
+                            className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pill-Shaped Green Gradient Login Button */}
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.6)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <span className="flex items-center space-x-2">
+                            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Logging in...</span>
+                          </span>
+                        ) : (
+                          <span>Login</span>
+                        )}
+                      </button>
+
+                      {eventBroadcast && (
+                        <div className="pt-2 text-center border-t border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setActiveView('event')}
+                            className="w-full py-2 px-3 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 text-xs font-mono font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-sm"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Bumalik sa Paalala ng Admin & QR Code</span>
+                          </button>
+                        </div>
                       )}
-                    </button>
-                  </form>
-                </div>
+                    </form>
+                  </div>
 
-                {/* RIGHT SIDE DIAGONAL GREEN PANEL (TRANSLUCENT FROSTED GLASS) */}
-                <div className="md:col-span-5 relative hidden md:flex flex-col justify-center items-center p-6 text-center text-white overflow-hidden min-h-[360px]">
-                  {/* Diagonal Green Panel Background */}
-                  <div
-                    className="absolute inset-0 bg-gradient-to-br from-emerald-500/75 via-emerald-600/60 to-teal-900/65 backdrop-blur-sm shadow-[inset_0_0_30px_rgba(0,0,0,0.2)]"
-                    style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)' }}
-                  />
+                  {/* RIGHT SIDE DIAGONAL GREEN PANEL (TRANSLUCENT FROSTED GLASS) */}
+                  <div className="md:col-span-5 relative hidden md:flex flex-col justify-center items-center p-6 text-center text-white overflow-hidden min-h-[360px]">
+                    {/* Diagonal Green Panel Background */}
+                    <div
+                      className="absolute inset-0 bg-gradient-to-br from-emerald-500/75 via-emerald-600/60 to-teal-900/65 backdrop-blur-sm shadow-[inset_0_0_30px_rgba(0,0,0,0.2)]"
+                      style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)' }}
+                    />
 
-                  {/* Right Side Overlay Content */}
-                  <div className="relative z-10 pl-6 space-y-3">
-                    <h2 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight uppercase drop-shadow-md leading-tight">
-                      WELCOME BACK!
-                    </h2>
-                    <p className="text-xs sm:text-sm text-emerald-100 font-medium leading-relaxed max-w-xs drop-shadow">
-                      Already a Member? Please Login.
-                    </p>
+                    {/* Right Side Overlay Content */}
+                    <div className="relative z-10 pl-6 space-y-3">
+                      <h2 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight uppercase drop-shadow-md leading-tight">
+                        WELCOME BACK!
+                      </h2>
+                      <p className="text-xs sm:text-sm text-emerald-100 font-medium leading-relaxed max-w-xs drop-shadow">
+                        Already a Member? Please Login.
+                      </p>
 
-                    <div className="pt-4 border-t border-emerald-400/30 text-[10px] font-mono text-emerald-200">
-                      Linis Dingalan EC Management <br />
-                      PESO & MENRO Operations
+                      <div className="pt-4 border-t border-emerald-400/30 text-[10px] font-mono text-emerald-200">
+                        Linis Dingalan EC Management <br />
+                        PESO & MENRO Operations
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>

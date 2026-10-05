@@ -182,8 +182,8 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
 
               {/* Smaller Horizontal Action Buttons in One Row */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {/* ADMIN ONLY: Generate Event QR Button */}
-                {currentUser.role !== 'staff' && onOpenGenerateQrModal && (
+                {/* Generate Event QR Button */}
+                {onOpenGenerateQrModal && (
                   <button
                     onClick={onOpenGenerateQrModal}
                     className="px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-[11px] font-mono shadow-[0_0_15px_rgba(16,185,129,0.35)] flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"

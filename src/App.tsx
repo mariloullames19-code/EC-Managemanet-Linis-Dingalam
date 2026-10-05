@@ -1027,18 +1027,16 @@ export default function App() {
         />
 
         {/* Admin Event QR Code & Reminders Generator Modal */}
-        {isAdminOrSuperAdmin && (
-          <GenerateQrEventModal
-            isOpen={isGenerateQrModalOpen}
-            onClose={() => setIsGenerateQrModalOpen(false)}
-            activities={activities}
-            currentUser={currentUser}
-            onBroadcastSuccess={(broadcast) => {
-              handleBroadcastSuccess(broadcast);
-              setIsGenerateQrModalOpen(false);
-            }}
-          />
-        )}
+        <GenerateQrEventModal
+          isOpen={isGenerateQrModalOpen}
+          onClose={() => setIsGenerateQrModalOpen(false)}
+          activities={activities}
+          currentUser={currentUser}
+          onBroadcastSuccess={(broadcast) => {
+            handleBroadcastSuccess(broadcast);
+            setIsGenerateQrModalOpen(false);
+          }}
+        />
 
         {/* User View Broadcasted Event QR & Reminders Notice Modal */}
         <EventQrNoticeModal
