@@ -684,12 +684,26 @@ async function startServer() {
 
   // ----------------------------------------------------------------------------
   // ANONYMOUS MESSAGES & REPORTS (ADMIN ACCESS ONLY)
+  // AUTO-PRUNE (30 DAYS / 1 MONTH) & PERMANENT DELETE ALL
   // ----------------------------------------------------------------------------
+  function pruneAnonymousMessagesOlderThan30Days(): number {
+    const now = Date.now();
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const beforeCount = anonymousMessages.length;
+    anonymousMessages = anonymousMessages.filter(msg => {
+      const ts = new Date(msg.timestamp || msg.createdAt).getTime();
+      return !isNaN(ts) && (now - ts) <= THIRTY_DAYS_MS;
+    });
+    return beforeCount - anonymousMessages.length;
+  }
+
   app.get('/api/anonymous-messages', (req: Request, res: Response) => {
+    pruneAnonymousMessagesOlderThan30Days();
     res.json({ messages: anonymousMessages });
   });
 
   app.post('/api/anonymous-messages', (req: Request, res: Response) => {
+    pruneAnonymousMessagesOlderThan30Days();
     const data = req.body;
     const newMsg: AnonymousMessage = {
       id: `anon-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -721,6 +735,13 @@ async function startServer() {
     if (status) target.status = status;
     if (adminNotes !== undefined) target.adminNotes = adminNotes;
     res.json({ success: true, message: target });
+  });
+
+  // Delete All Anonymous Messages permanently
+  app.delete('/api/anonymous-messages', (req: Request, res: Response) => {
+    const count = anonymousMessages.length;
+    anonymousMessages = [];
+    res.json({ success: true, count, message: 'All anonymous messages permanently deleted.' });
   });
 
   app.delete('/api/anonymous-messages/:id', (req: Request, res: Response) => {

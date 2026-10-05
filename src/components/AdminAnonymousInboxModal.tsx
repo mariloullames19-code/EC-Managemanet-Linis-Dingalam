@@ -50,6 +50,8 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMessage, setSelectedMessage] = useState<AnonymousMessage | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isDeleteAllConfirmOpen, setIsDeleteAllConfirmOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   if (!isOpen) return null;
 
@@ -123,6 +125,20 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
     }
   };
 
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      await api.deleteAllAnonymousMessages();
+      setSelectedMessage(null);
+      setIsDeleteAllConfirmOpen(false);
+      if (onRefreshMessages) onRefreshMessages();
+    } catch (e) {
+      console.warn('Failed to delete all anonymous messages', e);
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const getPriorityBadge = (priority: AnonymousMessage['priority']) => {
     switch (priority) {
       case 'urgent':
@@ -175,6 +191,18 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* DELETE ALL BUTTON */}
+            <button
+              type="button"
+              onClick={() => setIsDeleteAllConfirmOpen(true)}
+              disabled={messages.length === 0}
+              className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 hover:text-rose-100 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+              title="Permanenteng burahin ang lahat ng anonymous messages sa database"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Burahin Lahat ({messages.length})</span>
+            </button>
+
             {onOpenBroadcastModal && (
               <button
                 type="button"
@@ -264,6 +292,20 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
               placeholder="Hanapin sa mensahe o lugar..."
               className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-xs font-sans focus:border-emerald-400"
             />
+          </div>
+        </div>
+
+        {/* Auto-Purge Notice Strip (1 Month / 30 Days Retention Policy) */}
+        <div className="px-5 py-2 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
+          <div className="flex items-center space-x-2 text-cyan-300">
+            <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>
+              <strong>1-Month Auto-Purge:</strong> Awtomatikong binubura ng sistema ang mga ulat kapag lumipas na ang <strong>30 araw (1 buwan)</strong>.
+            </span>
+          </div>
+          <div className="flex items-center space-x-2 text-slate-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Kumpidensiyal & Auto-Cleaned</span>
           </div>
         </div>
 
@@ -477,6 +519,58 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
           </button>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* DELETE ALL ANONYMOUS MESSAGES CONFIRMATION DIALOG                        */}
+      {/* ========================================================================= */}
+      {isDeleteAllConfirmOpen && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-900 border-2 border-rose-500/70 rounded-3xl p-6 shadow-[0_25px_70px_rgba(244,63,94,0.35)] text-left space-y-4 animate-scaleIn">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto sm:mx-0 shadow-lg">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-white tracking-tight">
+                Permanenteng Pagbura ng Lahat ng Mensahe
+              </h3>
+              <p className="text-xs text-rose-200/90 font-mono font-bold">
+                ⚠️ WARNING: IRREVERSIBLE / HINDI MAIBABALIK
+              </p>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Sigurado ka bang nais mong permanenteng burahin ang lahat ng <strong>{messages.length}</strong> anonymous messages at reports sa sistema?
+                Mawawala ang lahat ng data mula sa database at server.
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-cyan-300 flex items-center space-x-2">
+              <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>Paalala: Awtomatiko ring binubura ng system ang mga lumang ulat na lampas na sa 30 araw (1 buwan).</span>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingAll}
+                onClick={() => setIsDeleteAllConfirmOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-mono font-bold text-xs transition-colors cursor-pointer"
+              >
+                Kanselahin
+              </button>
+
+              <button
+                type="button"
+                disabled={isDeletingAll}
+                onClick={handleDeleteAll}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-mono font-black text-xs flex items-center space-x-2 shadow-[0_0_20px_rgba(244,63,94,0.5)] transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingAll ? 'Binubura ang Lahat...' : 'Oo, Permanenteng Burahin Lahat'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

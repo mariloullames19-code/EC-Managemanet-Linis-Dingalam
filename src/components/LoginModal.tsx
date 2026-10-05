@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import QRCode from 'qrcode';
 import { checkEventCutoff } from '../utils/watermarkEngine';
 import { useDingalanClock, getDingalanNow } from '../utils/philippineClock';
+import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
 import {
   Lock,
   Mail,
@@ -102,6 +103,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const { time: phTime } = useDingalanClock();
   const [isUnfolded, setIsUnfolded] = useState<boolean>(true);
   const [isBroadcastHidden, setIsBroadcastHidden] = useState<boolean>(false);
+  const [isAnonymousModalOpen, setIsAnonymousModalOpen] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
@@ -812,6 +814,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Anonymous Citizen & Participant Reporting Box (Green Theme) */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/50 hover:bg-slate-950/60 border border-emerald-500/40 backdrop-blur-xl shadow-xl space-y-2.5 max-w-xl transition-all">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-emerald-300 font-mono font-bold text-xs">
+                  <EyeOff className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>KUMPIDENSIYAL NA MENSAHE SA ADMIN</span>
+                </div>
+                <span className="text-[10px] font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase">
+                  100% Anonymous
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed font-sans text-justify">
+                May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ng Admin ang inyong pangalan o pagkakakilanlan.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsAnonymousModalOpen(true)}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-bold text-xs flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all cursor-pointer hover:scale-[1.01] active:scale-95 border border-emerald-400/50"
+              >
+                <EyeOff className="w-4 h-4 text-emerald-200" />
+                <span>Pindutin para Mag-send ng Anonymous Message</span>
+              </button>
+            </div>
           </div>
 
           {/* --------------------------------------------------------------------- */}
@@ -923,7 +949,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </p>
                         
                         {/* Prominent Full-Width Upload Accomplishment Attendance Button */}
-                        <div className="pt-2 w-full">
+                        <div className="pt-2 w-full space-y-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -937,6 +963,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <Camera className="w-5 h-5 text-slate-950 shrink-0" />
                             <span className="tracking-wide uppercase">Mag-Upload ng Accomplishment Attendance Photo</span>
                             <Upload className="w-4 h-4 text-slate-950 shrink-0 ml-1" />
+                          </button>
+
+                          {/* Anonymous Report / Message Button inside Broadcast Card (Green Theme) */}
+                          <button
+                            type="button"
+                            onClick={() => setIsAnonymousModalOpen(true)}
+                            className="w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-600/30 via-teal-600/30 to-emerald-700/30 hover:bg-emerald-600/40 text-emerald-300 hover:text-emerald-100 font-mono font-bold text-xs flex items-center justify-center space-x-2 transition-all border border-emerald-400/60 shadow-[0_0_18px_rgba(16,185,129,0.25)] cursor-pointer hover:scale-[1.01] active:scale-95"
+                            title="Mag-send ng Anonymous Message o Sumbong sa Admin ukol sa patnubay o aktibidad na ito"
+                          >
+                            <EyeOff className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>Mag-send ng Anonymous Message / Sumbong sa Admin</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-400/25 text-emerald-300 border border-emerald-400/50 uppercase font-mono font-bold">
+                              Admin Only
+                            </span>
                           </button>
                         </div>
 
@@ -1172,6 +1212,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <span>Bumalik sa Paalala & QR Code</span>
                           </button>
                         </div>
+
+                        {/* Quick Anonymous Message Option under Login Form (Green Theme) */}
+                        <div className="pt-2 text-center border-t border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setIsAnonymousModalOpen(true)}
+                            className="w-full py-2 px-3 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-emerald-100 text-xs font-mono font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-sm"
+                            title="Magpadala ng Anonymous Message nang hindi kailangang mag-login"
+                          >
+                            <EyeOff className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Mag-send ng Anonymous Message (Hindi Kailangang Mag-Login)</span>
+                          </button>
+                        </div>
                       </form>
                     </div>
 
@@ -1320,6 +1373,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <span>Offline-First Synced</span>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* SEND ANONYMOUS MESSAGE MODAL (AVAILABLE PUBLICLY ON LOGIN PAGE)            */}
+      {/* ========================================================================= */}
+      {isAnonymousModalOpen && (
+        <SendAnonymousMessageModal
+          isOpen={isAnonymousModalOpen}
+          onClose={() => setIsAnonymousModalOpen(false)}
+          referencedActivityTitle={eventBroadcast?.activityTitle}
+          referencedLocation={
+            eventBroadcast
+              ? `Brgy. ${eventBroadcast.barangay} • ${eventBroadcast.targetArea}`
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 };

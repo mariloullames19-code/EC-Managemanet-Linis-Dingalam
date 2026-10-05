@@ -1199,14 +1199,40 @@ export class ApiService {
   }
 
   async getAnonymousMessages(): Promise<{ success: boolean; messages: AnonymousMessage[] }> {
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    // Helper to auto-purge records older than 30 days (1 month)
+    const filterAndPurgeExpired = (list: AnonymousMessage[]) => {
+      const active: AnonymousMessage[] = [];
+      const expired: AnonymousMessage[] = [];
+      list.forEach(m => {
+        const ts = new Date(m.timestamp || m.createdAt).getTime();
+        if (!isNaN(ts) && (now - ts) > THIRTY_DAYS_MS) {
+          expired.push(m);
+        } else {
+          active.push(m);
+        }
+      });
+
+      // Asynchronously clean up expired items in Firestore
+      if (expired.length > 0) {
+        expired.forEach(exp => {
+          deleteDoc(doc(db, 'anonymous_messages', exp.id)).catch(() => {});
+        });
+      }
+      return active;
+    };
+
     // 1. Try Server API
     try {
       const res = await fetch('/api/anonymous-messages');
       if (res.ok) {
         const data = await res.json();
         if (data.messages && Array.isArray(data.messages)) {
-          localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(data.messages));
-          return { success: true, messages: data.messages };
+          const fresh = filterAndPurgeExpired(data.messages);
+          localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(fresh));
+          return { success: true, messages: fresh };
         }
       }
     } catch {}
@@ -1216,9 +1242,10 @@ export class ApiService {
       const snap = await getDocs(collection(db, 'anonymous_messages'));
       if (!snap.empty) {
         const list: AnonymousMessage[] = snap.docs.map(d => d.data() as AnonymousMessage);
-        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(list));
-        return { success: true, messages: list };
+        const fresh = filterAndPurgeExpired(list);
+        fresh.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(fresh));
+        return { success: true, messages: fresh };
       }
     } catch {}
 
@@ -1226,12 +1253,16 @@ export class ApiService {
     try {
       const raw = localStorage.getItem('ld_anonymous_messages_v1');
       if (raw) {
-        return { success: true, messages: JSON.parse(raw) };
+        const list: AnonymousMessage[] = JSON.parse(raw);
+        const fresh = filterAndPurgeExpired(list);
+        localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(fresh));
+        return { success: true, messages: fresh };
       }
     } catch {}
 
-    localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(INITIAL_ANONYMOUS_MESSAGES));
-    return { success: true, messages: INITIAL_ANONYMOUS_MESSAGES };
+    const freshSeed = filterAndPurgeExpired(INITIAL_ANONYMOUS_MESSAGES);
+    localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(freshSeed));
+    return { success: true, messages: freshSeed };
   }
 
   async markAnonymousMessageStatus(
@@ -1284,6 +1315,29 @@ export class ApiService {
     try {
       await deleteDoc(doc(db, 'anonymous_messages', id));
     } catch {}
+
+    return { success: true };
+  }
+
+  async deleteAllAnonymousMessages(): Promise<{ success: boolean }> {
+    // 1. Delete on Server
+    try {
+      fetch('/api/anonymous-messages', { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    // 2. Clear in LocalStorage
+    try {
+      localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify([]));
+    } catch {}
+
+    // 3. Delete all docs in Firestore
+    try {
+      const snap = await getDocs(collection(db, 'anonymous_messages'));
+      const batchPromises = snap.docs.map((docSnap) => deleteDoc(docSnap.ref));
+      await Promise.all(batchPromises);
+    } catch (err) {
+      console.warn('Firestore deleteAllAnonymousMessages error:', err);
+    }
 
     return { success: true };
   }
