@@ -3,6 +3,8 @@ import { Activity, Beneficiary, AttendanceRecord, User } from '../types';
 import { burnGeotagWatermark, getGpsCoordinates, formatCoordinatesDMS, formatPSTDate, GeotagResult } from '../utils/watermarkEngine';
 import { verifyQrSignature } from '../utils/crypto';
 import { UploadAccomplishmentModal } from './UploadAccomplishmentModal';
+import { FullScreenPhotoViewer } from './FullScreenPhotoViewer';
+import { formatPhilippineDateTime } from '../utils/philippineClock';
 import {
   Camera,
   QrCode,
@@ -70,6 +72,7 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
   const [submittedRecord, setSubmittedRecord] = useState<AttendanceRecord | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isAccomplishmentPopupOpen, setIsAccomplishmentPopupOpen] = useState(false);
+  const [isFullscreenPhotoOpen, setIsFullscreenPhotoOpen] = useState(false);
 
   // Manual QR input or search
   const [manualCodeInput, setManualCodeInput] = useState('');
@@ -733,7 +736,11 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
 
               {/* Watermarked Result Preview */}
               {capturedRawImage && watermarkedResult && (
-                <div className="relative w-full h-full">
+                <div
+                  className="relative w-full h-full cursor-pointer group"
+                  onClick={() => setIsFullscreenPhotoOpen(true)}
+                  title="Pindutin para i-fullscreen kasama ang eksaktong oras ng Pilipinas"
+                >
                   <img
                     src={watermarkedResult.watermarkedDataUrl}
                     alt="Watermarked accomplishment"
@@ -741,6 +748,9 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
                   />
                   <div className="absolute top-3 right-3 bg-emerald-600 text-white font-mono text-[10px] font-bold px-2.5 py-1 rounded shadow">
                     CANVAS HUD BURNED & COMPRESSED
+                  </div>
+                  <div className="absolute bottom-3 inset-x-3 bg-slate-950/80 text-center py-1.5 rounded-lg border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold opacity-90 group-hover:opacity-100 transition-opacity">
+                    Pindutin para I-fullscreen (Tingnan sa Oras ng Pilipinas)
                   </div>
                 </div>
               )}
@@ -893,8 +903,10 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
               <span className="text-sky-400 font-bold">{submittedRecord.latitude}° N, {submittedRecord.longitude}° E</span>
             </div>
             <div className="flex justify-between border-b border-slate-800 pb-2">
-              <span className="text-slate-400">Timestamp:</span>
-              <span className="text-slate-300">{submittedRecord.localPhTime}</span>
+              <span className="text-slate-400">Oras ng Pilipinas:</span>
+              <span className="text-cyan-300 font-bold">
+                {formatPhilippineDateTime(submittedRecord.timestamp || submittedRecord.localPhTime).fullCombinedTagalog}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Verified By:</span>
@@ -903,11 +915,20 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
           </div>
 
           {/* Next Action */}
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setIsFullscreenPhotoOpen(true)}
+              className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 font-bold text-sm rounded-xl shadow-lg transition-transform active:scale-95 inline-flex items-center justify-center space-x-2"
+            >
+              <Camera className="w-4 h-4 mr-1.5 text-emerald-400" />
+              <span>I-fullscreen ang Larawan</span>
+            </button>
+
             <button
               type="button"
               onClick={handleResetForNext}
-              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm rounded-xl shadow-xl transition-transform active:scale-95 inline-flex items-center space-x-2"
+              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm rounded-xl shadow-xl transition-transform active:scale-95 inline-flex items-center justify-center space-x-2"
             >
               <QrCode className="w-4 h-4 mr-1.5" />
               <span>Scan Next Beneficiary</span>
@@ -930,6 +951,37 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
             setCurrentStep(4);
             setIsAccomplishmentPopupOpen(false);
           }}
+        />
+      )}
+
+      {/* Fullscreen Photo Viewer */}
+      {isFullscreenPhotoOpen && (watermarkedResult || submittedRecord) && (
+        <FullScreenPhotoViewer
+          isOpen={isFullscreenPhotoOpen}
+          onClose={() => setIsFullscreenPhotoOpen(false)}
+          photos={
+            submittedRecord?.accomplishmentPhotos && submittedRecord.accomplishmentPhotos.length > 0
+              ? submittedRecord.accomplishmentPhotos
+              : submittedRecord?.photoWatermarkedUrl
+              ? [submittedRecord.photoWatermarkedUrl]
+              : watermarkedResult?.watermarkedDataUrl
+              ? [watermarkedResult.watermarkedDataUrl]
+              : []
+          }
+          beneficiaryName={
+            submittedRecord?.beneficiaryName ||
+            (selectedBeneficiary ? `${selectedBeneficiary.firstName} ${selectedBeneficiary.lastName}` : 'Benepisyaryo')
+          }
+          beneficiaryCode={submittedRecord?.beneficiaryCode || selectedBeneficiary?.beneCode || 'DING-000'}
+          activityTitle={submittedRecord?.activityTitle || selectedActivity?.title || 'Linis Dingalan Cleanup'}
+          locationDescription={submittedRecord?.locationDescription || selectedActivity?.targetArea || 'Dingalan, Aurora'}
+          timestamp={submittedRecord?.timestamp || new Date().toISOString()}
+          localPhTime={submittedRecord?.localPhTime || watermarkedResult?.localPhTime}
+          latitude={submittedRecord?.latitude || currentCoords?.latitude}
+          longitude={submittedRecord?.longitude || currentCoords?.longitude}
+          accuracyMeters={submittedRecord?.accuracyMeters || currentCoords?.accuracy}
+          altitudeMeters={submittedRecord?.altitudeMeters || currentCoords?.altitude}
+          verifiedByOfficer={submittedRecord?.verifiedByOfficerName || currentUser.name}
         />
       )}
     </div>

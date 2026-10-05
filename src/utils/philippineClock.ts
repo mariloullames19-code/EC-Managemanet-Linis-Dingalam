@@ -95,6 +95,176 @@ export function formatDingalanFull(date?: Date): string {
   }
 }
 
+export interface PhilippineDateTimeInfo {
+  dayOfWeekTagalog: string;
+  weekdayEn: string;
+  monthTagalog: string;
+  dayNum: string;
+  yearNum: string;
+  dayAndDateTagalog: string;
+  dayAndDateEnglish: string;
+  exactTimeWithSeconds: string;
+  fullCombinedTagalog: string;
+}
+
+/**
+ * Authoritative Philippine Standard Time (PST - UTC+8) Formatter
+ * Accurately extracts the Day of the Week (Araw), Full Date, and Exact Time with Seconds (Oras)
+ * for Accomplishment Attendance Upload Proof.
+ */
+export function formatPhilippineDateTime(timestampOrStr?: string | Date, fallbackString?: string): PhilippineDateTimeInfo {
+  let date: Date | null = null;
+
+  if (timestampOrStr instanceof Date && !isNaN(timestampOrStr.getTime())) {
+    date = timestampOrStr;
+  } else if (typeof timestampOrStr === 'string' && timestampOrStr.trim()) {
+    const raw = timestampOrStr.trim();
+    // Try standard ISO Date parsing
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      date = d;
+    } else {
+      // Try stripping PST
+      const clean = raw.replace(/PST/gi, '').trim();
+      const d2 = new Date(clean);
+      if (!isNaN(d2.getTime())) {
+        date = d2;
+      }
+    }
+  }
+
+  if (!date && typeof fallbackString === 'string' && fallbackString.trim()) {
+    const clean = fallbackString.replace(/PST/gi, '').trim();
+    const d3 = new Date(clean);
+    if (!isNaN(d3.getTime())) {
+      date = d3;
+    }
+  }
+
+  // Fallback regex parser for mm/dd/yyyy or yyyy-mm-dd patterns
+  if (!date && typeof timestampOrStr === 'string') {
+    const m = timestampOrStr.match(/(\d{1,4})[\/\-](\d{1,2})[\/\-](\d{1,4})[,\s]+(\d{1,2}):(\d{2}):?(\d{2})?\s*(AM|PM)?/i);
+    if (m) {
+      let y = parseInt(m[1], 10);
+      let mo = parseInt(m[2], 10);
+      let day = parseInt(m[3], 10);
+      if (y < 100) {
+        // e.g. 10/6/2026 -> m[1]=10 (month), m[2]=6 (day), m[3]=2026 (year)
+        mo = parseInt(m[1], 10);
+        day = parseInt(m[2], 10);
+        y = parseInt(m[3], 10);
+      }
+      let h = parseInt(m[4], 10);
+      const min = parseInt(m[5], 10);
+      const sec = m[6] ? parseInt(m[6], 10) : 0;
+      const ampm = m[7] ? m[7].toUpperCase() : '';
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      // Dingalan time UTC+8
+      const epochMs = Date.UTC(y, mo - 1, day, h - 8, min, sec);
+      date = new Date(epochMs);
+    }
+  }
+
+  if (!date || isNaN(date.getTime())) {
+    date = getDingalanNow();
+  }
+
+  const dayNamesTagalog = ['Linggo', 'Lunes', 'Martes', 'Miyerkules', 'Huwebes', 'Biyernes', 'Sabado'];
+  const dayNamesEnglish = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNamesTagalog = [
+    'Enero', 'Pebrero', 'Marso', 'Abril', 'Mayo', 'Hunyo',
+    'Hulyo', 'Agosto', 'Setyembre', 'Oktubre', 'Nobyembre', 'Disyembre'
+  ];
+  const monthNamesEnglish = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'numeric',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    }).formatToParts(date);
+
+    const partMap: Record<string, string> = {};
+    parts.forEach((p) => {
+      partMap[p.type] = p.value;
+    });
+
+    const weekdayEn = partMap.weekday || 'Monday';
+    const dayIdx = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(weekdayEn);
+    const dayOfWeekTagalog = dayIdx >= 0 ? dayNamesTagalog[dayIdx] : weekdayEn;
+
+    const mNum = parseInt(partMap.month, 10);
+    const monthTagalog = mNum >= 1 && mNum <= 12 ? monthNamesTagalog[mNum - 1] : partMap.month;
+    const monthEn = mNum >= 1 && mNum <= 12 ? monthNamesEnglish[mNum - 1] : partMap.month;
+    const dayNum = partMap.day;
+    const yearNum = partMap.year;
+
+    const hour = partMap.hour;
+    const minute = partMap.minute;
+    const second = partMap.second;
+    const dayPeriod = partMap.dayPeriod || (parseInt(hour, 10) >= 12 ? 'PM' : 'AM');
+
+    const dayAndDateTagalog = `${dayOfWeekTagalog}, ${monthTagalog} ${dayNum}, ${yearNum}`;
+    const dayAndDateEnglish = `${weekdayEn}, ${monthEn} ${dayNum}, ${yearNum}`;
+    const exactTimeWithSeconds = `${hour}:${minute}:${second} ${dayPeriod}`;
+
+    return {
+      dayOfWeekTagalog,
+      weekdayEn,
+      monthTagalog,
+      dayNum,
+      yearNum,
+      dayAndDateTagalog,
+      dayAndDateEnglish,
+      exactTimeWithSeconds,
+      fullCombinedTagalog: `${dayAndDateTagalog} • ${exactTimeWithSeconds} PST`,
+    };
+  } catch {
+    // Math fallback
+    const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+    const pstDate = new Date(utc + 8 * 3600000);
+    const dayOfWeekTagalog = dayNamesTagalog[pstDate.getDay()];
+    const weekdayEn = dayNamesEnglish[pstDate.getDay()];
+    const monthTagalog = monthNamesTagalog[pstDate.getMonth()];
+    const monthEn = monthNamesEnglish[pstDate.getMonth()];
+    const dayNum = String(pstDate.getDate()).padStart(2, '0');
+    const yearNum = String(pstDate.getFullYear());
+
+    let h = pstDate.getHours();
+    const min = String(pstDate.getMinutes()).padStart(2, '0');
+    const sec = String(pstDate.getSeconds()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const strH = String(h).padStart(2, '0');
+
+    const dayAndDateTagalog = `${dayOfWeekTagalog}, ${monthTagalog} ${dayNum}, ${yearNum}`;
+    const dayAndDateEnglish = `${weekdayEn}, ${monthEn} ${dayNum}, ${yearNum}`;
+    const exactTimeWithSeconds = `${strH}:${min}:${sec} ${ampm}`;
+
+    return {
+      dayOfWeekTagalog,
+      weekdayEn,
+      monthTagalog,
+      dayNum,
+      yearNum,
+      dayAndDateTagalog,
+      dayAndDateEnglish,
+      exactTimeWithSeconds,
+      fullCombinedTagalog: `${dayAndDateTagalog} • ${exactTimeWithSeconds} PST`,
+    };
+  }
+}
+
 /**
  * Calculates realtime remaining countdown against Dingalan server time (UTC+8)
  */

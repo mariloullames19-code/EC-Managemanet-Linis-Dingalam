@@ -29,7 +29,8 @@ import { ManualAccomplishmentModal } from './components/ManualAccomplishmentModa
 import { GenerateQrEventModal } from './components/GenerateQrEventModal';
 import { EventQrNoticeModal } from './components/EventQrNoticeModal';
 import { GeneratePersonalQrModal } from './components/GeneratePersonalQrModal';
-import { EventQrBroadcast } from './types';
+import { AdminAnonymousInboxModal } from './components/AdminAnonymousInboxModal';
+import { EventQrBroadcast, AnonymousMessage } from './types';
 import { checkEventCutoff } from './utils/watermarkEngine';
 import systemWallpaper from './assets/images/dingalan_system_wallpaper.jpg';
 import { db } from './firebase';
@@ -108,6 +109,8 @@ export default function App() {
   const [isManualAccomplishmentModalOpen, setIsManualAccomplishmentModalOpen] = useState<boolean>(false);
   const [isGenerateQrModalOpen, setIsGenerateQrModalOpen] = useState<boolean>(false);
   const [isEventQrNoticeModalOpen, setIsEventQrNoticeModalOpen] = useState<boolean>(false);
+  const [isAnonymousInboxModalOpen, setIsAnonymousInboxModalOpen] = useState<boolean>(false);
+  const [anonymousMessages, setAnonymousMessages] = useState<AnonymousMessage[]>([]);
   const [latestEventBroadcast, setLatestEventBroadcast] = useState<EventQrBroadcast | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -158,6 +161,9 @@ export default function App() {
 
       const benes = await api.getBeneficiaries();
       setBeneficiaries(benes);
+
+      const anonRes = await api.getAnonymousMessages();
+      setAnonymousMessages(anonRes.messages || []);
 
       const actData = await api.getActivities();
       setActivities(actData.activities);
@@ -348,6 +354,11 @@ export default function App() {
           const newBc = event.data.broadcast as EventQrBroadcast;
           setLatestEventBroadcast(newBc);
           showToast(`Bagong Opisyal na Paalala at QR Code: ${newBc.activityTitle}!`, 'success');
+        }
+        if (event.data?.type === 'NEW_ANONYMOUS_MESSAGE' && event.data.message) {
+          const newAnon = event.data.message as AnonymousMessage;
+          setAnonymousMessages((prev) => [newAnon, ...prev.filter((m) => m.id !== newAnon.id)]);
+          showToast('Nakatanggap ng Bagong Anonymous Report sa Admin Inbox!', 'info');
         }
       };
       return () => bc.close();
@@ -801,6 +812,8 @@ export default function App() {
           onOpenApprovalsModal={isAdminOrSuperAdmin ? () => setIsApprovalsModalOpen(true) : undefined}
           attendancesCount={attendances.length}
           onOpenAccomplishmentModal={isAdminOrSuperAdmin ? () => setIsAccomplishmentModalOpen(true) : undefined}
+          anonymousMessagesCount={isAdminOrSuperAdmin ? anonymousMessages.filter(m => m.status === 'unread').length : 0}
+          onOpenAnonymousInboxModal={isAdminOrSuperAdmin ? () => setIsAnonymousInboxModalOpen(true) : undefined}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
           onOpenManualUploadModal={() => setIsManualAccomplishmentModalOpen(true)}
           onOpenGenerateQrModal={isAdminOrSuperAdmin ? () => setIsGenerateQrModalOpen(true) : undefined}
@@ -1116,6 +1129,20 @@ export default function App() {
             setIsUploadAccomplishmentModalOpen(true);
           }}
         />
+
+        {/* Admin-Only Anonymous Messages Inbox Modal */}
+        {isAdminOrSuperAdmin && (
+          <AdminAnonymousInboxModal
+            isOpen={isAnonymousInboxModalOpen}
+            onClose={() => setIsAnonymousInboxModalOpen(false)}
+            currentUser={currentUser}
+            messages={anonymousMessages}
+            onRefreshMessages={() => {
+              api.getAnonymousMessages().then((res) => setAnonymousMessages(res.messages || []));
+            }}
+            onOpenBroadcastModal={() => setIsGenerateQrModalOpen(true)}
+          />
+        )}
 
         {/* Footer */}
         <footer className="border-t border-slate-800/80 bg-slate-950/80 backdrop-blur-xl py-4 mt-auto">

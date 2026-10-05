@@ -153,7 +153,7 @@ export function formatCoordinatesDMS(lat: number, lng: number): string {
   return `${formatDMS(lat, latDir)} ${formatDMS(lng, lngDir)}`;
 }
 
-import { getDingalanNow, formatDingalanFull } from './philippineClock';
+import { getDingalanNow, formatDingalanFull, formatPhilippineDateTime } from './philippineClock';
 
 /**
  * Format date in Philippine Standard Time (PST - UTC+8) with exact seconds, synchronized for Dingalan, Aurora
@@ -248,7 +248,8 @@ export async function burnGeotagWatermark(
   const coords = forcedCoords || await getGpsCoordinates(metadata.barangay);
   const now = new Date();
   const timestampISO = now.toISOString();
-  const localPhTime = formatPSTDate(now);
+  const dtInfo = formatPhilippineDateTime(now);
+  const localPhTime = `${dtInfo.dayOfWeekTagalog}, ${dtInfo.monthTagalog} ${dtInfo.dayNum}, ${dtInfo.yearNum} • ${dtInfo.exactTimeWithSeconds} PST`;
 
   // 2. Load Source Image
   const img = await loadImage(imageSource);
@@ -349,12 +350,12 @@ export async function burnGeotagWatermark(
     startY + lineHeight * 3.1
   );
 
-  // Timestamp & Officer verification stamp
-  ctx.font = '11px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#94a3b8'; // Slate-400
-  const officerTag = metadata.verifiedByOfficer ? ` | OFFICER: ${metadata.verifiedByOfficer}` : '';
+  // Timestamp & Officer verification stamp in Philippine Standard Time (PST - UTC+8)
+  ctx.font = 'bold 11px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#67e8f9'; // Cyan-300
+  const officerTag = metadata.verifiedByOfficer ? ` | OPISYAL: ${metadata.verifiedByOfficer}` : '';
   ctx.fillText(
-    `TIMESTAMP: ${localPhTime} PST${officerTag} | DINGALAN, AURORA`,
+    `NA-UPLOAD (ORAS SA PILIPINAS): ${localPhTime}${officerTag} | DINGALAN, AURORA`,
     paddingX,
     startY + lineHeight * 4.0
   );

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Beneficiary, Activity, AttendanceRecord, User, EventQrBroadcast } from '../types';
 import { burnGeotagWatermark, getGpsCoordinates, detectDingalanAreaByCoordinates, formatCoordinatesDMS, checkEventCutoff } from '../utils/watermarkEngine';
+import { FullScreenPhotoViewer } from './FullScreenPhotoViewer';
+import { formatPhilippineDateTime } from '../utils/philippineClock';
 import {
   Camera,
   Upload,
@@ -65,6 +67,7 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [submittedRecord, setSubmittedRecord] = useState<AttendanceRecord | null>(null);
+  const [previewFullscreenIndex, setPreviewFullscreenIndex] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -342,18 +345,35 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
                   <span className="text-slate-400">Mga Larawan:</span>
                   <span className="text-cyan-400 font-bold">{uploadedPhotos.length} Pictures</span>
                 </div>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-800">
+                  <span className="text-slate-400">Oras ng Pilipinas:</span>
+                  <span className="text-cyan-300 font-bold">
+                    {formatPhilippineDateTime(submittedRecord?.timestamp || new Date()).fullCombinedTagalog}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Status:</span>
                   <span className="text-emerald-300 font-bold">VERIFIED CLEANUP ATTENDANCE</span>
                 </div>
               </div>
 
-              <button
-                onClick={onClose}
-                className="w-full max-w-md mx-auto py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm shadow-[0_0_20px_rgba(16,185,129,0.35)] cursor-pointer"
-              >
-                Tapos na (Done)
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setPreviewFullscreenIndex(0)}
+                  className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg"
+                >
+                  <Images className="w-4 h-4 text-emerald-400" />
+                  <span>I-fullscreen ang Larawan ({uploadedPhotos.length})</span>
+                </button>
+
+                <button
+                  onClick={onClose}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_20px_rgba(16,185,129,0.35)] cursor-pointer"
+                >
+                  Tapos na (Done)
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -525,11 +545,23 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
               {/* Photos Gallery */}
               {uploadedPhotos.length > 0 && (
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                    <span>Pindutin ang picture para i-fullscreen at makita ang exact Philippine time:</span>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFullscreenIndex(0)}
+                      className="text-emerald-400 hover:underline font-bold"
+                    >
+                      I-fullscreen Lahat
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {uploadedPhotos.map((photo, index) => (
                       <div
                         key={index}
-                        className="group relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-700 shadow"
+                        onClick={() => setPreviewFullscreenIndex(index)}
+                        className="group relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-700 hover:border-emerald-400 shadow transition-all cursor-pointer"
+                        title="Pindutin para i-fullscreen"
                       >
                         <img
                           src={photo}
@@ -539,10 +571,18 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
                         <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-950/80 text-[9px] font-mono text-emerald-300 font-bold border border-emerald-500/30">
                           #{index + 1}
                         </div>
+                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <span className="text-[10px] font-mono text-white bg-slate-950/80 px-2 py-1 rounded-lg border border-emerald-400/50">
+                            Pindutin para I-fullscreen
+                          </span>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => handleRemovePhoto(index)}
-                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-950/90 text-rose-300 hover:text-white border border-rose-500/50 opacity-90 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemovePhoto(index);
+                          }}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-950/90 text-rose-300 hover:text-white border border-rose-500/50 opacity-90 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
                           title="Tanggalin ang larawang ito"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -607,6 +647,28 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
           )}
         </div>
       </div>
+
+      {/* Full-Screen Photo Viewer for Upload Accomplishment */}
+      {previewFullscreenIndex !== null && uploadedPhotos.length > 0 && (
+        <FullScreenPhotoViewer
+          isOpen={previewFullscreenIndex !== null}
+          onClose={() => setPreviewFullscreenIndex(null)}
+          photos={uploadedPhotos}
+          initialIndex={previewFullscreenIndex}
+          beneficiaryName={fullName || `${beneficiary.firstName} ${beneficiary.lastName}`}
+          beneficiaryCode={beneficiary.beneCode}
+          activityTitle={activity?.title || 'Linis Dingalan Environmental Compliance Program'}
+          locationDescription={cleanedArea || `${activity?.targetArea || 'Dingalan Area'}, Dingalan`}
+          cleanupNotes={accomplishmentNotes}
+          timestamp={submittedRecord?.timestamp || new Date().toISOString()}
+          localPhTime={submittedRecord?.localPhTime}
+          latitude={gpsCoords?.latitude}
+          longitude={gpsCoords?.longitude}
+          accuracyMeters={gpsCoords?.accuracy}
+          altitudeMeters={gpsCoords?.altitude}
+          verifiedByOfficer={currentUser.name}
+        />
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, StorageMetrics, EventQrBroadcast } from '../types';
+import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, StorageMetrics, EventQrBroadcast, AnonymousMessage } from '../types';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -423,3 +423,46 @@ export const INITIAL_EVENT_BROADCAST: EventQrBroadcast = {
   sentByAdminName: 'ENGR. JOHN MARK N. ORLASAN',
   sentAt: new Date().toISOString(),
 };
+
+export const INITIAL_ANONYMOUS_MESSAGES: AnonymousMessage[] = [
+  {
+    id: 'anon-msg-001',
+    senderAlias: 'Anonymous Contributor #ANON-7821',
+    category: 'report',
+    categoryLabelTagalog: 'Ulat sa Paglilinis / Field Report',
+    priority: 'urgent',
+    message: 'Magandang araw Admin. Nais ko lamang ipabatid na sa bandang dulo ng Feeder Port seawall sa Brgy. Paltic ay marami pang natitirang mga lumang lambat at plastic na naanod mula sa dagat. Baka po kailangan magdagdag ng 2 pang sako o karagdagang kagawad para mahakot agad bago tumaas ang tubig.',
+    referencedActivityTitle: 'Coastal Clean-Up & Mangrove Rehabilitation',
+    referencedLocation: 'Dingalan Feeder Port & Paltic Seawall, Brgy. Paltic',
+    timestamp: '2026-10-04T07:15:00.000Z',
+    localPhTime: 'Linggo, Oktubre 04, 2026 • 03:15:00 PM PST',
+    status: 'unread',
+    adminNotes: 'Naka-assign na sa MENRO field team para sa pickup.',
+  },
+  {
+    id: 'anon-msg-002',
+    senderAlias: 'Anonymous Field Member #ANON-4109',
+    category: 'feedback',
+    categoryLabelTagalog: 'Mungkahi / Rekomendasyon',
+    priority: 'normal',
+    message: 'Napakaganda po ng paalala sa login page ukol sa hydration at mga kagamitan. Suhestiyon ko lamang po sana na magkaroon ng water refilling station malapit sa Barangay Hall para hindi na kailangan bumili ng single-use mineral water bottles ang mga benepisyaryo.',
+    referencedActivityTitle: 'Linis Dingalan Environmental Compliance Program',
+    referencedLocation: 'Town Center & Coastal Shore, Brgy. Poblacion',
+    timestamp: '2026-10-04T08:30:00.000Z',
+    localPhTime: 'Linggo, Oktubre 04, 2026 • 04:30:00 PM PST',
+    status: 'read',
+  },
+  {
+    id: 'anon-msg-003',
+    senderAlias: 'Anonymous Attendee #ANON-9234',
+    category: 'allowance_inquiry',
+    categoryLabelTagalog: 'Katanungan ukol sa Stipend / Allowance',
+    priority: 'normal',
+    message: 'Admin, may tanong lang po kung kailan po ang official release schedule ng allowance para sa coastal cleanup ngayong buwan. Salamat po sa patuloy na pag-asikaso sa amin.',
+    referencedActivityTitle: 'Linis Dingalan Coastal Seaboard Monitoring',
+    referencedLocation: 'Pacific Coastline, Brgy. Umiray',
+    timestamp: '2026-10-04T09:45:00.000Z',
+    localPhTime: 'Linggo, Oktubre 04, 2026 • 05:45:00 PM PST',
+    status: 'unread',
+  }
+];

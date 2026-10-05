@@ -181,3 +181,20 @@ export interface EventQrBroadcast {
   sentByAdminName: string;
   sentAt: string;
 }
+
+export interface AnonymousMessage {
+  id: string;
+  senderAlias: string;
+  category: 'report' | 'feedback' | 'allowance_inquiry' | 'emergency' | 'general';
+  categoryLabelTagalog: string;
+  priority: 'normal' | 'urgent' | 'confidential';
+  message: string;
+  referencedPhotoUrl?: string;
+  referencedActivityTitle?: string;
+  referencedLocation?: string;
+  timestamp: string;
+  localPhTime: string;
+  status: 'unread' | 'read' | 'resolved';
+  adminNotes?: string;
+  createdAt?: string;
+}

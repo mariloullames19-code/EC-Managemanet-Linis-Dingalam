@@ -19,6 +19,7 @@ import {
   Bell,
   Images,
   Upload,
+  EyeOff,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,6 +33,8 @@ interface HeaderProps {
   onOpenApprovalsModal?: () => void;
   attendancesCount?: number;
   onOpenAccomplishmentModal?: () => void;
+  anonymousMessagesCount?: number;
+  onOpenAnonymousInboxModal?: () => void;
   onOpenScanQrModal?: () => void;
   onOpenManualUploadModal?: () => void;
   onOpenGenerateQrModal?: () => void;
@@ -49,6 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenApprovalsModal,
   attendancesCount = 0,
   onOpenAccomplishmentModal,
+  anonymousMessagesCount = 0,
+  onOpenAnonymousInboxModal,
   onOpenScanQrModal,
   onOpenManualUploadModal,
   onOpenGenerateQrModal,
@@ -280,6 +285,23 @@ export const Header: React.FC<HeaderProps> = ({
             <Clock className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
             <span className="font-bold">{phTime || 'Loading Dingalan Time...'}</span>
           </div>
+
+          {/* Anonymous Messages Inbox Button (For Admin & Super Admin) */}
+          {isAdminOrSuperAdmin && onOpenAnonymousInboxModal && (
+            <button
+              onClick={onOpenAnonymousInboxModal}
+              className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all cursor-pointer shrink-0"
+              title="Tingnan ang mga Anonymous Messages at Reports mula sa field (Admin Only)"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Anonymous Inbox</span>
+              {anonymousMessagesCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] animate-pulse">
+                  {anonymousMessagesCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Accomplishment Attendance Records Button (For Admin & Super Admin) */}
           {isAdminOrSuperAdmin && onOpenAccomplishmentModal && (

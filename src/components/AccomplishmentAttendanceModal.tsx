@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AttendanceRecord, User } from '../types';
+import { FullScreenPhotoViewer } from './FullScreenPhotoViewer';
+import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
+import { formatPhilippineDateTime } from '../utils/philippineClock';
 import {
   Camera,
   Images,
@@ -20,6 +23,7 @@ import {
   Filter,
   Trash2,
   AlertTriangle,
+  EyeOff,
 } from 'lucide-react';
 
 interface AccomplishmentAttendanceModalProps {
@@ -58,6 +62,7 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
   // Delete All State
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isAnonymousSendOpen, setIsAnonymousSendOpen] = useState<boolean>(false);
 
   // Trigger auto-prune of records older than 1 month (30 days) when modal is opened
   useEffect(() => {
@@ -324,10 +329,20 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
 
                           {/* Time Submitted */}
                           <td className="py-3 px-4 font-mono text-slate-300">
-                            <div className="flex items-center gap-1.5 text-[11px] text-cyan-300 bg-slate-900/80 px-2 py-1 rounded-lg border border-cyan-500/30 inline-flex">
-                              <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
-                              <span>{att.localPhTime}</span>
-                            </div>
+                            {(() => {
+                              const dt = formatPhilippineDateTime(att.timestamp || att.localPhTime, att.localPhTime);
+                              return (
+                                <div className="flex flex-col text-[11px] text-cyan-300 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+                                  <span className="font-bold text-white flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
+                                    <span>{dt.exactTimeWithSeconds} PST</span>
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">
+                                    {dt.dayOfWeekTagalog}, {dt.monthTagalog} {dt.dayNum}, {dt.yearNum}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* Photos Count Badge */}
@@ -516,10 +531,20 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>Gawain: <strong className="text-white">{selectedRecordForPhotos.activityTitle}</strong></span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-cyan-300 bg-cyan-950/50 px-2.5 py-1 rounded-lg border border-cyan-500/30 font-bold">
-                    <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span>Oras Naipasa: {selectedRecordForPhotos.localPhTime}</span>
-                  </div>
+                  {(() => {
+                    const dt = formatPhilippineDateTime(
+                      selectedRecordForPhotos.timestamp || selectedRecordForPhotos.localPhTime,
+                      selectedRecordForPhotos.localPhTime
+                    );
+                    return (
+                      <div className="flex items-center gap-1.5 text-cyan-300 bg-cyan-950/70 px-3 py-1.5 rounded-lg border border-cyan-500/40 font-mono text-[11px] font-bold shadow-sm">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0 animate-pulse" />
+                        <span>
+                          <strong>Na-upload:</strong> {dt.dayOfWeekTagalog}, {dt.monthTagalog} {dt.dayNum}, {dt.yearNum} ganap na <strong className="text-white underline">{dt.exactTimeWithSeconds} PST</strong>
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -586,8 +611,18 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
               )}
             </div>
 
-            {/* Bottom Close Bar */}
-            <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/90 flex justify-end">
+            {/* Bottom Close Bar with Anonymous Report Button */}
+            <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/90 flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAnonymousSendOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-mono font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-md"
+                title="Mag-send ng Anonymous Report o Feedback sa Admin ukol sa larawang ito"
+              >
+                <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                <span>Mag-send ng Anonymous Message sa Admin</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setSelectedRecordForPhotos(null)}
@@ -601,49 +636,27 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
       )}
 
       {/* ========================================================================= */}
-      {/* FULL-SCREEN PHOTO LIGHTBOX (ZOOM)                                         */}
+      {/* FULL-SCREEN PHOTO LIGHTBOX WITH PHILIPPINE TIME & GEOTAG OVERLAY          */}
       {/* ========================================================================= */}
       {activePhotoLightbox && (
-        <div className="fixed inset-0 z-70 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 animate-fadeIn">
-          <button
-            type="button"
-            onClick={() => setActivePhotoLightbox(null)}
-            className="absolute top-5 right-5 p-2 rounded-full bg-slate-800/80 text-white hover:bg-slate-700 transition-colors cursor-pointer"
-            title="Isara ang zoom"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
-          <div className="max-w-4xl w-full space-y-4 text-center">
-            <div className="relative inline-block max-h-[75vh] rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl bg-slate-950">
-              <img
-                src={activePhotoLightbox.photoUrl}
-                alt="Accomplishment Full Proof"
-                className="max-h-[75vh] w-auto mx-auto object-contain"
-              />
-            </div>
-
-            <div className="bg-slate-900/90 border border-slate-700 p-4 rounded-2xl max-w-2xl mx-auto text-left space-y-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-base font-black text-white">
-                    {activePhotoLightbox.record.beneficiaryName} ({activePhotoLightbox.record.beneficiaryCode})
-                  </h4>
-                  <p className="text-xs text-emerald-400 font-semibold">
-                    {activePhotoLightbox.record.activityTitle}
-                  </p>
-                </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  Larawan {activePhotoLightbox.photoIndex + 1} / {activePhotoLightbox.totalPhotos}
-                </span>
-              </div>
-              <div className="text-xs text-slate-300 font-mono flex items-center justify-between pt-1 border-t border-slate-800">
-                <span>{activePhotoLightbox.record.localPhTime}</span>
-                <span>{activePhotoLightbox.record.locationDescription}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FullScreenPhotoViewer
+          isOpen={!!activePhotoLightbox}
+          onClose={() => setActivePhotoLightbox(null)}
+          photos={getRecordPhotos(activePhotoLightbox.record)}
+          initialIndex={activePhotoLightbox.photoIndex}
+          beneficiaryName={activePhotoLightbox.record.beneficiaryName}
+          beneficiaryCode={activePhotoLightbox.record.beneficiaryCode}
+          activityTitle={activePhotoLightbox.record.activityTitle}
+          locationDescription={activePhotoLightbox.record.locationDescription}
+          cleanupNotes={activePhotoLightbox.record.accomplishmentNotes || activePhotoLightbox.record.notes}
+          timestamp={activePhotoLightbox.record.timestamp}
+          localPhTime={activePhotoLightbox.record.localPhTime}
+          latitude={activePhotoLightbox.record.latitude}
+          longitude={activePhotoLightbox.record.longitude}
+          accuracyMeters={activePhotoLightbox.record.accuracyMeters}
+          altitudeMeters={activePhotoLightbox.record.altitudeMeters}
+          verifiedByOfficer={activePhotoLightbox.record.verifiedByOfficerName}
+        />
       )}
       {/* ========================================================================= */}
       {/* CONFIRM PERMANENT DELETE ALL MODAL                                        */}
@@ -703,6 +716,16 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
             </div>
           </div>
         </div>
+      )}
+      {/* Anonymous Message Modal */}
+      {isAnonymousSendOpen && selectedRecordForPhotos && (
+        <SendAnonymousMessageModal
+          isOpen={isAnonymousSendOpen}
+          onClose={() => setIsAnonymousSendOpen(false)}
+          referencedPhotoUrl={getRecordPhotos(selectedRecordForPhotos)[0]}
+          referencedActivityTitle={selectedRecordForPhotos.activityTitle}
+          referencedLocation={selectedRecordForPhotos.locationDescription}
+        />
       )}
     </div>
   );

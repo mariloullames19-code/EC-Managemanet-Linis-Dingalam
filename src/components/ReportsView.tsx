@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Activity, AttendanceRecord, Beneficiary, DingalanBarangay, User } from '../types';
+import { FullScreenPhotoViewer } from './FullScreenPhotoViewer';
+import { formatPhilippineDateTime } from '../utils/philippineClock';
 import {
   FileText,
   Download,
@@ -30,7 +32,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const [selectedActivityId, setSelectedActivityId] = useState<string>('ALL');
   const [selectedBarangay, setSelectedBarangay] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [selectedRecordForViewer, setSelectedRecordForViewer] = useState<AttendanceRecord | null>(null);
 
   // Filtered attendance records
   const filteredAttendances = useMemo(() => {
@@ -290,7 +292,20 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     </td>
 
                     <td className="py-3.5 px-4 font-mono text-[11px] text-slate-300">
-                      {att.localPhTime}
+                      {(() => {
+                        const dt = formatPhilippineDateTime(att.timestamp || att.localPhTime, att.localPhTime);
+                        return (
+                          <div className="flex flex-col">
+                            <span className="font-bold text-white flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
+                              <span>{dt.exactTimeWithSeconds} PST</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {dt.dayOfWeekTagalog}, {dt.monthTagalog} {dt.dayNum}, {dt.yearNum}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -304,17 +319,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
                     <td className="py-3.5 px-4 text-center">
                       <button
-                        onClick={() => setPreviewPhotoUrl(att.photoWatermarkedUrl)}
-                        className="relative group inline-block"
-                        title="Click to view full-size Geotagged photograph"
+                        onClick={() => setSelectedRecordForViewer(att)}
+                        className="relative group inline-block cursor-pointer"
+                        title="Pindutin para tingnan sa Fullscreen kasama ang oras ng Pilipinas"
                       >
                         <img
                           src={att.photoWatermarkedUrl}
                           alt="Accomplishment Thumbnail"
                           className="w-14 h-10 object-cover rounded border border-slate-700 group-hover:border-emerald-400 transition-colors"
                         />
-                        <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-white font-mono rounded-b">
-                          HUD VIEW
+                        <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-emerald-300 font-mono rounded-b">
+                          FULL VIEW
                         </span>
                       </button>
                     </td>
@@ -360,30 +375,29 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
       </div>
 
-      {/* Full Screen Photo Watermark Viewer Modal */}
-      {previewPhotoUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="relative max-w-3xl w-full bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
-              <span className="text-xs font-mono font-bold text-emerald-400">
-                AUDITED GEOTAG WATERMARKED PHOTOGRAPH (CANVAS HUD)
-              </span>
-              <button
-                onClick={() => setPreviewPhotoUrl(null)}
-                className="text-slate-400 hover:text-white font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 bg-black flex items-center justify-center">
-              <img
-                src={previewPhotoUrl}
-                alt="Full Geotagged Accomplishment"
-                className="max-h-[75vh] w-auto object-contain rounded-lg"
-              />
-            </div>
-          </div>
-        </div>
+      {/* Full Screen Photo Viewer with Philippine Time and Geotag HUD */}
+      {selectedRecordForViewer && (
+        <FullScreenPhotoViewer
+          isOpen={!!selectedRecordForViewer}
+          onClose={() => setSelectedRecordForViewer(null)}
+          photos={
+            selectedRecordForViewer.accomplishmentPhotos && selectedRecordForViewer.accomplishmentPhotos.length > 0
+              ? selectedRecordForViewer.accomplishmentPhotos
+              : [selectedRecordForViewer.photoWatermarkedUrl]
+          }
+          beneficiaryName={selectedRecordForViewer.beneficiaryName}
+          beneficiaryCode={selectedRecordForViewer.beneficiaryCode}
+          activityTitle={selectedRecordForViewer.activityTitle}
+          locationDescription={selectedRecordForViewer.locationDescription}
+          cleanupNotes={selectedRecordForViewer.accomplishmentNotes || selectedRecordForViewer.notes}
+          timestamp={selectedRecordForViewer.timestamp}
+          localPhTime={selectedRecordForViewer.localPhTime}
+          latitude={selectedRecordForViewer.latitude}
+          longitude={selectedRecordForViewer.longitude}
+          accuracyMeters={selectedRecordForViewer.accuracyMeters}
+          altitudeMeters={selectedRecordForViewer.altitudeMeters}
+          verifiedByOfficer={selectedRecordForViewer.verifiedByOfficerName}
+        />
       )}
     </div>
   );

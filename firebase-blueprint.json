@@ -124,6 +124,28 @@
         "details": { "type": "string", "maxLength": 1000 }
       },
       "required": ["id", "timestamp", "userName", "action"]
+    },
+    "AnonymousMessage": {
+      "title": "AnonymousMessage",
+      "description": "Confidential anonymous messages and field reports sent to Admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "senderAlias": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "enum": ["report", "feedback", "allowance_inquiry", "emergency", "general"] },
+        "categoryLabelTagalog": { "type": "string", "maxLength": 128 },
+        "priority": { "type": "string", "enum": ["normal", "urgent", "confidential"] },
+        "message": { "type": "string", "maxLength": 4000 },
+        "referencedPhotoUrl": { "type": "string" },
+        "referencedActivityTitle": { "type": "string", "maxLength": 256 },
+        "referencedLocation": { "type": "string", "maxLength": 256 },
+        "timestamp": { "type": "string" },
+        "localPhTime": { "type": "string" },
+        "status": { "type": "string", "enum": ["unread", "read", "resolved"] },
+        "adminNotes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "senderAlias", "category", "message", "status"]
     }
   },
   "firestore": {
@@ -146,6 +168,10 @@
     "/broadcasts/{broadcastId}": {
       "schema": { "$ref": "#/entities/EventBroadcast" },
       "description": "Admin broadcasted event QR codes and notices"
+    },
+    "/anonymous_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/AnonymousMessage" },
+      "description": "Anonymous reports and messages for Admin review"
     },
     "/auditLogs/{logId}": {
       "schema": { "$ref": "#/entities/AuditLog" },

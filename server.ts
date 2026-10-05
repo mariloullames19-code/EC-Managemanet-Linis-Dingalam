@@ -11,8 +11,9 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_STORAGE_METRICS,
   INITIAL_EVENT_BROADCAST,
+  INITIAL_ANONYMOUS_MESSAGES,
 } from './src/data/seedData';
-import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, UserRole, EventQrBroadcast } from './src/types';
+import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, UserRole, EventQrBroadcast, AnonymousMessage } from './src/types';
 
 // In-Memory Database Store with Server Persistence
 let users: User[] = [...INITIAL_USERS];
@@ -24,6 +25,7 @@ let auditLogs: AuditLog[] = [...INITIAL_AUDIT_LOGS];
 let storageMetrics = { ...INITIAL_STORAGE_METRICS };
 let latestBroadcast: EventQrBroadcast | null = { ...INITIAL_EVENT_BROADCAST };
 let broadcastHistory: EventQrBroadcast[] = [{ ...INITIAL_EVENT_BROADCAST }];
+let anonymousMessages: AnonymousMessage[] = [...INITIAL_ANONYMOUS_MESSAGES];
 
 const HMAC_SECRET = 'LINIS-DINGALAN-LGU-AURORA-SEC-KEY-2025-V1';
 
@@ -678,6 +680,53 @@ async function startServer() {
     latestBroadcast = null;
     broadcastHistory = [];
     res.json({ success: true, message: 'All broadcasts cleared.' });
+  });
+
+  // ----------------------------------------------------------------------------
+  // ANONYMOUS MESSAGES & REPORTS (ADMIN ACCESS ONLY)
+  // ----------------------------------------------------------------------------
+  app.get('/api/anonymous-messages', (req: Request, res: Response) => {
+    res.json({ messages: anonymousMessages });
+  });
+
+  app.post('/api/anonymous-messages', (req: Request, res: Response) => {
+    const data = req.body;
+    const newMsg: AnonymousMessage = {
+      id: `anon-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      senderAlias: data.senderAlias || `Anonymous Participant #ANON-${Math.floor(1000 + Math.random() * 9000)}`,
+      category: data.category || 'report',
+      categoryLabelTagalog: data.categoryLabelTagalog || 'Ulat sa Paglilinis / Field Report',
+      priority: data.priority || 'normal',
+      message: data.message || '',
+      referencedPhotoUrl: data.referencedPhotoUrl,
+      referencedActivityTitle: data.referencedActivityTitle,
+      referencedLocation: data.referencedLocation,
+      timestamp: data.timestamp || new Date().toISOString(),
+      localPhTime: data.localPhTime || new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }) + ' PST',
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    };
+
+    anonymousMessages.unshift(newMsg);
+    res.status(201).json({ success: true, message: newMsg });
+  });
+
+  app.patch('/api/anonymous-messages/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, adminNotes } = req.body;
+    const target = anonymousMessages.find(m => m.id === id);
+    if (!target) {
+      return res.status(404).json({ error: 'Anonymous message not found' });
+    }
+    if (status) target.status = status;
+    if (adminNotes !== undefined) target.adminNotes = adminNotes;
+    res.json({ success: true, message: target });
+  });
+
+  app.delete('/api/anonymous-messages/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    anonymousMessages = anonymousMessages.filter(m => m.id !== id);
+    res.json({ success: true, message: 'Anonymous message deleted.' });
   });
 
   // ----------------------------------------------------------------------------

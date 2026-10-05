@@ -1,4 +1,4 @@
-import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, StorageMetrics, UserRole, EventQrBroadcast } from '../types';
+import { User, Beneficiary, Activity, ActivityAssignment, AttendanceRecord, AuditLog, StorageMetrics, UserRole, EventQrBroadcast, AnonymousMessage } from '../types';
 import { generateQrSignature } from '../utils/crypto';
 import { db, auth } from '../firebase';
 import { collection, doc, setDoc, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
@@ -11,6 +11,7 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_STORAGE_METRICS,
   INITIAL_EVENT_BROADCAST,
+  INITIAL_ANONYMOUS_MESSAGES,
 } from '../data/seedData';
 
 export enum OperationType {
@@ -700,7 +701,16 @@ export class ApiService {
         beneficiaryName: payload.beneficiary_name || `${beneficiary.firstName} ${beneficiary.lastName}`,
         beneficiaryCode: beneficiary.beneCode,
         timestamp: now.toISOString(),
-        localPhTime: now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }) + ' PST',
+        localPhTime: new Intl.DateTimeFormat('en-PH', {
+          timeZone: 'Asia/Manila',
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }).format(now) + ' PST',
         latitude: payload.latitude,
         longitude: payload.longitude,
         accuracyMeters: payload.accuracy_meters,
@@ -1139,6 +1149,142 @@ export class ApiService {
     }
     localStorage.removeItem('ld_event_broadcasts_v1');
     localStorage.removeItem('ld_latest_event_broadcast');
+    return { success: true };
+  }
+
+  // --- ANONYMOUS MESSAGES & FIELD REPORTS (ADMIN ONLY INBOX) ---
+  async sendAnonymousMessage(
+    payload: Omit<AnonymousMessage, 'id'>
+  ): Promise<{ success: boolean; message: AnonymousMessage }> {
+    const newMsg: AnonymousMessage = {
+      id: `anon-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      ...payload,
+      createdAt: new Date().toISOString(),
+    };
+
+    // 1. Immediately persist in LocalStorage
+    try {
+      const raw = localStorage.getItem('ld_anonymous_messages_v1');
+      const list: AnonymousMessage[] = raw ? JSON.parse(raw) : [...INITIAL_ANONYMOUS_MESSAGES];
+      const updated = [newMsg, ...list.filter(m => m.id !== newMsg.id)];
+      localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(updated));
+    } catch {}
+
+    // 2. BroadcastChannel for instant live notify in Admin Portal
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'NEW_ANONYMOUS_MESSAGE', message: newMsg });
+        bc.close();
+      }
+    } catch {}
+
+    // 3. Post to Server API
+    try {
+      fetch('/api/anonymous-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMsg),
+      }).catch(() => {});
+    } catch {}
+
+    // 4. Store in Firestore collection 'anonymous_messages'
+    try {
+      await setDoc(doc(db, 'anonymous_messages', newMsg.id), newMsg);
+    } catch (err) {
+      console.warn('Firestore anonymous message sync:', err);
+    }
+
+    return { success: true, message: newMsg };
+  }
+
+  async getAnonymousMessages(): Promise<{ success: boolean; messages: AnonymousMessage[] }> {
+    // 1. Try Server API
+    try {
+      const res = await fetch('/api/anonymous-messages');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages && Array.isArray(data.messages)) {
+          localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(data.messages));
+          return { success: true, messages: data.messages };
+        }
+      }
+    } catch {}
+
+    // 2. Try Firestore
+    try {
+      const snap = await getDocs(collection(db, 'anonymous_messages'));
+      if (!snap.empty) {
+        const list: AnonymousMessage[] = snap.docs.map(d => d.data() as AnonymousMessage);
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(list));
+        return { success: true, messages: list };
+      }
+    } catch {}
+
+    // 3. Fallback LocalStorage or Seed
+    try {
+      const raw = localStorage.getItem('ld_anonymous_messages_v1');
+      if (raw) {
+        return { success: true, messages: JSON.parse(raw) };
+      }
+    } catch {}
+
+    localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(INITIAL_ANONYMOUS_MESSAGES));
+    return { success: true, messages: INITIAL_ANONYMOUS_MESSAGES };
+  }
+
+  async markAnonymousMessageStatus(
+    id: string,
+    status: 'read' | 'resolved',
+    adminNotes?: string
+  ): Promise<{ success: boolean }> {
+    try {
+      fetch(`/api/anonymous-messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, adminNotes }),
+      }).catch(() => {});
+    } catch {}
+
+    try {
+      const raw = localStorage.getItem('ld_anonymous_messages_v1');
+      if (raw) {
+        const list: AnonymousMessage[] = JSON.parse(raw);
+        const item = list.find(m => m.id === id);
+        if (item) {
+          item.status = status;
+          if (adminNotes !== undefined) item.adminNotes = adminNotes;
+          localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(list));
+        }
+      }
+    } catch {}
+
+    try {
+      await setDoc(doc(db, 'anonymous_messages', id), { status, ...(adminNotes ? { adminNotes } : {}) }, { merge: true });
+    } catch {}
+
+    return { success: true };
+  }
+
+  async deleteAnonymousMessage(id: string): Promise<{ success: boolean }> {
+    try {
+      fetch(`/api/anonymous-messages/${id}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    try {
+      const raw = localStorage.getItem('ld_anonymous_messages_v1');
+      if (raw) {
+        const list: AnonymousMessage[] = JSON.parse(raw);
+        const filtered = list.filter(m => m.id !== id);
+        localStorage.setItem('ld_anonymous_messages_v1', JSON.stringify(filtered));
+      }
+    } catch {}
+
+    try {
+      await deleteDoc(doc(db, 'anonymous_messages', id));
+    } catch {}
+
     return { success: true };
   }
 }
