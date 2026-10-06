@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   CheckSquare,
   Square,
+  QrCode,
 } from 'lucide-react';
 
 interface ActivityManagementProps {
@@ -23,6 +24,7 @@ interface ActivityManagementProps {
   onCreateActivity: (data: Partial<Activity>) => Promise<void>;
   onAssignBeneficiary: (activityId: string, beneficiaryId: string) => Promise<void>;
   onSelectActivityForAttendance?: (activity: Activity) => void;
+  onOpenGenerateQrModal?: () => void;
 }
 
 const DINGALAN_BARANGAYS: DingalanBarangay[] = [
@@ -47,6 +49,7 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
   onCreateActivity,
   onAssignBeneficiary,
   onSelectActivityForAttendance,
+  onOpenGenerateQrModal,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -190,6 +193,17 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
               </button>
             ))}
           </div>
+
+          {onOpenGenerateQrModal && (
+            <button
+              onClick={onOpenGenerateQrModal}
+              className="px-4 py-2 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs shadow-[0_0_18px_rgba(0,229,153,0.45)] flex items-center space-x-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+              title="Generate Cleanup Event QR Code & Paalala"
+            >
+              <QrCode className="w-4 h-4 text-slate-950 shrink-0" />
+              <span>Generate Event QR Code</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsCreateModalOpen(true)}

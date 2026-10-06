@@ -30,6 +30,7 @@ import { GenerateQrEventModal } from './components/GenerateQrEventModal';
 import { EventQrNoticeModal } from './components/EventQrNoticeModal';
 import { GeneratePersonalQrModal } from './components/GeneratePersonalQrModal';
 import { AdminAnonymousInboxModal } from './components/AdminAnonymousInboxModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { EventQrBroadcast, AnonymousMessage } from './types';
 import { checkEventCutoff } from './utils/watermarkEngine';
 import systemWallpaper from './assets/images/dingalan_system_wallpaper.jpg';
@@ -816,7 +817,7 @@ export default function App() {
           onOpenAnonymousInboxModal={isAdminOrSuperAdmin ? () => setIsAnonymousInboxModalOpen(true) : undefined}
           onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
           onOpenManualUploadModal={() => setIsManualAccomplishmentModalOpen(true)}
-          onOpenGenerateQrModal={isAdminOrSuperAdmin ? () => setIsGenerateQrModalOpen(true) : undefined}
+          onOpenGenerateQrModal={() => setIsGenerateQrModalOpen(true)}
           onOpenEventNoticeModal={() => setIsEventQrNoticeModalOpen(true)}
         />
 
@@ -835,7 +836,7 @@ export default function App() {
               onOpenAccomplishmentModal={isAdminOrSuperAdmin ? () => setIsAccomplishmentModalOpen(true) : undefined}
               onOpenScanQrModal={() => setIsScanQrModalOpen(true)}
               onOpenManualUploadModal={() => setIsManualAccomplishmentModalOpen(true)}
-              onOpenGenerateQrModal={isAdminOrSuperAdmin ? () => setIsGenerateQrModalOpen(true) : undefined}
+              onOpenGenerateQrModal={() => setIsGenerateQrModalOpen(true)}
               onOpenEventNoticeModal={() => setIsEventQrNoticeModalOpen(true)}
               onOpenPersonalQrModal={() => setIsPersonalQrModalOpen(true)}
               eventBroadcast={latestEventBroadcast}
@@ -880,6 +881,7 @@ export default function App() {
                 onCreateActivity={handleCreateActivity}
                 onAssignBeneficiary={handleAssignBeneficiary}
                 onSelectActivityForAttendance={handleSelectActivityForAttendance}
+                onOpenGenerateQrModal={() => setIsGenerateQrModalOpen(true)}
               />
             </div>
           )}
@@ -1027,16 +1029,20 @@ export default function App() {
         />
 
         {/* Admin Event QR Code & Reminders Generator Modal */}
-        <GenerateQrEventModal
-          isOpen={isGenerateQrModalOpen}
-          onClose={() => setIsGenerateQrModalOpen(false)}
-          activities={activities}
-          currentUser={currentUser}
-          onBroadcastSuccess={(broadcast) => {
-            handleBroadcastSuccess(broadcast);
-            setIsGenerateQrModalOpen(false);
-          }}
-        />
+        <ErrorBoundary>
+          {isGenerateQrModalOpen && (
+            <GenerateQrEventModal
+              isOpen={isGenerateQrModalOpen}
+              onClose={() => setIsGenerateQrModalOpen(false)}
+              activities={activities}
+              currentUser={currentUser}
+              onBroadcastSuccess={(broadcast) => {
+                handleBroadcastSuccess(broadcast);
+                setIsGenerateQrModalOpen(false);
+              }}
+            />
+          )}
+        </ErrorBoundary>
 
         {/* User View Broadcasted Event QR & Reminders Notice Modal */}
         <EventQrNoticeModal

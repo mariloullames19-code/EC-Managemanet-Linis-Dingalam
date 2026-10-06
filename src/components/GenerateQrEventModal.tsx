@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, User, EventQrBroadcast } from '../types';
 import { api } from '../services/api';
+import { INITIAL_ACTIVITIES, INITIAL_EVENT_BROADCAST } from '../data/seedData';
 import QRCode from 'qrcode';
 import {
   QrCode,
@@ -53,7 +54,7 @@ const isBroadcastActive = (broadcast: any): boolean => {
   try {
     const datePart = broadcast.eventDate || new Date().toISOString().split('T')[0];
     let timePart = broadcast.estimatedEndTime || '12:00 PM';
-    timePart = timePart.trim().toUpperCase();
+    timePart = String(timePart).trim().toUpperCase();
     const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/);
     let hours = 12;
     let minutes = 0;
@@ -65,7 +66,7 @@ const isBroadcastActive = (broadcast: any): boolean => {
       if (ampm === 'AM' && hours === 12) hours = 0;
     }
 
-    const [year, month, day] = datePart.split('-').map(Number);
+    const [year, month, day] = String(datePart).split('-').map(Number);
     if (!year || !month || !day) return true;
 
     const deadlineUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
@@ -84,16 +85,21 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   currentUser,
   onBroadcastSuccess,
 }) => {
-  const [selectedActivityId, setSelectedActivityId] = useState<string>('');
-  const [activityTitle, setActivityTitle] = useState<string>('Dingalan Feeder Port & Paltic Coastal Cleanliness Operation');
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [qrRawPayload, setQrRawPayload] = useState<string>('');
+  const safeActs = Array.isArray(activities) && activities.length > 0 ? activities : INITIAL_ACTIVITIES;
+  const initialAct = safeActs.find((a) => a.status === 'ongoing') || safeActs[0] || INITIAL_ACTIVITIES[0];
+
+  const [selectedActivityId, setSelectedActivityId] = useState<string>(initialAct?.id || 'act-001');
+  const [activityTitle, setActivityTitle] = useState<string>(
+    initialAct?.title || 'Dingalan Feeder Port & Paltic Coastal Cleanliness Operation'
+  );
+  const [qrDataUrl, setQrDataUrl] = useState<string>(INITIAL_EVENT_BROADCAST.qrDataUrl || '');
+  const [qrRawPayload, setQrRawPayload] = useState<string>(INITIAL_EVENT_BROADCAST.qrPayload || '');
   
   // Optional Reminders & Details
-  const [barangay, setBarangay] = useState<string>('Paltic');
-  const [targetArea, setTargetArea] = useState<string>('Pacific Seawall & Mangrove Buffer Strip');
+  const [barangay, setBarangay] = useState<string>(initialAct?.barangay || 'Paltic');
+  const [targetArea, setTargetArea] = useState<string>(initialAct?.targetArea || 'Pacific Seawall & Mangrove Buffer Strip');
   const [eventDate, setEventDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [startTime, setStartTime] = useState<string>('06:00 AM');
+  const [startTime, setStartTime] = useState<string>(initialAct?.callTime || '06:00 AM');
   const [estimatedEndTime, setEstimatedEndTime] = useState<string>('11:59 PM');
   const [totalHours, setTotalHours] = useState<string>('4 na Oras');
   const [requiredTools, setRequiredTools] = useState<string>(
@@ -111,7 +117,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isSuccessSent, setIsSuccessSent] = useState<boolean>(false);
-  const [broadcastHistory, setBroadcastHistory] = useState<EventQrBroadcast[]>([]);
+  const [broadcastHistory, setBroadcastHistory] = useState<EventQrBroadcast[]>([INITIAL_EVENT_BROADCAST]);
 
   // Edit Broadcast Modal States
   const [editingBroadcast, setEditingBroadcast] = useState<EventQrBroadcast | null>(null);
@@ -127,15 +133,20 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const [editRecommendedAttire, setEditRecommendedAttire] = useState<string>('');
   const [editAdditionalNotes, setEditAdditionalNotes] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
 
   // Load broadcast history when opened
   useEffect(() => {
     if (isOpen) {
       api.getAllEventBroadcasts().then((res) => {
-        setBroadcastHistory(Array.isArray(res) ? res : []);
+        if (Array.isArray(res) && res.length > 0) {
+          setBroadcastHistory(res);
+        } else {
+          setBroadcastHistory([INITIAL_EVENT_BROADCAST]);
+        }
       }).catch((err) => {
         console.warn('Failed to load broadcasts history:', err);
-        setBroadcastHistory([]);
+        setBroadcastHistory([INITIAL_EVENT_BROADCAST]);
       });
     }
   }, [isOpen]);
@@ -144,13 +155,15 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setIsSuccessSent(false);
-      const safeActs = Array.isArray(activities) ? activities : [];
-      const defaultAct = safeActs.find((a) => a.status === 'ongoing') || safeActs[0];
+      const acts = Array.isArray(activities) && activities.length > 0 ? activities : INITIAL_ACTIVITIES;
+      const defaultAct = acts.find((a) => a.status === 'ongoing') || acts[0];
       if (defaultAct) {
         setSelectedActivityId(defaultAct.id);
         setActivityTitle(defaultAct.title);
         setBarangay(defaultAct.barangay);
         setTargetArea(defaultAct.targetArea);
+        if (defaultAct.date) setEventDate(defaultAct.date);
+        if (defaultAct.callTime) setStartTime(defaultAct.callTime);
       }
     }
   }, [isOpen, activities]);
@@ -161,8 +174,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
     let isMounted = true;
     async function makeQr() {
-      const safeActs = Array.isArray(activities) ? activities : [];
-      const selectedAct = safeActs.find((a) => a.id === selectedActivityId) || safeActs[0];
+      const acts = Array.isArray(activities) && activities.length > 0 ? activities : INITIAL_ACTIVITIES;
+      const selectedAct = acts.find((a) => a.id === selectedActivityId) || acts[0];
       const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
       const payloadUrl = `${currentOrigin}/?action=personal_qr&act_id=${selectedAct?.id || 'act-001'}&brgy=${encodeURIComponent(barangay)}&date=${encodeURIComponent(eventDate)}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
       
@@ -194,8 +207,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
   if (!isOpen) return null;
 
-  const safeActs = Array.isArray(activities) ? activities : [];
-  const safeHistory = Array.isArray(broadcastHistory) ? broadcastHistory : [];
+  const safeHistory = Array.isArray(broadcastHistory) && broadcastHistory.length > 0 ? broadcastHistory : [INITIAL_EVENT_BROADCAST];
   const currentAct = safeActs.find((a) => a.id === selectedActivityId) || safeActs[0];
 
   const handleActivityChange = (actId: string) => {
@@ -234,7 +246,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         waterTumblerReminder,
         recommendedAttire,
         additionalNotes,
-        sentByAdminName: currentUser.name,
+        sentByAdminName: currentUser?.name || 'Admin Officer',
         sentAt: new Date().toISOString(),
       };
 
@@ -267,20 +279,24 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
   const handleDeleteHistoryItem = async (broadcastId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    if (window.confirm("Sigurado ka ba na gusto mong burahin ang paalalang ito? Mawawala rin ito sa login page kapag ito ang kasalukuyang active.")) {
+    try {
       await api.deleteEventBroadcast(broadcastId);
       const res = await api.getAllEventBroadcasts();
       setBroadcastHistory(res);
-      // Trigger update on parent
+      // Trigger reload on parent
       onBroadcastSuccess({} as any);
+    } catch (err) {
+      console.error('Failed to delete broadcast', err);
     }
   };
 
   const handleClearAllHistory = async () => {
-    if (window.confirm("🔴 WARNING: Sigurado ka ba na gusto mong burahin ang LAHAT ng paalala sa history? Parehong mabubura ang mga ito sa database at sa login page. Hindi na ito maibabalik kailanman.")) {
+    try {
       await api.clearAllEventBroadcasts();
       setBroadcastHistory([]);
       onBroadcastSuccess({} as any);
+    } catch (err) {
+      console.error('Failed to clear broadcasts', err);
     }
   };
 
@@ -356,15 +372,13 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     }
   };
 
-  const [showHistory, setShowHistory] = useState<boolean>(false);
-
   return (
     <>
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
-        <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
+        <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/70 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.35)] overflow-hidden my-auto flex flex-col max-h-[92vh] text-slate-100">
           
           {/* Header Bar */}
-          <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between shrink-0">
+          <div className="px-5 sm:px-6 py-4 border-b border-slate-800 bg-slate-950/95 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md">
                 <QrCode className="w-5 h-5 text-slate-950" />
@@ -374,7 +388,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   Admin Exclusive • Event QR Generator & Advisory
                 </span>
                 <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                  Generate Cleanup Event QR Code & Paalala
+                  Generate Event QR Code & Mga Paalala
                 </h3>
               </div>
             </div>
@@ -387,7 +401,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
           </div>
 
           {/* Modal Body */}
-          <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 text-left">
+          <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 min-h-0 text-left">
             {/* SUCCESS BROADCAST CONFIRMATION */}
             {isSuccessSent ? (
               <div className="text-center py-8 space-y-4 animate-scaleIn">
@@ -709,7 +723,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       type="button"
                       onClick={handleSendToAllUsers}
                       disabled={isSending}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-sm tracking-wide shadow-[0_0_25px_rgba(16,185,129,0.5)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-sm tracking-wide shadow-[0_0_25px_rgba(0,229,153,0.5)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
                     >
                       {isSending ? (
                         <span className="flex items-center space-x-2">
@@ -719,7 +733,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       ) : (
                         <span className="flex items-center space-x-2">
                           <Send className="w-4 h-4 text-slate-950" />
-                          <span>I-Send ang QR Code at mga Paalala sa Lahat ng Users</span>
+                          <span>I-Broadcast ang Event QR Code at Paalala sa Lahat ng Users</span>
                         </span>
                       )}
                     </button>
@@ -820,10 +834,10 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
       {/* EDIT BROADCAST MODAL OVERLAY                                              */}
       {/* ========================================================================= */}
       {editingBroadcast && (
-        <div className="fixed inset-0 z-[1050] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto animate-fadeIn select-none">
-          <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/80 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+        <div className="fixed inset-0 z-[10500] flex items-center justify-center p-3 sm:p-6 bg-slate-950/95 backdrop-blur-xl overflow-y-auto select-none">
+          <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/80 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.3)] overflow-hidden my-auto flex flex-col h-[90vh] max-h-[850px] text-slate-100">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/95 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-400 flex items-center justify-center text-slate-950 shadow-md">
                   <Edit3 className="w-5 h-5 text-slate-950" />
@@ -847,7 +861,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-left font-sans">
+            <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-left font-sans flex-1 min-h-0">
               <div>
                 <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
                   Pamagat ng Gawain / Activity Title <span className="text-rose-400">*</span>

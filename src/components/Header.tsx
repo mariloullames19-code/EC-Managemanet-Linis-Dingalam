@@ -291,6 +291,19 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
+          {/* Generate Event QR Button (Matches exact screenshot styling) */}
+          {onOpenGenerateQrModal && (
+            <button
+              onClick={onOpenGenerateQrModal}
+              className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_18px_rgba(0,229,153,0.45)] transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95"
+              title="Generate Cleanup Event QR Code & Paalala"
+            >
+              <QrCode className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+              <span className="hidden sm:inline">Generate Event QR Code</span>
+              <span className="sm:hidden">Generate QR</span>
+            </button>
+          )}
+
           {/* Anonymous Messages Inbox Button (For Admin & Super Admin) */}
           {isAdminOrSuperAdmin && onOpenAnonymousInboxModal && (
             <button
@@ -337,6 +350,15 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Sub-Navigation Bar - Touch-Optimized with horizontal smooth swipe */}
       <div className="flex lg:hidden overflow-x-auto py-2 px-1 mt-1.5 space-x-2 scrollbar-none text-xs font-mono font-bold select-none touch-pan-x">
+        {onOpenGenerateQrModal && (
+          <button
+            onClick={onOpenGenerateQrModal}
+            className="px-3.5 py-2 rounded-full whitespace-nowrap border-0 bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] text-slate-950 font-mono font-bold shadow-[0_0_18px_rgba(0,229,153,0.45)] flex items-center space-x-1.5 active:scale-95 touch-manipulation cursor-pointer shrink-0"
+          >
+            <QrCode className="w-3.5 h-3.5 text-slate-950" />
+            <span>Generate Event QR Code</span>
+          </button>
+        )}
         {[
           { id: 'homepage', label: 'Overview', icon: Sparkles },
           { id: 'portal', label: 'Field Terminal', icon: QrCode },

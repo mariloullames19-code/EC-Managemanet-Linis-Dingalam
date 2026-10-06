@@ -182,14 +182,14 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
 
               {/* Smaller Horizontal Action Buttons in One Row */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {/* Generate Event QR Button */}
+                {/* Generate Event QR Button (Matches exact screenshot styling) */}
                 {onOpenGenerateQrModal && (
                   <button
                     onClick={onOpenGenerateQrModal}
-                    className="px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-black text-[11px] font-mono shadow-[0_0_15px_rgba(16,185,129,0.35)] flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                    className="px-4 py-2 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs sm:text-[13px] tracking-tight shadow-[0_0_20px_rgba(0,229,153,0.45)] flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer shrink-0"
                   >
-                    <QrCode className="w-3.5 h-3.5 text-slate-950" />
-                    <span>Generate Event QR</span>
+                    <QrCode className="w-4 h-4 text-slate-950 shrink-0" />
+                    <span>Generate Event QR Code</span>
                   </button>
                 )}
 
@@ -234,8 +234,8 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
           </div>
         </section>
 
-        {/* LATEST EVENT QR & PAALALA BROADCAST BANNER (Only visible to regular User accounts, hidden on Admin/Superadmin) */}
-        {eventBroadcast && currentUser.role === 'staff' && (
+        {/* LATEST EVENT QR & PAALALA BROADCAST BANNER */}
+        {eventBroadcast && (
           <section className="mb-6 animate-fadeIn">
             <div className="bg-gradient-to-r from-slate-900/90 via-emerald-950/40 to-slate-900/90 border-2 border-emerald-500/50 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
