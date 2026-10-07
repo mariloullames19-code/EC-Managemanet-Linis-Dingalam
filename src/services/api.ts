@@ -592,6 +592,62 @@ export class ApiService {
     return newAct;
   }
 
+  async deleteActivity(id: string): Promise<boolean> {
+    try {
+      fetch(`/api/activities/${id}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      }).catch(() => {});
+    } catch {}
+
+    const rawActs = localStorage.getItem(LS_ACTIVITIES);
+    const list: Activity[] = rawActs ? JSON.parse(rawActs) : INITIAL_ACTIVITIES;
+    const updated = list.filter(a => a.id !== id);
+    localStorage.setItem(LS_ACTIVITIES, JSON.stringify(updated));
+
+    // Also remove related assignments
+    const rawAsgs = localStorage.getItem(LS_ASSIGNMENTS);
+    if (rawAsgs) {
+      try {
+        const asgs: ActivityAssignment[] = JSON.parse(rawAsgs);
+        const filteredAsgs = asgs.filter(asg => asg.activityId !== id);
+        localStorage.setItem(LS_ASSIGNMENTS, JSON.stringify(filteredAsgs));
+      } catch {}
+    }
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'DELETE_ACTIVITY', activityId: id });
+        bc.close();
+      } catch {}
+    }
+
+    return true;
+  }
+
+  async clearAllActivities(): Promise<boolean> {
+    try {
+      fetch('/api/activities', {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      }).catch(() => {});
+    } catch {}
+
+    localStorage.setItem(LS_ACTIVITIES, JSON.stringify([]));
+    localStorage.setItem(LS_ASSIGNMENTS, JSON.stringify([]));
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'CLEAR_ACTIVITIES' });
+        bc.close();
+      } catch {}
+    }
+
+    return true;
+  }
+
   // --- ATTENDANCE VERIFICATION & SUBMISSION ---
   async verifyQrPayload(beneId: string, hash: string): Promise<{
     valid: boolean;
@@ -1000,14 +1056,15 @@ export class ApiService {
     return { success: true, broadcast };
   }
 
-  async getLatestEventBroadcast(): Promise<EventQrBroadcast> {
+  async getLatestEventBroadcast(): Promise<EventQrBroadcast | null> {
     // 1. Check LocalStorage first for instant responsive UI without network latency
     let localCandidate: EventQrBroadcast | null = null;
     try {
+      const isCleared = localStorage.getItem('ld_broadcasts_cleared') === 'true';
       const direct = localStorage.getItem('ld_latest_event_broadcast');
       if (direct) {
         localCandidate = JSON.parse(direct);
-      } else {
+      } else if (!isCleared) {
         const raw = localStorage.getItem('ld_event_broadcasts_v1');
         if (raw) {
           const list: EventQrBroadcast[] = JSON.parse(raw);
@@ -1022,7 +1079,7 @@ export class ApiService {
       if (res.ok) {
         const data = await res.json();
         if (data.broadcast && data.broadcast.id) {
-          // If server broadcast is newer or equal, use it; otherwise preserve recent local broadcast
+          localStorage.removeItem('ld_broadcasts_cleared');
           if (!localCandidate || new Date(data.broadcast.sentAt || 0).getTime() >= new Date(localCandidate.sentAt || 0).getTime()) {
             localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(data.broadcast));
             return data.broadcast;
@@ -1042,12 +1099,17 @@ export class ApiService {
         const docs = snap.docs.map(d => d.data() as EventQrBroadcast);
         docs.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
         if (docs.length > 0) {
+          localStorage.removeItem('ld_broadcasts_cleared');
           localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(docs[0]));
           return docs[0];
         }
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.GET, 'broadcasts');
+    }
+
+    if (localStorage.getItem('ld_broadcasts_cleared') === 'true') {
+      return null;
     }
 
     return INITIAL_EVENT_BROADCAST;
@@ -1059,20 +1121,33 @@ export class ApiService {
       if (!snap.empty) {
         const docs = snap.docs.map(d => d.data() as EventQrBroadcast);
         docs.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+        localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(docs));
         return docs;
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.GET, 'broadcasts');
     }
 
+    if (localStorage.getItem('ld_broadcasts_cleared') === 'true') {
+      return [];
+    }
+
     const raw = localStorage.getItem('ld_event_broadcasts_v1');
-    return raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
+    if (raw !== null) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+    return [];
   }
 
   async updateEventBroadcast(updated: EventQrBroadcast): Promise<{ success: boolean; broadcast: EventQrBroadcast }> {
+    localStorage.removeItem('ld_broadcasts_cleared');
     // 1. Immediately persist to localStorage
     const raw = localStorage.getItem('ld_event_broadcasts_v1');
-    const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [INITIAL_EVENT_BROADCAST];
+    const list: EventQrBroadcast[] = raw ? JSON.parse(raw) : [];
     const index = list.findIndex(b => b.id === updated.id);
     if (index >= 0) {
       list[index] = updated;
@@ -1112,22 +1187,41 @@ export class ApiService {
 
   async deleteEventBroadcast(id: string): Promise<{ success: boolean }> {
     try {
+      fetch(`/api/broadcasts/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    try {
       await deleteDoc(doc(db, 'broadcasts', id));
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
     }
 
     const raw = localStorage.getItem('ld_event_broadcasts_v1');
+    let filtered: EventQrBroadcast[] = [];
     if (raw) {
       const list: EventQrBroadcast[] = JSON.parse(raw);
-      const filtered = list.filter(b => b.id !== id);
+      filtered = list.filter(b => b.id !== id);
       localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify(filtered));
       if (filtered.length > 0) {
         localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(filtered[0]));
       } else {
         localStorage.removeItem('ld_latest_event_broadcast');
+        localStorage.setItem('ld_broadcasts_cleared', 'true');
       }
+    } else {
+      localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify([]));
+      localStorage.removeItem('ld_latest_event_broadcast');
+      localStorage.setItem('ld_broadcasts_cleared', 'true');
     }
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: filtered.length > 0 ? 'NEW_BROADCAST' : 'CLEAR_BROADCASTS', broadcast: filtered[0] || null });
+        bc.close();
+      } catch {}
+    }
+
     return { success: true };
   }
 
@@ -1142,8 +1236,18 @@ export class ApiService {
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'broadcasts');
     }
-    localStorage.removeItem('ld_event_broadcasts_v1');
+    localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify([]));
     localStorage.removeItem('ld_latest_event_broadcast');
+    localStorage.setItem('ld_broadcasts_cleared', 'true');
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('ld_sync');
+        bc.postMessage({ type: 'CLEAR_BROADCASTS' });
+        bc.close();
+      } catch {}
+    }
+
     return { success: true };
   }
 

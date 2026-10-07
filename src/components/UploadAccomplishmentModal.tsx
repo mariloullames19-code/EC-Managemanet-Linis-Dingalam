@@ -282,30 +282,30 @@ export const UploadAccomplishmentModal: React.FC<UploadAccomplishmentModalProps>
       <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
         
         {/* Header Bar */}
-        <div className="px-6 py-4.5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md">
-              <Camera className="w-5 h-5 text-slate-950" />
+        <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md shrink-0">
+              <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
             </div>
             <div>
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+              <span className="text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400 block">
                 Linis Dingalan • Verified QR Attendance
               </span>
-              <h3 className="text-lg font-black text-white tracking-tight">
-                Patunay sa Pagdalo: Upload Accomplishment Pictures
+              <h3 className="text-sm sm:text-lg font-black text-white tracking-tight leading-tight">
+                Patunay sa Pagdalo: Upload Accomplishment
               </h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1 min-h-0 text-left">
           {/* SUCCESS SCREEN */}
           {isSuccess ? (
             <div className="text-center py-8 space-y-4 animate-scaleIn">

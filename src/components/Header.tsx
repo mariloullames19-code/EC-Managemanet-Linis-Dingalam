@@ -66,19 +66,19 @@ export const Header: React.FC<HeaderProps> = ({
   const isSuperadmin = currentUser.role === 'superadmin';
 
   return (
-    <header className="sticky top-2 z-40 px-2 sm:px-4 w-full transition-all">
+    <header className="sticky top-1 sm:top-2 z-40 px-1.5 sm:px-4 w-full max-w-full overflow-hidden transition-all">
       {/* Floating Frosted Glassmorphism Navigation Capsule */}
-      <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-700/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] rounded-full px-3 sm:px-5 py-2 flex items-center justify-between gap-2.5 text-slate-100 w-full">
+      <div className="bg-slate-900/85 backdrop-blur-2xl border border-slate-700/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] rounded-full px-2.5 sm:px-5 py-1.5 sm:py-2 flex items-center justify-between gap-1 sm:gap-2.5 text-slate-100 w-full">
         {/* Left Section: eC access Logo & System Name */}
         <div
           onClick={() => setActiveTab('homepage')}
-          className="flex items-center space-x-2.5 cursor-pointer shrink-0 group select-none"
+          className="flex items-center space-x-1 sm:space-x-2.5 cursor-pointer shrink-0 group select-none"
         >
           {/* Official eC access Logo */}
           <div className="flex items-center">
             <svg
               viewBox="0 0 205 64"
-              className="h-6 sm:h-7 w-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+              className="h-4.5 xs:h-5 sm:h-7 w-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -162,12 +162,12 @@ export const Header: React.FC<HeaderProps> = ({
             </svg>
           </div>
 
-          <div className="border-l border-slate-700/60 pl-2">
-            <div className="flex items-center space-x-1">
-              <span className="font-extrabold text-xs sm:text-sm tracking-tight text-white uppercase group-hover:text-emerald-300 transition-colors">
-                Linis Dingalan
+          <div className="border-l border-slate-700/60 pl-1.5 sm:pl-2">
+            <div className="flex items-center space-x-0.5 sm:space-x-1">
+              <span className="font-extrabold text-[11px] xs:text-xs sm:text-sm tracking-tight text-white uppercase group-hover:text-emerald-300 transition-colors">
+                <span className="hidden xs:inline">Linis </span>Dingalan
               </span>
-              <span className="text-[10px] font-mono font-bold text-cyan-400">
+              <span className="text-[9px] xs:text-[10px] font-mono font-bold text-cyan-400">
                 EC
               </span>
             </div>
@@ -277,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Right Section: Small Live Clock & Glowing Action Pills */}
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-2 shrink-0">
           {/* Small Live Clock - Synchronized for Dingalan, Aurora */}
           <div
             className="hidden lg:flex items-center space-x-1.5 text-[11px] font-mono text-emerald-300 bg-slate-950/90 border border-emerald-500/50 px-3 py-1 rounded-full shadow-inner select-none"
@@ -291,16 +291,15 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Generate Event QR Button (Matches exact screenshot styling) */}
+          {/* Generate Event QR Button */}
           {onOpenGenerateQrModal && (
             <button
               onClick={onOpenGenerateQrModal}
-              className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_18px_rgba(0,229,153,0.45)] transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95"
+              className="w-6.5 h-6.5 xs:w-7 xs:h-7 sm:w-auto sm:h-auto p-1 xs:p-1.5 sm:px-3 sm:py-1 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 shadow-[0_0_12px_rgba(0,229,153,0.35)] transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95"
               title="Generate Cleanup Event QR Code & Paalala"
             >
-              <QrCode className="w-3.5 h-3.5 text-slate-950 shrink-0" />
-              <span className="hidden sm:inline">Generate Event QR Code</span>
-              <span className="sm:hidden">Generate QR</span>
+              <QrCode className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-slate-950 shrink-0" />
+              <span className="hidden sm:inline">Event QR</span>
             </button>
           )}
 
@@ -308,13 +307,13 @@ export const Header: React.FC<HeaderProps> = ({
           {isAdminOrSuperAdmin && onOpenAnonymousInboxModal && (
             <button
               onClick={onOpenAnonymousInboxModal}
-              className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all cursor-pointer shrink-0"
+              className="h-6.5 xs:h-7 sm:h-auto px-1.5 xs:px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 shadow-[0_0_10px_rgba(245,158,11,0.25)] transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95"
               title="Tingnan ang mga Anonymous Messages at Reports mula sa field (Admin Only)"
             >
-              <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+              <EyeOff className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-amber-400 shrink-0" />
               <span className="hidden md:inline">Anonymous Inbox</span>
               {anonymousMessagesCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] animate-pulse">
+                <span className="px-1 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[8px] xs:text-[9px] leading-none animate-pulse">
                   {anonymousMessagesCount}
                 </span>
               )}
@@ -325,12 +324,12 @@ export const Header: React.FC<HeaderProps> = ({
           {isAdminOrSuperAdmin && onOpenAccomplishmentModal && (
             <button
               onClick={onOpenAccomplishmentModal}
-              className="px-2.5 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.35)] transition-all cursor-pointer shrink-0"
+              className="h-6.5 xs:h-7 sm:h-auto px-1.5 xs:px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-mono font-bold text-[10px] sm:text-xs flex items-center justify-center space-x-1 shadow-[0_0_10px_rgba(16,185,129,0.25)] transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95"
               title="Tingnan ang lahat ng accomplishment photos at attendance records ng mga naglinis"
             >
-              <Images className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Accomplishment Attendance</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 font-black text-[10px]">
+              <Images className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden md:inline">Accomplishment Attendance</span>
+              <span className="px-1 py-0.2 rounded-full bg-emerald-400 text-slate-950 font-black text-[8px] xs:text-[9px] leading-none">
                 {attendancesCount}
               </span>
             </button>
@@ -339,49 +338,40 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Log Out Button */}
           <button
             onClick={onLogout || onOpenLoginModal}
-            className="px-3 py-1 rounded-full bg-slate-900/80 hover:bg-rose-950/80 border border-slate-700/80 hover:border-rose-500/50 text-slate-300 hover:text-rose-300 font-bold text-xs tracking-wide shadow transition-all flex items-center space-x-1 shrink-0 cursor-pointer"
+            className="w-6.5 h-6.5 xs:w-7 xs:h-7 sm:w-auto sm:h-auto p-1 xs:p-1.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-900/80 hover:bg-rose-950/80 border border-slate-700/80 hover:border-rose-500/50 text-slate-300 hover:text-rose-300 font-bold text-xs tracking-wide shadow transition-all flex items-center justify-center space-x-1 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
             title="Mag-log out sa system"
           >
-            <LogOut className="w-3 h-3" />
+            <LogOut className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-3 sm:h-3 shrink-0" />
             <span className="hidden sm:inline">Log Out</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile Sub-Navigation Bar - Touch-Optimized with horizontal smooth swipe */}
-      <div className="flex lg:hidden overflow-x-auto py-2 px-1 mt-1.5 space-x-2 scrollbar-none text-xs font-mono font-bold select-none touch-pan-x">
-        {onOpenGenerateQrModal && (
-          <button
-            onClick={onOpenGenerateQrModal}
-            className="px-3.5 py-2 rounded-full whitespace-nowrap border-0 bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] text-slate-950 font-mono font-bold shadow-[0_0_18px_rgba(0,229,153,0.45)] flex items-center space-x-1.5 active:scale-95 touch-manipulation cursor-pointer shrink-0"
-          >
-            <QrCode className="w-3.5 h-3.5 text-slate-950" />
-            <span>Generate Event QR Code</span>
-          </button>
-        )}
+      {/* Mobile Sub-Navigation Bar - Compact Responsive Grid that fits 100% on any Mobile Screen */}
+      <div className="grid grid-cols-4 sm:flex sm:items-center sm:justify-start lg:hidden gap-1 py-1 px-0.5 mt-1 text-[9.5px] xs:text-[10.5px] font-mono font-bold select-none w-full">
         {[
           { id: 'homepage', label: 'Overview', icon: Sparkles },
-          { id: 'portal', label: 'Field Terminal', icon: QrCode },
+          { id: 'portal', label: 'Terminal', icon: QrCode },
           { id: 'beneficiaries', label: 'Masterlist', icon: Users },
           { id: 'activities', label: 'Programs', icon: Calendar },
           { id: 'reports', label: 'Reports', icon: FileText },
-          { id: 'audit', label: 'Audit Trail', icon: Terminal },
-          { id: 'storage', label: 'Photo Prune', icon: HardDrive },
-          { id: 'architecture', label: 'DDL Schemas', icon: Cpu },
+          { id: 'audit', label: 'Audit', icon: Terminal },
+          { id: 'storage', label: 'Prune', icon: HardDrive },
+          { id: 'architecture', label: 'DDL', icon: Cpu },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-2 rounded-full whitespace-nowrap border transition-all flex items-center space-x-1.5 active:scale-95 touch-manipulation cursor-pointer shadow-md ${
+              className={`px-1 xs:px-1.5 sm:px-2.5 py-1 rounded-lg sm:rounded-full border transition-all flex items-center justify-center space-x-0.5 xs:space-x-1 active:scale-95 touch-manipulation cursor-pointer shadow leading-tight ${
                 activeTab === tab.id
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.35)]'
                   : 'bg-slate-900/90 backdrop-blur-lg text-slate-300 border-slate-700/70 hover:bg-slate-800'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
+              <Icon className="w-2.5 h-2.5 xs:w-3 xs:h-3 shrink-0" />
+              <span className="truncate">{tab.label}</span>
             </button>
           );
         })}

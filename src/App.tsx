@@ -356,6 +356,10 @@ export default function App() {
           setLatestEventBroadcast(newBc);
           showToast(`Bagong Opisyal na Paalala at QR Code: ${newBc.activityTitle}!`, 'success');
         }
+        if (event.data?.type === 'CLEAR_BROADCASTS') {
+          setLatestEventBroadcast(null);
+          showToast('Nabura ang lahat ng kasaysayan ng mga paalala.', 'info');
+        }
         if (event.data?.type === 'NEW_ANONYMOUS_MESSAGE' && event.data.message) {
           const newAnon = event.data.message as AnonymousMessage;
           setAnonymousMessages((prev) => [newAnon, ...prev.filter((m) => m.id !== newAnon.id)]);
@@ -381,6 +385,12 @@ export default function App() {
             list.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
             if (list.length > 0) {
               setLatestEventBroadcast(list[0]);
+            } else {
+              setLatestEventBroadcast(null);
+            }
+          } else {
+            if (localStorage.getItem('ld_broadcasts_cleared') === 'true') {
+              setLatestEventBroadcast(null);
             }
           }
         },
@@ -396,9 +406,13 @@ export default function App() {
     };
   }, []);
 
-  const handleBroadcastSuccess = async (broadcast: EventQrBroadcast) => {
+  const handleBroadcastSuccess = async (broadcast: EventQrBroadcast | null) => {
     if (!broadcast || !broadcast.id) {
       // Clear or reload from DB
+      if (typeof window !== 'undefined' && localStorage.getItem('ld_broadcasts_cleared') === 'true') {
+        setLatestEventBroadcast(null);
+        return;
+      }
       const latest = await api.getLatestEventBroadcast();
       setLatestEventBroadcast(latest && latest.id ? latest : null);
       return;
@@ -407,43 +421,64 @@ export default function App() {
     setLatestEventBroadcast(broadcast);
     api.broadcastEventQr(broadcast).catch(() => {});
 
-    // Upsert activity into state so that all modals and views immediately update with the new broadcast details
+    // Upsert activity into state and localStorage so that all modals and views (including Programs tab) immediately update
     setActivities((prev) => {
-      const existingIdx = prev.findIndex((a) => a.id === broadcast.activityId);
+      const targetId = broadcast.activityId || `act-${Date.now().toString().slice(-6)}`;
+      const existingIdx = prev.findIndex((a) => a.id === targetId || a.title === broadcast.activityTitle);
+      let updatedList: Activity[];
+
       if (existingIdx >= 0) {
-        const updated = [...prev];
-        updated[existingIdx] = {
-          ...updated[existingIdx],
+        updatedList = [...prev];
+        updatedList[existingIdx] = {
+          ...updatedList[existingIdx],
           title: broadcast.activityTitle,
           barangay: broadcast.barangay as any,
           targetArea: broadcast.targetArea,
           date: broadcast.eventDate || new Date().toISOString().split('T')[0],
           callTime: broadcast.startTime || '06:00 AM',
-          status: 'ongoing',
-          notes: broadcast.additionalNotes,
+          status: 'scheduled',
+          notes: broadcast.additionalNotes || updatedList[existingIdx].notes,
+          supervisorName: broadcast.sentByAdminName || updatedList[existingIdx].supervisorName,
         };
-        return updated;
       } else {
         const newAct: Activity = {
-          id: broadcast.activityId || `act-${Date.now()}`,
+          id: targetId,
           title: broadcast.activityTitle,
           programType: 'COASTAL_CLEANUP',
-          description: broadcast.additionalNotes || 'Linis Dingalan Cleanup Operation',
+          description: broadcast.additionalNotes || 'Linis Dingalan Cleanup Operation & Environmental Compliance',
           date: broadcast.eventDate || new Date().toISOString().split('T')[0],
           callTime: broadcast.startTime || '06:00 AM',
           targetArea: broadcast.targetArea,
           barangay: broadcast.barangay as any,
           menroSupervisorId: currentUser.id,
-          supervisorName: broadcast.sentByAdminName,
-          targetBeneficiariesCount: 40,
-          assignedBeneficiariesCount: 35,
+          supervisorName: broadcast.sentByAdminName || currentUser.name || 'Admin Officer',
+          targetBeneficiariesCount: 20,
+          assignedBeneficiariesCount: 0,
           attendedBeneficiariesCount: 0,
-          status: 'ongoing',
-          notes: broadcast.additionalNotes,
+          status: 'scheduled',
+          notes: broadcast.additionalNotes || '',
           createdAt: new Date().toISOString(),
         };
-        return [newAct, ...prev];
+        updatedList = [newAct, ...prev];
       }
+
+      try {
+        localStorage.setItem('ld_activities_v1', JSON.stringify(updatedList));
+      } catch {}
+
+      try {
+        fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-role': currentUser.role,
+            'x-user-id': currentUser.id,
+          },
+          body: JSON.stringify(updatedList[0]),
+        }).catch(() => {});
+      } catch {}
+
+      return updatedList;
     });
 
     showToast('Naipadala na ang Event QR Code at mga paalala sa lahat ng naka-register na user!', 'success');
@@ -531,6 +566,30 @@ export default function App() {
     const newAct = await api.createActivity(data);
     setActivities((prev) => [newAct, ...prev]);
     showToast(`Created work program "${newAct.title}".`, 'success');
+  };
+
+  // Delete Single Activity Handler
+  const handleDeleteActivity = async (id: string) => {
+    try {
+      await api.deleteActivity(id);
+      setActivities((prev) => prev.filter((a) => a.id !== id));
+      setAssignments((prev) => prev.filter((asg) => asg.activityId !== id));
+      showToast('Matagumpay na nabura ang napiling work program box.', 'info');
+    } catch (err: any) {
+      showToast(err.message || 'Nabigo ang pagbura sa program', 'error');
+    }
+  };
+
+  // Clear All Activities Handler
+  const handleClearAllActivities = async () => {
+    try {
+      await api.clearAllActivities();
+      setActivities([]);
+      setAssignments([]);
+      showToast('Matagumpay na permanenteng nabura ang lahat ng work program boxes.', 'info');
+    } catch (err: any) {
+      showToast(err.message || 'Nabigo ang pagbura sa lahat ng programs', 'error');
+    }
   };
 
   // Assign Beneficiary Handler
@@ -845,7 +904,7 @@ export default function App() {
 
           {/* TAB 2: FIELD ATTENDANCE TERMINAL */}
           {activeTab === 'portal' && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <FieldAttendancePortal
                 activities={activities}
                 beneficiaries={beneficiaries}
@@ -859,7 +918,7 @@ export default function App() {
 
           {/* TAB 3: BENEFICIARY MASTERLIST */}
           {activeTab === 'beneficiaries' && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <BeneficiaryMasterlist
                 beneficiaries={beneficiaries}
                 currentUser={currentUser}
@@ -872,7 +931,7 @@ export default function App() {
 
           {/* TAB 4: WORK PROGRAMS & ACTIVITIES */}
           {activeTab === 'activities' && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <ActivityManagement
                 activities={activities}
                 assignments={assignments}
@@ -882,13 +941,15 @@ export default function App() {
                 onAssignBeneficiary={handleAssignBeneficiary}
                 onSelectActivityForAttendance={handleSelectActivityForAttendance}
                 onOpenGenerateQrModal={() => setIsGenerateQrModalOpen(true)}
+                onDeleteActivity={handleDeleteActivity}
+                onClearAllActivities={handleClearAllActivities}
               />
             </div>
           )}
 
           {/* TAB 5: COMPLIANCE REPORTS */}
           {activeTab === 'reports' && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <ReportsView
                 activities={activities}
                 attendances={attendances}
@@ -900,7 +961,7 @@ export default function App() {
 
           {/* TAB 6: AUDIT TRAIL */}
           {activeTab === 'audit' && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <AuditTrailView
                 auditLogs={auditLogs}
                 currentUser={currentUser}
@@ -911,7 +972,7 @@ export default function App() {
 
           {/* TAB 7: STORAGE & PHOTO PRUNING */}
           {activeTab === 'storage' && storageMetrics && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <StoragePruningView
                 metrics={storageMetrics}
                 currentUser={currentUser}
@@ -922,7 +983,7 @@ export default function App() {
 
           {/* TAB 8: ARCHITECTURE & DDL SCHEMAS */}
           {activeTab === 'architecture' && (
-            <div className="w-full px-2 sm:px-4 md:px-6 py-3">
+            <div className="w-full max-w-full overflow-hidden px-1.5 xs:px-2 sm:px-4 md:px-6 py-2 sm:py-3">
               <ArchitectureDocsView currentUser={currentUser} />
             </div>
           )}

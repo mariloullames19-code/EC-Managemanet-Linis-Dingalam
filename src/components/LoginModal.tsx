@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { User, UserRole, Beneficiary, EventQrBroadcast } from '../types';
 import { api } from '../services/api';
 import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
@@ -99,6 +99,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onOpenUploadAccomplishment,
   onOpenScanQrModal,
   onRegisterSuccess,
+  activities: propActivities = [],
   eventBroadcast: propEventBroadcast,
 }) => {
   const clock = useDingalanClock();
@@ -109,8 +110,116 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
+  // Switchable Active View: Defaults to 'event' (Paalala at Patnubay Box automatic na bubungad sa initial load)
+  const [activeView, setActiveView] = useState<'login' | 'event'>('event');
+
+  // Fallback state for activities if not passed in props
+  const [localActivities, setLocalActivities] = useState<any[]>(propActivities);
+  const allActivities = propActivities && propActivities.length > 0 ? propActivities : localActivities;
+
+  // Filter strictly scheduled and ongoing activities from the Programs list (excluding completed/cancelled)
+  const scheduledActivities = useMemo(() => {
+    return (allActivities || []).filter((act) => act.status === 'scheduled' || act.status === 'ongoing');
+  }, [allActivities]);
+
+  useEffect(() => {
+    if (propActivities && propActivities.length > 0) {
+      setLocalActivities(propActivities);
+    } else {
+      api.getActivities().then((res) => {
+        if (res && res.activities && res.activities.length > 0) {
+          setLocalActivities(res.activities);
+        }
+      }).catch(() => {});
+    }
+  }, [propActivities]);
+
+  // Selected scheduled activity id (if user chooses to view a specific scheduled program)
+  const [selectedScheduledActivityId, setSelectedScheduledActivityId] = useState<string | null>(null);
+
+  // Helper to parse activity schedule in Dingalan PST
+  const parseActivitySchedule = (act: any) => {
+    try {
+      const datePart = act.date || new Date().toISOString().split('T')[0];
+      let timePart = act.callTime || '06:00 AM';
+      timePart = timePart.trim().toUpperCase();
+
+      const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/);
+      let hours = 6;
+      let minutes = 0;
+      if (match) {
+        hours = parseInt(match[1], 10);
+        minutes = parseInt(match[2], 10);
+        const ampm = match[3];
+        if (ampm === 'PM' && hours < 12) hours += 12;
+        if (ampm === 'AM' && hours === 12) hours = 0;
+      }
+
+      const [year, month, day] = datePart.split('-').map(Number);
+      const startUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
+      const endUtcMs = startUtcMs + (4.5 * 60 * 60 * 1000); // 4.5 hours duration
+      const nowUtcMs = getDingalanNow().getTime();
+
+      const hasArrived = nowUtcMs >= startUtcMs;
+      const isCurrentlyActive = hasArrived && nowUtcMs <= endUtcMs;
+      const isPastEnd = nowUtcMs > endUtcMs;
+
+      return {
+        startUtcMs,
+        endUtcMs,
+        hasArrived,
+        isCurrentlyActive,
+        isPastEnd,
+        datePart,
+        timePart,
+      };
+    } catch {
+      return {
+        startUtcMs: 0,
+        endUtcMs: 0,
+        hasArrived: false,
+        isCurrentlyActive: false,
+        isPastEnd: false,
+        datePart: act?.date || '',
+        timePart: act?.callTime || '',
+      };
+    }
+  };
+
+  // Convert an Activity to a full EventQrBroadcast object with complete reminders
+  const convertActivityToBroadcast = (act: any): EventQrBroadcast => {
+    const formattedCallTime = act.callTime
+      ? (act.callTime.includes('AM') || act.callTime.includes('PM') ? act.callTime : `${act.callTime} AM`)
+      : '06:00 AM';
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
+    const payload = `${origin}/?action=upload&act_id=${act.id}&brgy=${encodeURIComponent(act.barangay || 'Paltic')}&date=${encodeURIComponent(act.date || '')}`;
+
+    return {
+      id: `bc-auto-${act.id}`,
+      activityId: act.id,
+      activityTitle: act.title,
+      targetArea: act.targetArea || 'Dingalan Feeder Port & Rock Wall',
+      barangay: act.barangay || 'Paltic',
+      qrPayload: payload,
+      eventDate: act.date || new Date().toISOString().split('T')[0],
+      startTime: formattedCallTime,
+      estimatedEndTime: act.estimatedEndTime || (formattedCallTime.includes('PM') ? '05:00 PM' : '11:00 AM'),
+      totalHours: '4 Oras (4 Hours)',
+      requiredTools: act.requiredTools || 'Guwantes (Gloves), Sako para sa Basura, Walis Tingting, Pandakot at Tongs / Pang-ipit',
+      waterTumblerReminder: act.waterReminder || 'Magdala ng sariling reusable tumbler na may inuming tubig. Mahigpit na ipinagbabawal ang single-use plastic bottles alinsunod sa Dingalan MENRO Ordinance.',
+      recommendedAttire: act.recommendedAttire || 'Boots o Rubber Shoes, Sumbrero / Cap laban sa araw, at MENRO/PESO Reflectorized Vest o komportableng damit pansaka.',
+      additionalNotes: act.description || `Opisyal na itinakdang gawain para sa ${act.title} sa ${act.targetArea || 'Dingalan'}. Mag-scan ng QR code at mag-upload ng patunay na larawan bago matapos ang oras.`,
+      sentAt: new Date().toISOString(),
+      sentByAdminName: act.supervisorName || 'Admin Officer (Operations Administrator)',
+    };
+  };
+
   // Dedicated active broadcast state, initialized synchronously from prop, localStorage, or seed fallback
   const [activeBroadcast, setActiveBroadcast] = useState<EventQrBroadcast | null>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('ld_broadcasts_cleared') === 'true') {
+      return null;
+    }
     if (propEventBroadcast && propEventBroadcast.id) return propEventBroadcast;
     if (typeof window !== 'undefined') {
       try {
@@ -126,14 +235,66 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     return null;
   });
 
-  const eventBroadcast = activeBroadcast || propEventBroadcast || INITIAL_EVENT_BROADCAST;
+  // Track the last activated activity ID to avoid unnecessary state thrashing
+  const lastActiveActivityIdRef = useRef<string | null>(null);
+
+  // Automatic Schedule Arrival Engine:
+  // Updates broadcast data when scheduled activity arrives WITHOUT disrupting active login view
+  useEffect(() => {
+    if (!scheduledActivities || scheduledActivities.length === 0) return;
+
+    // Check if user manually clicked a specific scheduled activity
+    if (selectedScheduledActivityId) {
+      const found = scheduledActivities.find((a) => a.id === selectedScheduledActivityId);
+      if (found && found.id !== lastActiveActivityIdRef.current) {
+        lastActiveActivityIdRef.current = found.id;
+        if (typeof window !== 'undefined') localStorage.removeItem('ld_broadcasts_cleared');
+        setActiveBroadcast(convertActivityToBroadcast(found));
+      }
+      return;
+    }
+
+    // Otherwise, find the activity whose scheduled date & time has arrived right now
+    const arrivedActiveActivities = scheduledActivities.filter((act) => {
+      const schedule = parseActivitySchedule(act);
+      return (schedule.hasArrived && !schedule.isPastEnd) || act.status === 'ongoing';
+    });
+
+    if (arrivedActiveActivities.length > 0) {
+      const currentActive = arrivedActiveActivities[0];
+      if (currentActive.id !== lastActiveActivityIdRef.current) {
+        lastActiveActivityIdRef.current = currentActive.id;
+        if (typeof window !== 'undefined') localStorage.removeItem('ld_broadcasts_cleared');
+        setActiveBroadcast(convertActivityToBroadcast(currentActive));
+      }
+      return;
+    }
+
+    // Fallback: Check if there is an upcoming scheduled activity for today (only if not explicitly cleared by admin)
+    const isCleared = typeof window !== 'undefined' && localStorage.getItem('ld_broadcasts_cleared') === 'true';
+    if (!isCleared) {
+      const upcomingTodayActivities = scheduledActivities.filter((act) => {
+        const schedule = parseActivitySchedule(act);
+        return !schedule.isPastEnd;
+      });
+
+      if (upcomingTodayActivities.length > 0 && !activeBroadcast) {
+        lastActiveActivityIdRef.current = upcomingTodayActivities[0].id;
+        setActiveBroadcast(convertActivityToBroadcast(upcomingTodayActivities[0]));
+      }
+    }
+  }, [scheduledActivities, selectedScheduledActivityId]);
+
+  const isBroadcastCleared = typeof window !== 'undefined' && localStorage.getItem('ld_broadcasts_cleared') === 'true';
+  const eventBroadcast = isBroadcastCleared ? null : (activeBroadcast || propEventBroadcast);
 
   // Keep activeBroadcast synchronized with prop changes
   useEffect(() => {
     if (propEventBroadcast && propEventBroadcast.id) {
       setActiveBroadcast(propEventBroadcast);
-      setIsUnfolded(true);
-      setActiveView('event');
+    } else if (propEventBroadcast === null) {
+      setActiveBroadcast(null);
+      setSelectedScheduledActivityId(null);
     }
   }, [propEventBroadcast]);
 
@@ -143,18 +304,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       const bc = new BroadcastChannel('ld_sync');
       bc.onmessage = (event) => {
         if (event.data?.type === 'NEW_BROADCAST' && event.data.broadcast) {
+          if (typeof window !== 'undefined') localStorage.removeItem('ld_broadcasts_cleared');
           setActiveBroadcast(event.data.broadcast);
           setIsUnfolded(true);
           setActiveView('event');
+        } else if (event.data?.type === 'CLEAR_BROADCASTS') {
+          setActiveBroadcast(null);
+          setSelectedScheduledActivityId(null);
         }
       };
       return () => bc.close();
     }
   }, []);
 
-  // Background fetch to ensure fresh broadcast is loaded if state is null
+  // Background fetch to ensure fresh broadcast is loaded if state is null and not cleared
   useEffect(() => {
-    if (!activeBroadcast) {
+    const isCleared = typeof window !== 'undefined' && localStorage.getItem('ld_broadcasts_cleared') === 'true';
+    if (!activeBroadcast && !isCleared) {
       api.getLatestEventBroadcast().then((bc) => {
         if (bc && bc.id) {
           setActiveBroadcast(bc);
@@ -162,9 +328,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       }).catch(() => {});
     }
   }, [activeBroadcast]);
-
-  // Switchable Active View: Defaults to 'event' (Paalala at Patnubay Box automatic na bubungad)
-  const [activeView, setActiveView] = useState<'login' | 'event'>('event');
 
   // Registration Form States
   const [regFullName, setRegFullName] = useState<string>('');
@@ -383,23 +546,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setEmail('');
     setPassword('');
     setIsUnfolded(true);
-    if (eventBroadcast) {
-      setActiveView('event');
-    } else {
-      setActiveView('login');
-    }
-  }, [isOpen, eventBroadcast]);
+  }, [isOpen]);
 
   const handleAdminPortalClick = () => {
     setErrorMessage(null);
     setPendingNotice(null);
-    if (activeView === 'login') {
-      setActiveView('event');
-      setIsUnfolded(true);
-    } else {
-      setActiveView('login');
-      setIsUnfolded(true);
-    }
+    setActiveView('login');
+    setIsUnfolded(true);
     setTimeout(() => {
       modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 50);
@@ -701,7 +854,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </text>
             </svg>
 
-            <div className="h-8 sm:h-10 w-px bg-slate-700/80" />
+            <div className="h-8 sm:h-10 w-px bg-slate-700/80 hidden sm:block" />
 
             <div className="text-left space-y-0.5">
               <span className="text-[9px] sm:text-xs font-mono font-extrabold text-emerald-400 tracking-wider uppercase block">
@@ -710,6 +863,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <h1 className="text-xs sm:text-base md:text-lg font-black text-white tracking-tight leading-tight drop-shadow">
                 Municipality of Dingalan, Aurora
               </h1>
+              {/* Mobile Live Clock Pill */}
+              <div className="flex sm:hidden items-center space-x-1.5 text-[10px] font-mono text-emerald-300 pt-0.5 select-none">
+                <Clock className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
+                <span className="font-bold">{clock.dayOfWeek}, {clock.month} {clock.dayNum} • {clock.timeWithSeconds}</span>
+              </div>
             </div>
           </div>
 
@@ -725,63 +883,64 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           )}
         </div>
 
-        {/* Right Header Action Buttons: Neatly Full-Width and Justified on Mobile, Row on Desktop */}
+        {/* Right Header Action Buttons: 3-column unified segmented tab bar on mobile, row on desktop */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          {/* Paalala & QR Code Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsUnfolded(true);
-              setActiveView('event');
-              setTimeout(() => {
-                modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-              }, 50);
-            }}
-            className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
-              isUnfolded && activeView === 'event'
-                ? 'text-slate-950 bg-emerald-400 border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.6)] font-extrabold'
-                : 'text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900/90 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-            }`}
-            title="Pindutin para makita ang Opisyal na Patnubay, Paalala at Event QR Code"
-          >
-            <Radio className="w-4 h-4 shrink-0 animate-pulse text-emerald-300" />
-            <span className="tracking-wide">Paalala & QR Code</span>
-          </button>
+          {/* Unified Fit-To-Screen Tab Bar */}
+          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-lg w-full sm:w-auto sm:flex sm:items-center">
+            {/* Paalala & QR Code Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsUnfolded(true);
+                setActiveView('event');
+                setTimeout(() => {
+                  modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 50);
+              }}
+              className={`flex items-center justify-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono font-bold px-2 sm:px-4 py-2 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+                isUnfolded && activeView === 'event'
+                  ? 'text-slate-950 bg-emerald-400 border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)] font-extrabold'
+                  : 'text-emerald-300 hover:text-white hover:bg-slate-800/80'
+              }`}
+              title="Pindutin para makita ang Opisyal na Patnubay, Paalala at Event QR Code"
+            >
+              <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 animate-pulse text-emerald-300" />
+              <span className="truncate">Paalala & QR</span>
+            </button>
 
-          {/* Admin Login Icon Button */}
-          <button
-            type="button"
-            onClick={handleAdminPortalClick}
-            className={`w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold border px-4 py-2.5 sm:py-2 rounded-xl sm:rounded-full transition-all transform hover:scale-[1.01] sm:hover:scale-105 active:scale-95 cursor-pointer shadow-sm ${
-              isUnfolded && activeView === 'login'
-                ? 'text-slate-950 bg-white border-white shadow-[0_0_25px_rgba(255,255,255,0.4)]'
-                : 'text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.5)]'
-            }`}
-            title="Pindutin para lumabas ang Admin Login Portal"
-          >
-            <ShieldCheck className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-white'}`} />
-            <span className="tracking-wide">Admin Login Portal</span>
-            <LogIn className={`w-4 h-4 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-emerald-200'}`} />
-          </button>
+            {/* Admin Login Button */}
+            <button
+              type="button"
+              onClick={handleAdminPortalClick}
+              className={`flex items-center justify-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono font-bold px-2 sm:px-4 py-2 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+                isUnfolded && activeView === 'login'
+                  ? 'text-slate-950 bg-white border border-white shadow-[0_0_20px_rgba(255,255,255,0.4)] font-extrabold'
+                  : 'text-white hover:bg-slate-800/80'
+              }`}
+              title="Pindutin para lumabas ang Admin Login Portal"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="truncate">Admin Login</span>
+            </button>
 
-          {/* UPLOAD ATTENDANCE BUTTON (Automatic multi-picture upload / kahit ilang larawan) */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onOpenUploadAccomplishment) {
-                onOpenUploadAccomplishment();
-              }
-            }}
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 text-xs font-mono font-bold px-4 py-2.5 sm:py-2 rounded-full border border-cyan-400/90 bg-gradient-to-r from-teal-700/90 via-emerald-600/90 to-cyan-700/90 hover:from-teal-600 hover:to-cyan-600 text-white shadow-[0_0_22px_rgba(6,182,212,0.55)] transition-all transform hover:scale-[1.02] sm:hover:scale-105 active:scale-95 cursor-pointer"
-            title="Pindutin para mag-upload ng Attendance Pictures (kahit ilang larawan / multiple photos)"
-          >
-            <Camera className="w-4 h-4 text-cyan-200 shrink-0" />
-            <span className="tracking-wide font-extrabold uppercase">Upload Attendance</span>
-            <Upload className="w-3.5 h-3.5 text-white shrink-0 ml-0.5" />
-          </button>
+            {/* Upload Attendance Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenUploadAccomplishment) {
+                  onOpenUploadAccomplishment();
+                }
+              }}
+              className="flex items-center justify-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono font-bold px-2 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-teal-700 via-emerald-600 to-cyan-700 hover:from-teal-600 hover:to-cyan-600 text-white shadow transition-all active:scale-95 cursor-pointer"
+              title="Pindutin para mag-upload ng Attendance Pictures"
+            >
+              <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-200 shrink-0" />
+              <span className="truncate uppercase font-black">Upload</span>
+            </button>
+          </div>
 
           <div
-            className="flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/90 border border-emerald-500/60 px-3.5 py-1.5 rounded-full shadow-[0_0_18px_rgba(16,185,129,0.35)] select-none shrink-0"
+            className="hidden sm:flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/90 border border-emerald-500/60 px-3.5 py-1.5 rounded-full shadow-[0_0_18px_rgba(16,185,129,0.35)] select-none shrink-0"
             title="Opisyal at Awtorisadong Oras sa Dingalan, Aurora (Philippine Standard Time UTC+8)"
           >
             <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
@@ -806,33 +965,33 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* MAIN CENTER HERO CONTAINER (MOVED HIGHER FOR CLEANER VISUAL BALANCE) */}
+      {/* MAIN CENTER HERO CONTAINER (FIT TO MOBILE SCREEN)                          */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-3 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 mt-1 sm:mt-2 mb-auto">
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start lg:items-center">
+      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-2 sm:pt-6 lg:pt-8 pb-6 sm:pb-12 mt-1 sm:mt-2 mb-auto">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-5 sm:gap-8 lg:gap-12 items-start lg:items-center">
           
           {/* --------------------------------------------------------------------- */}
           {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
           {/* --------------------------------------------------------------------- */}
           <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full ${isUnfolded ? 'order-2 lg:order-1' : 'order-1'}`}>
-            <div className="space-y-3">
-              <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.08] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
+            <div className="space-y-2.5 sm:space-y-3">
+              <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.1] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
                 Linis Dingalan <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
                   EC Management
                 </span>
               </h1>
-              <p className="text-xs sm:text-base lg:text-lg text-slate-100 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] text-justify">
+              <p className="text-xs sm:text-base lg:text-lg text-slate-100 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] text-left sm:text-justify">
                 Innovation in Action Project of Municipal Environment and Natural Resources Office in Collaboration with Public Employment Service Office.
               </p>
-              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3.5 py-2 rounded-xl sm:rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] sm:text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md text-center sm:text-left">
-                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[9px] sm:text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md text-center sm:text-left">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
                 <span className="leading-tight">PESO & MENRO INTEGRATED OPERATIONS PLATFORM</span>
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 rounded-3xl bg-slate-950/45 hover:bg-slate-950/50 border border-slate-700/60 backdrop-blur-xl shadow-2xl space-y-3 max-w-xl transition-colors">
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans text-justify">
+            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-950/45 hover:bg-slate-950/50 border border-slate-700/60 backdrop-blur-xl shadow-2xl space-y-2.5 sm:space-y-3 max-w-xl transition-colors">
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans text-left sm:text-justify">
                 Activity-based participants' inventory monitoring with photographic compliance and real-time GPS watermarking across 11 coastal and river Barangays with Offline First to Online Sync Feature.
               </p>
               <div className="flex items-center justify-between sm:justify-start space-x-4 pt-2 border-t border-slate-800 text-xs font-mono text-emerald-400">
@@ -844,17 +1003,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
 
             {/* Anonymous Citizen & Participant Reporting Box (Green Theme) */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/50 hover:bg-slate-950/60 border border-emerald-500/40 backdrop-blur-xl shadow-xl space-y-2.5 max-w-xl transition-all">
+            <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-slate-950/50 hover:bg-slate-950/60 border border-emerald-500/40 backdrop-blur-xl shadow-xl space-y-2.5 max-w-xl transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-emerald-300 font-mono font-bold text-xs">
                   <EyeOff className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>KUMPIDENSIYAL NA MENSAHE SA ADMIN</span>
                 </div>
-                <span className="text-[10px] font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase">
+                <span className="text-[9px] sm:text-[10px] font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase">
                   100% Anonymous
                 </span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans text-justify">
+              <p className="text-xs text-slate-300 leading-relaxed font-sans text-left sm:text-justify">
                 May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ng Admin ang inyong pangalan o pagkakakilanlan.
               </p>
               <button
@@ -871,34 +1030,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* --------------------------------------------------------------------- */}
           {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD                         */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0 block' : 'hidden'}`}>
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0 block' : 'hidden'}`}>
             {isUnfolded && (
               activeView === 'event' && eventBroadcast ? (
                 /* ========================================================================= */
                 /* EVENT BROADCAST CARD: OFFICIAL PATNUBAY AT PAALALA NG ADMIN                */
                 /* ========================================================================= */
-                <div className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/55 hover:bg-slate-950/65 backdrop-blur-md p-5 sm:p-6 space-y-4 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
+                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/75 hover:bg-slate-950/80 backdrop-blur-md p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
                   <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
+                      <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
                         <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
                         <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
                       </span>
                     </div>
 
                     <div className="flex items-center space-x-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setActiveView('login')}
-                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-mono font-bold transition-all cursor-pointer backdrop-blur-sm shadow-md hover:scale-105 active:scale-95"
-                        title="Pumunta sa Admin Login Form"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5 text-white" />
-                        <span>Admin Login</span>
-                      </button>
-
                       <button
                         type="button"
                         onClick={() => setIsUnfolded(false)}
@@ -912,7 +1061,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                   {/* Title & Location */}
                   <div className="space-y-1.5 text-left">
-                    <h3 className="text-lg sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
+                        {eventBroadcast.startTime} PST • SCHEDULED WORK PROGRAM
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-2xl font-black text-white leading-tight drop-shadow-md">
                       {eventBroadcast.activityTitle}
                     </h3>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
@@ -928,7 +1082,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   </div>
 
                   {/* Event QR Code Box & Attendance Upload */}
-                  <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-row items-center gap-3 sm:gap-4 animate-fadeIn">
+                  <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-col xs:flex-row items-center gap-3 sm:gap-4 animate-fadeIn">
                     <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
                       {eventQrUrl || eventBroadcast.qrDataUrl ? (
                         <img
@@ -946,7 +1100,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-left flex-1 min-w-0">
+                    <div className="space-y-2 text-center xs:text-left flex-1 min-w-0 w-full">
                       <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold">
                         <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
                         <span>EVENT ATTENDANCE QR CODE</span>
@@ -962,7 +1116,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             onOpenUploadAccomplishment();
                           }
                         }}
-                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.45)] transition-all cursor-pointer border border-emerald-300"
+                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.45)] transition-all cursor-pointer border border-emerald-300 active:scale-95"
                       >
                         <Camera className="w-4 h-4 text-slate-950 shrink-0" />
                         <span className="uppercase font-extrabold">Upload Attendance Photo</span>
@@ -1014,6 +1168,79 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
                   </div>
                 </div>
+              ) : activeView === 'event' ? (
+                /* ========================================================================= */
+                /* NO ACTIVE SCHEDULE: OFFICIAL PROFESSIONAL ENGLISH ADVISORY CARD          */
+                /* ========================================================================= */
+                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-slate-700/80 shadow-[0_0_50px_rgba(0,0,0,0.7),inset_0_0_20px_rgba(16,185,129,0.1)] bg-slate-950/80 hover:bg-slate-950/85 backdrop-blur-md p-4 sm:p-6 space-y-4 transition-all duration-500 hover:border-slate-600 animate-scaleIn w-full text-left">
+                  {/* Top Bar inside Card */}
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                      <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
+                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span className="truncate">Public Advisory • PESO & MENRO Operations</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsUnfolded(false)}
+                        className="p-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        title="Close Notice"
+                      >
+                        <X className="w-4 h-4 text-slate-400 hover:text-white" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Official Notice Header */}
+                  <div className="space-y-1.5 text-left">
+                    <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-[10px] font-mono font-bold text-slate-400">
+                      <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>OFFICIAL STATUS: NO SCHEDULE RECORDED FOR TODAY</span>
+                    </div>
+                    <h3 className="text-base sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                      No Official Work Program Scheduled for Today
+                    </h3>
+                    <p className="text-xs font-mono text-emerald-300 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Municipality of Dingalan, Aurora • Environmental Compliance Platform</span>
+                    </p>
+                  </div>
+
+                  {/* Professional Notice Statement Box */}
+                  <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs sm:text-sm font-sans space-y-2.5 text-slate-200 leading-relaxed shadow-inner">
+                    <p>
+                      Please be advised that <strong>there are currently no active field operations, coastal cleanup drives, or official environmental compliance activities scheduled for today</strong>.
+                    </p>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      All verified beneficiaries, field supervisors, and participating workers will automatically receive the official event QR code and operational guidelines here as soon as a new schedule is broadcasted by the PESO & MENRO Operations Administrator.
+                    </p>
+                  </div>
+
+                  {/* Assistance & Office Hours Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-300">
+                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-0.5">
+                      <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Office Operations:</span>
+                      <span className="text-white text-[11px]">Monday to Friday: 8:00 AM – 5:00 PM PST</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-0.5">
+                      <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Operations Center:</span>
+                      <span className="text-white text-[11px]">Barangay Poblacion, Dingalan, Aurora</span>
+                    </div>
+                  </div>
+
+                  {/* Live Monitoring Badge */}
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <div className="flex items-center space-x-1.5 text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span>Live Scheduler Active • Automatically updates when a schedule is posted</span>
+                    </div>
+                    <span className="text-slate-500">Dingalan LGU</span>
+                  </div>
+                </div>
               ) : (
                 /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD (SEMI-TRANSPARENT FROSTED GLASS) */
                 <div
@@ -1035,24 +1262,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   </button>
 
                   {/* LEFT SIDE FORM PANEL */}
-                  <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5 relative z-10 animate-fadeIn">
+                  <div className="md:col-span-7 p-4 sm:p-8 flex flex-col justify-between space-y-4 sm:space-y-5 relative z-10 animate-fadeIn">
                     {/* Top Badge */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold w-fit">
+                      <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold w-fit">
                         <ShieldCheck className="w-4 h-4 text-emerald-400" />
                         <span>ADMIN PORTAL</span>
                       </div>
-
-                      {eventBroadcast && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveView('event')}
-                          className="text-[11px] font-mono text-emerald-300 hover:text-white flex items-center space-x-1 bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Paalala & QR</span>
-                        </button>
-                      )}
                     </div>
 
                     {/* Error Banner */}
@@ -1076,13 +1292,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                     {/* Form Heading */}
                     <div className="text-left space-y-1">
-                      <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                      <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
                         Login
                       </h2>
                     </div>
 
                     {/* Form Fields */}
-                    <form onSubmit={handleLoginSubmit} className="space-y-6">
+                    <form onSubmit={handleLoginSubmit} className="space-y-4 sm:space-y-6">
                       {/* Underlined Username/Email Field */}
                       <div className="space-y-1 text-left">
                         <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
@@ -1128,7 +1344,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.6)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                        className="w-full py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-sm sm:text-base tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.6)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
                       >
                         {isLoading ? (
                           <span className="flex items-center space-x-2">
@@ -1139,19 +1355,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           <span>Login</span>
                         )}
                       </button>
-
-                      {eventBroadcast && (
-                        <div className="pt-2 text-center border-t border-white/10">
-                          <button
-                            type="button"
-                            onClick={() => setActiveView('event')}
-                            className="w-full py-2 px-3 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 text-xs font-mono font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-sm"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Bumalik sa Paalala ng Admin & QR Code</span>
-                          </button>
-                        </div>
-                      )}
                     </form>
                   </div>
 

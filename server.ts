@@ -363,6 +363,60 @@ async function startServer() {
     res.status(201).json({ assignment: newAsg });
   });
 
+  // Delete Individual Activity
+  app.delete('/api/activities/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    const user = (req as any).user as User;
+    const actIdx = activities.findIndex(a => a.id === id);
+    if (actIdx === -1) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
+    const [deleted] = activities.splice(actIdx, 1);
+    
+    // Remove associated assignments
+    for (let i = assignments.length - 1; i >= 0; i--) {
+      if (assignments[i].activityId === id) {
+        assignments.splice(i, 1);
+      }
+    }
+
+    recordAuditLog(
+      user?.id || 'admin',
+      user?.name || 'Administrator',
+      user?.role || 'admin',
+      user?.department || 'PESO',
+      'ACTIVITY_WORK_PROGRAM_DELETED',
+      'ACTIVITY',
+      id,
+      `Deleted work program '${deleted.title}' in ${deleted.barangay}`,
+      (req as any).clientIp
+    );
+
+    res.json({ success: true, message: `Work program '${deleted.title}' deleted successfully.` });
+  });
+
+  // Delete All Activities
+  app.delete('/api/activities', (req: Request, res: Response) => {
+    const user = (req as any).user as User;
+    const count = activities.length;
+    activities.length = 0;
+    assignments.length = 0;
+
+    recordAuditLog(
+      user?.id || 'admin',
+      user?.name || 'Administrator',
+      user?.role || 'admin',
+      user?.department || 'PESO',
+      'ALL_ACTIVITIES_CLEARED',
+      'ACTIVITY',
+      'ALL',
+      `Cleared all ${count} work programs from the system`,
+      (req as any).clientIp
+    );
+
+    res.json({ success: true, message: `Successfully cleared all ${count} work programs.` });
+  });
+
   // ----------------------------------------------------------------------------
   // DELIVERABLE #3: QR VERIFICATION & ATTENDANCE CHECK-IN ROUTE
   // ----------------------------------------------------------------------------
@@ -674,6 +728,15 @@ async function startServer() {
       broadcastHistory = [broadcast, ...broadcastHistory.filter(b => b.id !== broadcast.id)];
     }
     res.json({ success: true, broadcast: latestBroadcast });
+  });
+
+  app.delete('/api/broadcasts/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    broadcastHistory = broadcastHistory.filter(b => b.id !== id);
+    if (latestBroadcast && latestBroadcast.id === id) {
+      latestBroadcast = broadcastHistory.length > 0 ? broadcastHistory[0] : null;
+    }
+    res.json({ success: true, message: 'Broadcast deleted.' });
   });
 
   app.delete('/api/broadcasts', (req: Request, res: Response) => {

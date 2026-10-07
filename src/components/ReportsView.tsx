@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Activity, AttendanceRecord, Beneficiary, DingalanBarangay, User } from '../types';
 import { FullScreenPhotoViewer } from './FullScreenPhotoViewer';
 import { formatPhilippineDateTime } from '../utils/philippineClock';
+import { exportAttendanceToExcel } from '../utils/excelExporter';
 import {
   FileText,
   Download,
@@ -14,6 +15,9 @@ import {
   ShieldCheck,
   Search,
   Check,
+  Camera,
+  FileSpreadsheet,
+  X,
 } from 'lucide-react';
 
 interface ReportsViewProps {
@@ -33,6 +37,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const [selectedBarangay, setSelectedBarangay] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRecordForViewer, setSelectedRecordForViewer] = useState<AttendanceRecord | null>(null);
+  const [excelSuccessToast, setExcelSuccessToast] = useState<string | null>(null);
 
   // Filtered attendance records
   const filteredAttendances = useMemo(() => {
@@ -109,83 +114,122 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     document.body.removeChild(link);
   };
 
+  const handleExportExcel = () => {
+    const records = filteredAttendances.length > 0 ? filteredAttendances : attendances;
+    if (records.length === 0) {
+      alert('Walang data na mai-export.');
+      return;
+    }
+    const result = exportAttendanceToExcel(records, 'Linis-Dingalan-Compliance-Report');
+    if (result.success) {
+      setExcelSuccessToast(
+        `Matagumpay na na-export ang Excel table file (${result.fileName}) na may kumpletong detalye ng ${result.count} na tala!`
+      );
+      setTimeout(() => setExcelSuccessToast(null), 6000);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
+      {/* Excel Export Success Toast */}
+      {excelSuccessToast && (
+        <div className="px-4 py-3 bg-emerald-950/90 border border-emerald-500/50 rounded-xl text-emerald-200 text-xs font-bold flex items-center justify-between shadow-lg animate-fadeIn">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{excelSuccessToast}</span>
+          </div>
+          <button
+            onClick={() => setExcelSuccessToast(null)}
+            className="p-1 text-emerald-400 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header & Export Controls */}
-      <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-              <FileText className="w-5 h-5 text-emerald-400" />
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">
+            <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
               Activity Compliance & Attendance Reporting
             </h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Audited field compliance reports with timestamped GPS telemetry and MENRO-PESO sign-off sheets.
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleExportExcel}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+            title="I-download ang buong report bilang Excel Spreadsheet (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-100" />
+            <span>Export Excel (.xlsx)</span>
+          </button>
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-600 flex items-center transition-colors"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-600 flex items-center transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4 mr-1.5 text-cyan-400" />
+            <Download className="w-3.5 h-3.5 mr-1 text-cyan-400" />
             Export CSV
           </button>
           <button
             onClick={handlePrint}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center transition-colors"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl border border-slate-600 shadow flex items-center transition-colors cursor-pointer"
           >
-            <Printer className="w-4 h-4 mr-1.5" />
+            <Printer className="w-3.5 h-3.5 mr-1" />
             Print Report
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-slate-400">Total Checked-In</p>
-          <p className="text-2xl font-black text-white mt-1">{totalRecords}</p>
-          <span className="text-[10px] text-slate-400 font-mono">Beneficiaries recorded</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-slate-400">Total Checked-In</p>
+          <p className="text-lg sm:text-2xl font-black text-white mt-0.5 sm:mt-1">{totalRecords}</p>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">Beneficiaries</span>
         </div>
 
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-emerald-400">GPS Verified Complied</p>
-          <p className="text-2xl font-black text-emerald-400 mt-1">{verifiedCount}</p>
-          <span className="text-[10px] text-emerald-500 font-mono">100% Geotagged</span>
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-emerald-400">GPS Verified</p>
+          <p className="text-lg sm:text-2xl font-black text-emerald-400 mt-0.5 sm:mt-1">{verifiedCount}</p>
+          <span className="text-[9px] sm:text-[10px] text-emerald-500 font-mono">100% Geotagged</span>
         </div>
 
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-cyan-400">Target Workforce</p>
-          <p className="text-2xl font-black text-cyan-400 mt-1">{totalTargetBeneficiaries}</p>
-          <span className="text-[10px] text-slate-400 font-mono">Assigned quota</span>
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-cyan-400">Workforce</p>
+          <p className="text-lg sm:text-2xl font-black text-cyan-400 mt-0.5 sm:mt-1">{totalTargetBeneficiaries}</p>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">Target quota</span>
         </div>
 
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-amber-400">Compliance Rate</p>
-          <p className="text-2xl font-black text-amber-400 mt-1">{complianceRate}%</p>
-          <span className="text-[10px] text-slate-400 font-mono">Of target completed</span>
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-amber-400">Compliance</p>
+          <p className="text-lg sm:text-2xl font-black text-amber-400 mt-0.5 sm:mt-1">{complianceRate}%</p>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">Of target</span>
         </div>
       </div>
 
       {/* Filter Row */}
-      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-3">
         <div className="md:col-span-4 relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
             placeholder="Search by Beneficiary Name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
 
@@ -193,7 +237,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <select
             value={selectedActivityId}
             onChange={(e) => setSelectedActivityId(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
           >
             <option value="ALL">All Work Programs ({activities.length})</option>
             {activities.map((a) => (
@@ -208,7 +252,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <select
             value={selectedBarangay}
             onChange={(e) => setSelectedBarangay(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
           >
             <option value="ALL">All Barangays</option>
             <option value="Paltic">Brgy. Paltic</option>
@@ -223,36 +267,83 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       </div>
 
       {/* Printable Report Document Container */}
-      <div id="compliance-printable-report" className="bg-slate-800/80 border border-slate-700/80 rounded-2xl overflow-hidden shadow-xl">
+      <div id="compliance-printable-report" className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl">
         {/* Printable Official Header */}
-        <div className="p-6 border-b border-slate-700 bg-slate-900/80">
-          <div className="flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center font-black text-emerald-300 text-lg">
+        <div className="p-3.5 sm:p-6 border-b border-slate-700 bg-slate-900/80">
+          <div className="flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-3 sm:gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center font-black text-emerald-300 text-sm sm:text-lg shrink-0">
                 LGU
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-emerald-400 font-bold">
-                  Republic of the Philippines • Province of Aurora • Municipality of Dingalan
+                <p className="text-[10px] sm:text-xs uppercase tracking-wider text-emerald-400 font-bold">
+                  Republic of the Philippines • Municipality of Dingalan
                 </p>
-                <h3 className="text-lg font-black text-white uppercase tracking-tight">
-                  Linis Dingalan Environmental Compliance Monitoring Report
+                <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-tight">
+                  Linis Dingalan Compliance Report
                 </h3>
-                <p className="text-xs text-slate-400 font-mono">
-                  Joint Program: Public Employment Service Office (PESO) & Municipal Environment and Natural Resources Office (MENRO)
+                <p className="text-[10px] sm:text-xs text-slate-400 font-mono">
+                  Joint Program: PESO & MENRO
                 </p>
               </div>
             </div>
 
-            <div className="text-right text-xs font-mono text-slate-300">
-              <p>Generated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <div className="text-right text-[10px] sm:text-xs font-mono text-slate-300">
+              <p>Generated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
               <p className="text-emerald-400 font-bold">Status: AUDIT VERIFIED</p>
             </div>
           </div>
         </div>
 
-        {/* Table of Records */}
-        <div className="overflow-x-auto">
+        {/* MOBILE VIEW: Compact Cards (< 640px) */}
+        <div className="sm:hidden p-2 space-y-2">
+          {filteredAttendances.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-400">
+              No compliance records match your current filter parameters.
+            </div>
+          ) : (
+            filteredAttendances.map((att) => {
+              const dt = formatPhilippineDateTime(att.timestamp || att.localPhTime, att.localPhTime);
+              return (
+                <div key={att.id} className="bg-slate-900/90 border border-slate-750 rounded-xl p-2.5 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-white text-xs">{att.beneficiaryName}</div>
+                      <span className="font-mono text-[9px] text-emerald-400 block">{att.beneficiaryCode}</span>
+                    </div>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      <ShieldCheck className="w-2.5 h-2.5 mr-0.5 text-emerald-400" /> COMPLIED
+                    </span>
+                  </div>
+
+                  <div className="text-[10px] text-slate-300 space-y-0.5 bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                    <p className="text-white font-medium truncate">{att.activityTitle}</p>
+                    <p className="text-slate-400 flex items-center gap-1 truncate">
+                      <MapPin className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                      {att.locationDescription}
+                    </p>
+                    <p className="text-cyan-300 font-mono text-[9px]">
+                      {dt.exactTimeWithSeconds} PST • {att.latitude.toFixed(4)}°N, {att.longitude.toFixed(4)}°E (±{att.accuracyMeters}m)
+                    </p>
+                  </div>
+
+                  {att.photoWatermarkedUrl && (
+                    <button
+                      onClick={() => setSelectedRecordForViewer(att)}
+                      className="w-full py-1.5 bg-slate-800 hover:bg-slate-750 rounded-lg text-emerald-300 font-mono text-[10px] font-bold flex items-center justify-center gap-1.5 border border-slate-700"
+                    >
+                      <Camera className="w-3 h-3 text-emerald-400" />
+                      <span>Tingnan Geotag Photo</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* DESKTOP VIEW: Table of Records (>= 640px) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-700 bg-slate-900/60 text-[10px] font-mono uppercase text-slate-400 tracking-wider">

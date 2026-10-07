@@ -350,48 +350,48 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-3 sm:space-y-6 max-w-4xl mx-auto">
       {/* High-Contrast Mobile Terminal Header */}
-      <div className="bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-4 sm:p-5 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/30">
-              <QrCode className="w-7 h-7" />
+      <div className="bg-slate-900 border-2 border-emerald-500/60 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-500/30 shrink-0">
+              <QrCode className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400">
                   Field Terminal • Outdoor HUD Mode
                 </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-ping" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h1 className="text-base sm:text-2xl font-black text-white tracking-tight leading-tight">
                 Linis Dingalan QR Check-In
               </h1>
             </div>
           </div>
 
           {/* Supervisor / MENRO Officer Badge */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 flex items-center justify-between sm:justify-end space-x-2">
-            <div className="text-right">
-              <p className="text-[10px] text-slate-400 font-mono">FIELD OPERATOR</p>
-              <p className="text-xs font-bold text-white truncate max-w-[180px]">
+          <div className="bg-slate-800 border border-slate-700 rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between sm:justify-end space-x-2 text-[10px] sm:text-xs">
+            <div className="text-left sm:text-right">
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-mono">FIELD OPERATOR</p>
+              <p className="text-xs font-bold text-white truncate max-w-[160px] sm:max-w-[180px]">
                 {currentUser.name}
               </p>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+            <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
               {currentUser.department}
             </span>
           </div>
         </div>
 
-        {/* Step Progress Bar - Big Outdoor Touch Steps */}
-        <div className="mt-5 grid grid-cols-4 gap-2 pt-4 border-t border-slate-800">
+        {/* Step Progress Bar - Big Outdoor Touch Steps (Compact on Mobile) */}
+        <div className="mt-3 sm:mt-5 grid grid-cols-4 gap-1 sm:gap-2 pt-2.5 sm:pt-4 border-t border-slate-800">
           {[
-            { step: 1, title: 'Scan ID', icon: QrCode },
-            { step: 2, title: 'GPS & Area', icon: MapPin },
-            { step: 3, title: 'Live Geotag', icon: Camera },
-            { step: 4, title: 'Verified', icon: ShieldCheck },
+            { step: 1, title: 'Scan ID', shortTitle: '1. Scan', icon: QrCode },
+            { step: 2, title: 'GPS & Area', shortTitle: '2. GPS', icon: MapPin },
+            { step: 3, title: 'Live Geotag', shortTitle: '3. Geotag', icon: Camera },
+            { step: 4, title: 'Verified', shortTitle: '4. Done', icon: ShieldCheck },
           ].map((item) => {
             const Icon = item.icon;
             const isPassed = currentStep > item.step;
@@ -400,17 +400,20 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
             return (
               <div
                 key={item.step}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all ${
+                className={`flex items-center justify-center py-1 sm:py-2 px-1 sm:px-2 rounded-lg sm:rounded-xl border text-center transition-all ${
                   isCurrent
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold shadow-lg shadow-emerald-500/20'
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-md'
                     : isPassed
-                    ? 'bg-slate-800/80 text-emerald-400 border-emerald-500/40'
-                    : 'bg-slate-950/60 text-slate-500 border-slate-800'
+                    ? 'bg-slate-800/80 text-emerald-400 border-emerald-500/40 font-bold'
+                    : 'bg-slate-950/60 text-slate-500 border-slate-800 font-medium'
                 }`}
               >
                 <div className="flex items-center space-x-1">
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span className="text-[11px] uppercase tracking-wide">
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span className="sm:hidden text-[10px] font-mono uppercase tracking-tight">
+                    {item.shortTitle}
+                  </span>
+                  <span className="hidden sm:inline text-[11px] uppercase tracking-wide">
                     {item.step}. {item.title}
                   </span>
                 </div>
@@ -424,37 +427,37 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
       {/* STEP 1: SCAN OR IDENTIFY BENEFICIARY */}
       {/* ========================================================================= */}
       {currentStep === 1 && (
-        <div className="space-y-4">
-          <div className="bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-5">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="bg-slate-800/90 border border-slate-700 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xl space-y-3 sm:space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center">
-                <QrCode className="w-5 h-5 text-emerald-400 mr-2" />
+              <h3 className="text-sm sm:text-lg font-bold text-white flex items-center">
+                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 mr-1.5" />
                 Step 1: Scan Beneficiary QR or Lookup Code
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Scan the dynamic QR code on the beneficiary's printed ID card or mobile screen.
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+                Scan dynamic QR code on printed ID card or mobile screen.
               </p>
             </div>
 
             {qrErrorMessage && (
-              <div className="p-3.5 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-200 text-xs flex items-start space-x-2">
+              <div className="p-2.5 sm:p-3.5 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-200 text-xs flex items-start space-x-2">
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                 <span>{qrErrorMessage}</span>
               </div>
             )}
 
             {/* Quick Manual Search Form */}
-            <form onSubmit={handleManualSearch} className="flex gap-2">
+            <form onSubmit={handleManualSearch} className="flex gap-1.5 sm:gap-2">
               <input
                 type="text"
-                placeholder="Enter Beneficiary Code (e.g. LD-BEN-2025-0101) or PhilSys ID..."
+                placeholder="Enter Beneficiary Code (e.g. LD-BEN-2025-0101)..."
                 value={manualCodeInput}
                 onChange={(e) => setManualCodeInput(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
               />
               <button
                 type="submit"
-                className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shrink-0 flex items-center"
+                className="px-3.5 py-2 sm:px-5 sm:py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow shrink-0 flex items-center"
               >
                 Lookup
               </button>
@@ -462,28 +465,28 @@ export const FieldAttendancePortal: React.FC<FieldAttendancePortalProps> = ({
 
             {/* Field Supervisor Fast Selector */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center">
-                  <UserCheck className="w-4 h-4 text-emerald-400 mr-1.5" />
-                  Quick Field Roster (Tap to Simulate Physical Scan):
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center">
+                  <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 mr-1" />
+                  Quick Field Roster (Tap to Simulate Scan):
                 </span>
-                <span className="text-[11px] text-slate-500 font-mono">
+                <span className="text-[10px] sm:text-[11px] text-slate-500 font-mono">
                   {beneficiaries.length} Registered
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto p-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 sm:max-h-72 overflow-y-auto p-0.5">
                 {beneficiaries.map((b) => (
                   <button
                     key={b.id}
                     type="button"
                     onClick={() => handleSelectBeneficiary(b)}
-                    className="p-3 bg-slate-900/90 hover:bg-slate-750 border border-slate-700 hover:border-emerald-500/60 rounded-xl text-left transition-all flex items-center space-x-3 group"
+                    className="p-2 sm:p-3 bg-slate-900/90 hover:bg-slate-750 border border-slate-700 hover:border-emerald-500/60 rounded-xl text-left transition-all flex items-center space-x-2.5 sm:space-x-3 group"
                   >
                     <img
                       src={b.photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
                       alt={b.firstName}
-                      className="w-12 h-12 rounded-lg object-cover border border-slate-700 group-hover:border-emerald-400 shrink-0"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover border border-slate-700 group-hover:border-emerald-400 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="font-bold text-white text-xs truncate group-hover:text-emerald-300">

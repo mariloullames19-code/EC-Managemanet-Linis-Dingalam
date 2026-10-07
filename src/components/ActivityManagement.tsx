@@ -14,6 +14,8 @@ import {
   CheckSquare,
   Square,
   QrCode,
+  Trash2,
+  X,
 } from 'lucide-react';
 
 interface ActivityManagementProps {
@@ -25,6 +27,8 @@ interface ActivityManagementProps {
   onAssignBeneficiary: (activityId: string, beneficiaryId: string) => Promise<void>;
   onSelectActivityForAttendance?: (activity: Activity) => void;
   onOpenGenerateQrModal?: () => void;
+  onDeleteActivity?: (activityId: string) => Promise<void>;
+  onClearAllActivities?: () => Promise<void>;
 }
 
 const DINGALAN_BARANGAYS: DingalanBarangay[] = [
@@ -50,12 +54,19 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
   onAssignBeneficiary,
   onSelectActivityForAttendance,
   onOpenGenerateQrModal,
+  onDeleteActivity,
+  onClearAllActivities,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [assignModalActivity, setAssignModalActivity] = useState<Activity | null>(null);
   const [selectedBeneIds, setSelectedBeneIds] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
+
+  // Delete states
+  const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
+  const [isConfirmDeleteAllOpen, setIsConfirmDeleteAllOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State
   const [newActivity, setNewActivity] = useState({
@@ -160,30 +171,30 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Top Header Banner */}
-      <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
-              <Calendar className="w-5 h-5 text-cyan-400" />
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 sm:p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">
+            <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
               Work Programs & Activity-Based Area Assignment
             </h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Activity-specific compliance monitoring for PESO Cash-for-Work & MENRO coastal defense initiatives.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-1 bg-slate-900/80 p-1 rounded-xl border border-slate-700 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center space-x-1 bg-slate-900/80 p-0.5 sm:p-1 rounded-xl border border-slate-700 text-[11px] sm:text-xs">
             {['ALL', 'ongoing', 'scheduled', 'completed'].map((st) => (
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
-                className={`px-3 py-1.5 rounded-lg capitalize font-medium transition-colors ${
+                className={`px-2 sm:px-3 py-1 rounded-lg capitalize font-medium transition-colors ${
                   filterStatus === st
                     ? 'bg-emerald-600 text-white shadow'
                     : 'text-slate-400 hover:text-slate-200'
@@ -197,114 +208,305 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
           {onOpenGenerateQrModal && (
             <button
               onClick={onOpenGenerateQrModal}
-              className="px-4 py-2 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs shadow-[0_0_18px_rgba(0,229,153,0.45)] flex items-center space-x-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs shadow-[0_0_15px_rgba(0,229,153,0.35)] flex items-center space-x-1 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
               title="Generate Cleanup Event QR Code & Paalala"
             >
-              <QrCode className="w-4 h-4 text-slate-950 shrink-0" />
-              <span>Generate Event QR Code</span>
+              <QrCode className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+              <span>Generate Event QR</span>
             </button>
           )}
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center transition-all"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center transition-all shrink-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4 mr-1.5" />
-            New Work Program
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            New Program
           </button>
+
+          {onClearAllActivities && activities.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsConfirmDeleteAllOpen(true)}
+              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 hover:border-rose-400 font-mono font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+              title="Permanenteng burahin ang lahat ng nakatalang Work Programs"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Burahin Lahat ({activities.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Activity Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredActivities.map((act) => {
-          const actAssignments = assignments.filter((asg) => asg.activityId === act.id);
-          const attendedCount = actAssignments.filter((asg) => asg.status === 'attended').length;
-          const assignedCount = actAssignments.length;
-          const progressPercent = assignedCount > 0 ? Math.round((attendedCount / assignedCount) * 100) : 0;
+      {filteredActivities.length === 0 ? (
+        <div className="p-8 sm:p-12 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
+          <Calendar className="w-12 h-12 text-slate-600 mx-auto" />
+          <h3 className="text-base font-bold text-white">Walang Nakatalang Work Program</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Kasalukuyang walang active o nakatakdang work program. Pindutin ang "+ New Program" upang magdagdag ng bagong schedule.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow inline-flex items-center space-x-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Lumikha ng Bagong Program</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+          {filteredActivities.map((act) => {
+            const actAssignments = assignments.filter((asg) => asg.activityId === act.id);
+            const attendedCount = actAssignments.filter((asg) => asg.status === 'attended').length;
+            const assignedCount = actAssignments.length;
+            const progressPercent = assignedCount > 0 ? Math.round((attendedCount / assignedCount) * 100) : 0;
 
-          return (
-            <div
-              key={act.id}
-              className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between hover:border-slate-600 transition-all group"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
-                    {act.programType.replace('_', ' ')}
+            return (
+              <div
+                key={act.id}
+                className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xl flex flex-col justify-between hover:border-slate-600 transition-all group relative"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
+                      {act.programType.replace('_', ' ')}
+                    </span>
+                    <div className="flex items-center space-x-1.5">
+                      {getStatusBadge(act.status)}
+                      {onDeleteActivity && (
+                        <button
+                          type="button"
+                          onClick={() => setActivityToDelete(act)}
+                          className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-slate-400 hover:text-white border border-slate-700 hover:border-rose-500 transition-all cursor-pointer"
+                          title="Burahin ang box na ito"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-2">
+                    {act.title}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-slate-400 mt-1 line-clamp-2">
+                    {act.description}
+                  </p>
+
+                  {/* Logistics Info */}
+                  <div className="mt-3 sm:mt-4 space-y-1 text-xs text-slate-300 bg-slate-900/60 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+                    <div className="flex items-center text-slate-200">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400 mr-1.5 shrink-0" />
+                      <span className="font-semibold truncate">{act.targetArea}</span>
+                      <span className="text-slate-400 ml-1 shrink-0">(Brgy. {act.barangay})</span>
+                    </div>
+                    <div className="flex flex-wrap items-center text-slate-300 gap-y-1">
+                      <span className="flex items-center">
+                        <Calendar className="w-3.5 h-3.5 text-cyan-400 mr-1 shrink-0" />
+                        <span>{act.date}</span>
+                      </span>
+                      <span className="flex items-center ml-2.5">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400 mr-1 shrink-0" />
+                        <span>{act.callTime} AM</span>
+                      </span>
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] text-slate-400 pt-1 border-t border-slate-800">
+                      Supervisor: <span className="text-slate-200 font-medium">{act.supervisorName}</span>
+                    </div>
+                  </div>
+
+                  {/* Beneficiary Assignment & Compliance Progress */}
+                  <div className="mt-3 sm:mt-4 space-y-1">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs font-semibold">
+                      <span className="text-slate-300 flex items-center">
+                        <Users className="w-3.5 h-3.5 text-emerald-400 mr-1" />
+                        Assigned Workforce:
+                      </span>
+                      <span className="font-mono text-emerald-300">
+                        {attendedCount} / {assignedCount || act.targetBeneficiariesCount} ({progressPercent}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-900 h-1.5 sm:h-2 rounded-full overflow-hidden border border-slate-800">
+                      <div
+                        className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, progressPercent)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-3.5 sm:mt-5 pt-2.5 sm:pt-3 border-t border-slate-700/60 flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-1.5">
+                    <button
+                      onClick={() => handleOpenAssignModal(act)}
+                      className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-slate-700/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-lg transition-colors border border-slate-600 flex items-center shrink-0 cursor-pointer"
+                    >
+                      <Users className="w-3 h-3 mr-1 text-slate-400" />
+                      Assign ({assignedCount})
+                    </button>
+
+                    {onDeleteActivity && (
+                      <button
+                        type="button"
+                        onClick={() => setActivityToDelete(act)}
+                        className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-rose-500/10 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-semibold rounded-lg transition-colors border border-rose-500/30 flex items-center shrink-0 cursor-pointer"
+                        title="Burahin ang box na ito"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        <span>Burahin</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {onSelectActivityForAttendance && (
+                    <button
+                      onClick={() => onSelectActivityForAttendance(act)}
+                      className="px-2.5 py-1 sm:px-3 sm:py-1.5 bg-emerald-600/90 hover:bg-emerald-600 text-xs font-bold text-white rounded-lg transition-colors flex items-center shadow cursor-pointer shrink-0"
+                    >
+                      <span>Open Terminal</span>
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Delete Single Activity Confirmation Modal */}
+      {activityToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-900 border-2 border-rose-500/60 rounded-2xl sm:rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(244,63,94,0.25)] p-4 sm:p-6 space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-rose-400 block">
+                    Kumpirmasyon ng Pagbura
                   </span>
-                  {getStatusBadge(act.status)}
-                </div>
-
-                <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-2">
-                  {act.title}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                  {act.description}
-                </p>
-
-                {/* Logistics Info */}
-                <div className="mt-4 space-y-1.5 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                  <div className="flex items-center text-slate-200">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400 mr-2 shrink-0" />
-                    <span className="font-semibold">{act.targetArea}</span>
-                    <span className="text-slate-400 ml-1">(Brgy. {act.barangay})</span>
-                  </div>
-                  <div className="flex items-center text-slate-300">
-                    <Calendar className="w-3.5 h-3.5 text-cyan-400 mr-2 shrink-0" />
-                    <span>Date: {act.date}</span>
-                    <Clock className="w-3.5 h-3.5 text-cyan-400 ml-3 mr-1 shrink-0" />
-                    <span>Call Time: {act.callTime} AM</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800">
-                    Supervisor: <span className="text-slate-200 font-medium">{act.supervisorName}</span>
-                  </div>
-                </div>
-
-                {/* Beneficiary Assignment & Compliance Progress */}
-                <div className="mt-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-300 flex items-center">
-                      <Users className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
-                      Assigned Workforce:
-                    </span>
-                    <span className="font-mono text-emerald-300">
-                      {attendedCount} / {assignedCount || act.targetBeneficiariesCount} ({progressPercent}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
-                    <div
-                      className="bg-emerald-500 h-full rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, progressPercent)}%` }}
-                    />
-                  </div>
+                  <h3 className="text-base font-black text-white">
+                    Burahin ang Program Box?
+                  </h3>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="mt-5 pt-3 border-t border-slate-700/60 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => handleOpenAssignModal(act)}
-                  className="px-3 py-1.5 bg-slate-700/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-lg transition-colors border border-slate-600 flex items-center"
-                >
-                  <Users className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                  Assign ({assignedCount})
-                </button>
-
-                {onSelectActivityForAttendance && (
-                  <button
-                    onClick={() => onSelectActivityForAttendance(act)}
-                    className="px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-600 text-xs font-bold text-white rounded-lg transition-colors flex items-center shadow"
-                  >
-                    Open Field QR Terminal
-                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setActivityToDelete(null)}
+                className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          );
-        })}
-      </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 text-xs text-slate-300">
+              <p className="font-bold text-white text-sm">{activityToDelete.title}</p>
+              <p className="text-[11px] text-emerald-300">Brgy. {activityToDelete.barangay} • {activityToDelete.targetArea}</p>
+              <p className="text-[11px] text-slate-400">{activityToDelete.date} • {activityToDelete.callTime} AM</p>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Sigurado ka bang nais mong permanenteng burahin ang box ng work program na ito?
+            </p>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setActivityToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-colors cursor-pointer"
+              >
+                Kanselahin
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!onDeleteActivity || !activityToDelete) return;
+                  setIsDeleting(true);
+                  try {
+                    await onDeleteActivity(activityToDelete.id);
+                    setActivityToDelete(null);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Binubura...' : 'Oo, Burahin Box'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Activities Confirmation Modal */}
+      {isConfirmDeleteAllOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-900 border-2 border-rose-500/60 rounded-2xl sm:rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(244,63,94,0.3)] p-4 sm:p-6 space-y-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-rose-400 block">
+                    Permanenteng Pagbura ng Lahat
+                  </span>
+                  <h3 className="text-base font-black text-white">
+                    Burahin ang Lahat ng Boxes?
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsConfirmDeleteAllOpen(false)}
+                className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-200 leading-relaxed space-y-1">
+              <p>Sigurado ka bang nais mong permanenteng burahin ang lahat ng <strong>{activities.length}</strong> work program boxes sa sistema?</p>
+              <p className="text-[11px] text-rose-300/80">Lahat ng aktibidad, schedule, at area assignments ay mawawala sa listahan.</p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsConfirmDeleteAllOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-colors cursor-pointer"
+              >
+                Kanselahin
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!onClearAllActivities) return;
+                  setIsDeleting(true);
+                  try {
+                    await onClearAllActivities();
+                    setIsConfirmDeleteAllOpen(false);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Binubura ang Lahat...' : 'Oo, Permanenteng Burahin Lahat'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Assign Beneficiaries Modal */}
       {assignModalActivity && (

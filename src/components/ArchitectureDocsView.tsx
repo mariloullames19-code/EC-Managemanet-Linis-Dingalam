@@ -217,16 +217,16 @@ app.post('/api/attendance/checkin', async (req, res) => {
   - Officer Validation Stamp & Compliance Seal`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Role Privilege Banner: Explains Superadmin (Developer) vs Admin permissions */}
       <div
-        className={`rounded-2xl p-5 border backdrop-blur-xl transition-all shadow-lg ${
+        className={`rounded-xl sm:rounded-2xl p-3.5 sm:p-5 border backdrop-blur-xl transition-all shadow-lg ${
           isSuperadmin
             ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
             : 'bg-cyan-950/40 border-cyan-500/40 text-cyan-200'
         }`}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-start space-x-3.5">
             <div
               className={`p-2.5 rounded-xl border mt-0.5 ${
@@ -288,7 +288,7 @@ app.post('/api/attendance/checkin', async (req, res) => {
       )}
 
       {/* System Interface & Functions Customizer */}
-      <div className="bg-slate-900/80 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+      <div className="bg-slate-900/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-6 shadow-xl space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-4">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 bg-emerald-500/15 rounded-xl border border-emerald-500/30">

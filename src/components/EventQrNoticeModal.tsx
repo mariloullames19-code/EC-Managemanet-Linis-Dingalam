@@ -171,55 +171,105 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentEvent = historyEvents.find((e) => e.id === selectedEventId) || historyEvents[0] || {
-    id: 'default',
-    title: 'Linis Dingalan Environmental Compliance Program',
-    barangay: 'Paltic',
-    targetArea: 'Dingalan Feeder Port & Coastal Shore',
-    date: new Date().toISOString().split('T')[0],
-    startTime: '06:00 AM',
-    endTime: '10:00 AM',
-    totalHours: '4 na Oras',
-    status: 'ongoing' as const,
-    isActive: true,
-    adminName: 'Admin Officer',
-    tools: 'Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes',
-    waterReminder: 'Magdala ng sariling tumbler para sa hydration',
-    attire: 'Linis Dingalan t-shirt o outdoor attire, rubber shoes/bota, cap/sombrero',
-    notes: 'Magtipon sa Barangay Covered Court bago mag-alas 6:00 ng umaga.',
-  };
+  if (historyEvents.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
+        <div className="relative w-full max-w-2xl bg-slate-900 border-2 border-slate-700/80 rounded-2xl sm:rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.15)] overflow-hidden my-auto flex flex-col p-4 sm:p-6 space-y-4 text-left">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-md shrink-0">
+                <ShieldCheck className="w-4 h-4 text-cyan-400" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-widest block">
+                  Official Public Advisory • PESO & MENRO Operations
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  No Schedule Recorded for Today
+                </h3>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs sm:text-sm font-sans text-slate-200 leading-relaxed">
+              <p>
+                Please be advised that <strong>there are currently no active field operations, coastal cleanup drives, or official environmental compliance activities scheduled for today</strong>.
+              </p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                All verified beneficiaries, field supervisors, and participating workers will automatically receive the official event QR code and operational guidelines here as soon as a new schedule is broadcasted by the PESO & MENRO Operations Administrator.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-300">
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-0.5">
+                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Office Operations:</span>
+                <span className="text-white text-[11px]">Monday to Friday: 8:00 AM – 5:00 PM PST</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-0.5">
+                <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Operations Center:</span>
+                <span className="text-white text-[11px]">Barangay Poblacion, Dingalan, Aurora</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>Live Scheduler Active</span>
+            </span>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold transition-all cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentEvent = historyEvents.find((e) => e.id === selectedEventId) || historyEvents[0];
 
   const activeQrCodeUrl = currentEvent.qrDataUrl || generatedQrMap[currentEvent.id];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[95vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
+      <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/60 rounded-2xl sm:rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[95vh]">
         
         {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md">
-              <QrCode className="w-5 h-5 text-slate-950" />
+        <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md shrink-0">
+              <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
             </div>
             <div>
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+              <span className="text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400 block">
                 Opisyal na Abiso mula sa Admin (PESO / MENRO)
               </span>
-              <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
-                Event QR Code & Kasaysayan ng mga Paalala sa Paglilinis
+              <h3 className="text-sm sm:text-lg font-black text-white tracking-tight leading-tight">
+                Event QR Code & Mga Paalala sa Paglilinis
               </h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1 min-h-0 text-left">
           
           {/* ========================================================================= */}
           {/* HISTORY NG MGA EVENT NA PAALALA (WITH GREEN CIRCLE ICON ON ACTIVE EVENTS) */}

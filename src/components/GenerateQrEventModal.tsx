@@ -86,43 +86,32 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   onBroadcastSuccess,
 }) => {
   const safeActs = Array.isArray(activities) && activities.length > 0 ? activities : INITIAL_ACTIVITIES;
-  const initialAct = safeActs.find((a) => a.status === 'ongoing') || safeActs[0] || INITIAL_ACTIVITIES[0];
 
-  const [selectedActivityId, setSelectedActivityId] = useState<string>(initialAct?.id || 'act-001');
-  const [activityTitle, setActivityTitle] = useState<string>(
-    initialAct?.title || 'Dingalan Feeder Port & Paltic Coastal Cleanliness Operation'
-  );
-  const [qrDataUrl, setQrDataUrl] = useState<string>(INITIAL_EVENT_BROADCAST.qrDataUrl || '');
-  const [qrRawPayload, setQrRawPayload] = useState<string>(INITIAL_EVENT_BROADCAST.qrPayload || '');
+  const [selectedActivityId, setSelectedActivityId] = useState<string>('');
+  const [activityTitle, setActivityTitle] = useState<string>('');
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [qrRawPayload, setQrRawPayload] = useState<string>('');
   
-  // Optional Reminders & Details
-  const [barangay, setBarangay] = useState<string>(initialAct?.barangay || 'Paltic');
-  const [targetArea, setTargetArea] = useState<string>(initialAct?.targetArea || 'Pacific Seawall & Mangrove Buffer Strip');
-  const [eventDate, setEventDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [startTime, setStartTime] = useState<string>(initialAct?.callTime || '06:00 AM');
-  const [estimatedEndTime, setEstimatedEndTime] = useState<string>('11:59 PM');
-  const [totalHours, setTotalHours] = useState<string>('4 na Oras');
-  const [requiredTools, setRequiredTools] = useState<string>(
-    'Walis tingting, dustpan, sako/trash bags, sipit/trash tongs, guwantes (gloves)'
-  );
-  const [waterTumblerReminder, setWaterTumblerReminder] = useState<string>(
-    'Magdala ng sariling tumbler o reusable water bottle para sa sapat na hydration sa tabing-dagat'
-  );
-  const [recommendedAttire, setRecommendedAttire] = useState<string>(
-    'Linis Dingalan t-shirt o komportableng damit pang-outdoor, bota/rubber shoes, sombrero o cap laban sa init ng araw'
-  );
-  const [additionalNotes, setAdditionalNotes] = useState<string>(
-    'Magtipon sa Barangay Covered Court bago mag-alas 6:00 ng umaga para sa maikling briefing at cleaning cluster assignments.'
-  );
+  // Optional Reminders & Details (Defaults to clean/empty)
+  const [barangay, setBarangay] = useState<string>('');
+  const [targetArea, setTargetArea] = useState<string>('');
+  const [eventDate, setEventDate] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>('');
+  const [estimatedEndTime, setEstimatedEndTime] = useState<string>('');
+  const [totalHours, setTotalHours] = useState<string>('');
+  const [requiredTools, setRequiredTools] = useState<string>('');
+  const [waterTumblerReminder, setWaterTumblerReminder] = useState<string>('');
+  const [recommendedAttire, setRecommendedAttire] = useState<string>('');
+  const [additionalNotes, setAdditionalNotes] = useState<string>('');
 
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isSuccessSent, setIsSuccessSent] = useState<boolean>(false);
-  const [broadcastHistory, setBroadcastHistory] = useState<EventQrBroadcast[]>([INITIAL_EVENT_BROADCAST]);
+  const [broadcastHistory, setBroadcastHistory] = useState<EventQrBroadcast[]>([]);
 
   // Edit Broadcast Modal States
   const [editingBroadcast, setEditingBroadcast] = useState<EventQrBroadcast | null>(null);
   const [editTitle, setEditTitle] = useState<string>('');
-  const [editBarangay, setEditBarangay] = useState<string>('Paltic');
+  const [editBarangay, setEditBarangay] = useState<string>('');
   const [editTargetArea, setEditTargetArea] = useState<string>('');
   const [editEventDate, setEditEventDate] = useState<string>('');
   const [editStartTime, setEditStartTime] = useState<string>('');
@@ -135,6 +124,22 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState<boolean>(false);
 
+  // Function to manually clear all text fields to zero data
+  const handleClearAllFields = () => {
+    setSelectedActivityId('');
+    setActivityTitle('');
+    setBarangay('');
+    setTargetArea('');
+    setEventDate('');
+    setStartTime('');
+    setEstimatedEndTime('');
+    setTotalHours('');
+    setRequiredTools('');
+    setWaterTumblerReminder('');
+    setRecommendedAttire('');
+    setAdditionalNotes('');
+  };
+
   // Load broadcast history when opened
   useEffect(() => {
     if (isOpen) {
@@ -142,31 +147,22 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         if (Array.isArray(res) && res.length > 0) {
           setBroadcastHistory(res);
         } else {
-          setBroadcastHistory([INITIAL_EVENT_BROADCAST]);
+          setBroadcastHistory([]);
         }
       }).catch((err) => {
         console.warn('Failed to load broadcasts history:', err);
-        setBroadcastHistory([INITIAL_EVENT_BROADCAST]);
+        setBroadcastHistory([]);
       });
     }
   }, [isOpen]);
 
-  // Initialize selected activity and generate QR code
+  // Clean / Zero-data initialization when modal opens
   useEffect(() => {
     if (isOpen) {
       setIsSuccessSent(false);
-      const acts = Array.isArray(activities) && activities.length > 0 ? activities : INITIAL_ACTIVITIES;
-      const defaultAct = acts.find((a) => a.status === 'ongoing') || acts[0];
-      if (defaultAct) {
-        setSelectedActivityId(defaultAct.id);
-        setActivityTitle(defaultAct.title);
-        setBarangay(defaultAct.barangay);
-        setTargetArea(defaultAct.targetArea);
-        if (defaultAct.date) setEventDate(defaultAct.date);
-        if (defaultAct.callTime) setStartTime(defaultAct.callTime);
-      }
+      handleClearAllFields();
     }
-  }, [isOpen, activities]);
+  }, [isOpen]);
 
   // Generate dynamic QR Code when activity or details change
   useEffect(() => {
@@ -174,10 +170,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
     let isMounted = true;
     async function makeQr() {
-      const acts = Array.isArray(activities) && activities.length > 0 ? activities : INITIAL_ACTIVITIES;
-      const selectedAct = acts.find((a) => a.id === selectedActivityId) || acts[0];
       const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
-      const payloadUrl = `${currentOrigin}/?action=personal_qr&act_id=${selectedAct?.id || 'act-001'}&brgy=${encodeURIComponent(barangay)}&date=${encodeURIComponent(eventDate)}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
+      const payloadUrl = `${currentOrigin}/?action=personal_qr&act_id=${selectedActivityId || 'custom'}&brgy=${encodeURIComponent(barangay || 'Dingalan')}&date=${encodeURIComponent(eventDate || new Date().toISOString().split('T')[0])}&sig=LD-ADMIN-GEN-${Date.now().toString().slice(-6)}`;
       
       setQrRawPayload(payloadUrl);
 
@@ -203,25 +197,26 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, selectedActivityId, barangay, eventDate, activities]);
+  }, [isOpen, selectedActivityId, barangay, eventDate]);
 
   if (!isOpen) return null;
 
-  const safeHistory = Array.isArray(broadcastHistory) && broadcastHistory.length > 0 ? broadcastHistory : [INITIAL_EVENT_BROADCAST];
-  const currentAct = safeActs.find((a) => a.id === selectedActivityId) || safeActs[0];
+  const safeHistory = Array.isArray(broadcastHistory) ? broadcastHistory : [];
+  const currentAct = safeActs.find((a) => a.id === selectedActivityId);
 
   const handleActivityChange = (actId: string) => {
     setSelectedActivityId(actId);
+    if (!actId) {
+      handleClearAllFields();
+      return;
+    }
     const act = safeActs.find((a) => a.id === actId);
     if (act) {
-      setBarangay(act.barangay);
-      setTargetArea(act.targetArea);
-      if (act.date) {
-        setEventDate(act.date);
-      }
-      if (act.callTime) {
-        setStartTime(act.callTime);
-      }
+      setActivityTitle(act.title || '');
+      setBarangay(act.barangay || '');
+      setTargetArea(act.targetArea || '');
+      if (act.date) setEventDate(act.date);
+      if (act.callTime) setStartTime(act.callTime);
     }
   };
 
@@ -230,10 +225,13 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
     try {
       const cleanEventDate = eventDate || new Date().toISOString().split('T')[0];
+      const targetActId = (currentAct && currentAct.id) ? currentAct.id : `act-${Date.now().toString().slice(-6)}`;
+      const finalTitle = activityTitle || currentAct?.title || 'Linis Dingalan Community Cleanup';
+      
       const broadcast: EventQrBroadcast = {
         id: `broadcast-${Date.now()}`,
-        activityId: currentAct?.id || 'act-001',
-        activityTitle: activityTitle || currentAct?.title || 'Linis Dingalan Community Cleanup',
+        activityId: targetActId,
+        activityTitle: finalTitle,
         barangay,
         targetArea,
         qrDataUrl,
@@ -253,6 +251,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
       // 1. Immediately store in localStorage & BroadcastChannel for 0ms lag
       try {
         localStorage.setItem('ld_latest_event_broadcast', JSON.stringify(broadcast));
+        localStorage.removeItem('ld_broadcasts_cleared');
         if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
           const bc = new BroadcastChannel('ld_sync');
           bc.postMessage({ type: 'NEW_BROADCAST', broadcast });
@@ -260,14 +259,58 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         }
       } catch {}
 
-      // 2. Notify parent immediately so all views update
+      // 2. Ensure the activity is synced into Programs list in LocalStorage
+      try {
+        const rawActs = localStorage.getItem('ld_activities_v1');
+        const actsList: Activity[] = rawActs ? JSON.parse(rawActs) : [];
+        const existingIdx = actsList.findIndex((a) => a.id === targetActId || a.title === finalTitle);
+        
+        if (existingIdx >= 0) {
+          actsList[existingIdx] = {
+            ...actsList[existingIdx],
+            title: finalTitle,
+            barangay: barangay as any,
+            targetArea: targetArea,
+            date: cleanEventDate,
+            callTime: startTime || '06:00 AM',
+            notes: additionalNotes || actsList[existingIdx].notes,
+            supervisorName: currentUser?.name || actsList[existingIdx].supervisorName,
+            status: 'scheduled',
+          };
+        } else {
+          const newActObj: Activity = {
+            id: targetActId,
+            title: finalTitle,
+            programType: 'COASTAL_CLEANUP',
+            description: additionalNotes || 'Linis Dingalan Cleanup Operation & Environmental Compliance',
+            date: cleanEventDate,
+            callTime: startTime || '06:00 AM',
+            targetArea: targetArea,
+            barangay: barangay as any,
+            menroSupervisorId: currentUser?.id || 'admin',
+            supervisorName: currentUser?.name || 'Admin Officer',
+            targetBeneficiariesCount: 20,
+            assignedBeneficiariesCount: 0,
+            attendedBeneficiariesCount: 0,
+            status: 'scheduled',
+            notes: additionalNotes || '',
+            createdAt: new Date().toISOString(),
+          };
+          actsList.unshift(newActObj);
+        }
+        localStorage.setItem('ld_activities_v1', JSON.stringify(actsList));
+      } catch (err) {
+        console.warn('Error saving activity to localstorage:', err);
+      }
+
+      // 3. Notify parent immediately so all views (including Programs tab) update
       onBroadcastSuccess(broadcast);
       setIsSuccessSent(true);
 
-      // 3. Persist to API and Firestore
+      // 4. Persist to API and Firestore
       await api.broadcastEventQr(broadcast);
 
-      // 4. Immediately refresh history list
+      // 5. Immediately refresh history list
       const res = await api.getAllEventBroadcasts();
       setBroadcastHistory(res);
     } catch (err) {
@@ -280,11 +323,36 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const handleDeleteHistoryItem = async (broadcastId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
+      // 1. Immediate optimistic UI update
+      setBroadcastHistory((prev) => {
+        const nextList = prev.filter((b) => b.id !== broadcastId);
+        if (nextList.length === 0) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ld_broadcasts_cleared', 'true');
+            localStorage.removeItem('ld_latest_event_broadcast');
+            localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify([]));
+          }
+          onBroadcastSuccess(null as any);
+        } else {
+          onBroadcastSuccess(nextList[0]);
+        }
+        return nextList;
+      });
+
+      // 2. Persist delete in API and storage
       await api.deleteEventBroadcast(broadcastId);
       const res = await api.getAllEventBroadcasts();
       setBroadcastHistory(res);
-      // Trigger reload on parent
-      onBroadcastSuccess({} as any);
+      if (res.length === 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('ld_broadcasts_cleared', 'true');
+          localStorage.removeItem('ld_latest_event_broadcast');
+          localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify([]));
+        }
+        onBroadcastSuccess(null as any);
+      } else {
+        onBroadcastSuccess(res[0]);
+      }
     } catch (err) {
       console.error('Failed to delete broadcast', err);
     }
@@ -292,9 +360,14 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
   const handleClearAllHistory = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ld_broadcasts_cleared', 'true');
+        localStorage.removeItem('ld_latest_event_broadcast');
+        localStorage.setItem('ld_event_broadcasts_v1', JSON.stringify([]));
+      }
       await api.clearAllEventBroadcasts();
       setBroadcastHistory([]);
-      onBroadcastSuccess({} as any);
+      onBroadcastSuccess(null as any);
     } catch (err) {
       console.error('Failed to clear broadcasts', err);
     }
@@ -374,34 +447,34 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
-        <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/70 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.35)] overflow-hidden my-auto flex flex-col max-h-[92vh] text-slate-100">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-6 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
+        <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/70 rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.35)] overflow-hidden my-auto flex flex-col max-h-[94vh] text-slate-100">
           
           {/* Header Bar */}
-          <div className="px-5 sm:px-6 py-4 border-b border-slate-800 bg-slate-950/95 flex items-center justify-between shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md">
-                <QrCode className="w-5 h-5 text-slate-950" />
+          <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-950/95 flex items-center justify-between shrink-0">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md shrink-0">
+                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
               </div>
               <div>
-                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+                <span className="text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400 block">
                   Admin Exclusive • Event QR Generator & Advisory
                 </span>
-                <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                <h3 className="text-sm sm:text-lg font-black text-white tracking-tight leading-tight">
                   Generate Event QR Code & Mga Paalala
                 </h3>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* Modal Body */}
-          <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 min-h-0 text-left">
+          <div className="p-3.5 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-5 flex-1 min-h-0 text-left">
             {/* SUCCESS BROADCAST CONFIRMATION */}
             {isSuccessSent ? (
               <div className="text-center py-8 space-y-4 animate-scaleIn">
@@ -457,24 +530,34 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       <FileText className="w-4 h-4 text-emerald-400" />
                       <span>Pumili ng Cleanup Activity o Maglagay ng Custom Title:</span>
                     </label>
-                    <span className="text-[10px] font-mono text-emerald-400">
-                      Synchronized sa Active Program List
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleClearAllFields}
+                        className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center space-x-1"
+                        title="Linisin at gawing zero data ang lahat ng text field"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Linisin Lahat ng Field</span>
+                      </button>
+                      <span className="text-[10px] font-mono text-emerald-400 hidden sm:inline">
+                        Synchronized sa Active Program List
+                      </span>
+                    </div>
                   </div>
 
-                  {safeActs.length > 0 && (
-                    <select
-                      value={selectedActivityId}
-                      onChange={(e) => handleActivityChange(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:border-emerald-400 focus:outline-none"
-                    >
-                      {safeActs.map((act) => (
-                        <option key={act.id} value={act.id}>
-                          {act.title} — Brgy. {act.barangay} ({act.targetArea})
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  <select
+                    value={selectedActivityId}
+                    onChange={(e) => handleActivityChange(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white focus:border-emerald-400 focus:outline-none"
+                  >
+                    <option value="">-- Pumili ng Activity (Iwanang Malinis / Clean) --</option>
+                    {safeActs.map((act) => (
+                      <option key={act.id} value={act.id}>
+                        {act.title} — Brgy. {act.barangay} ({act.targetArea})
+                      </option>
+                    ))}
+                  </select>
 
                   <div>
                     <label className="block text-[11px] font-mono text-slate-400 mb-1">
@@ -508,6 +591,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                         onChange={(e) => setBarangay(e.target.value)}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
                       >
+                        <option value="">-- Pumili ng Barangay --</option>
                         {DINGALAN_BARANGAYS.map((b) => (
                           <option key={b} value={b}>
                             Barangay {b}
@@ -549,7 +633,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
                       <div>
                         <label className="block text-[10px] font-mono text-slate-400 mb-1">
                           Simula:
@@ -593,19 +677,19 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                 </div>
 
                 {/* Section 3: Reminders and Advisories */}
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-800">
                     <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wide flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>Mga Paalala ng Admin sa mga Kalahok (Editable):</span>
                     </span>
-                    <span className="text-[10px] font-mono text-emerald-400">Lahat ay Customizable</span>
+                    <span className="text-[9px] sm:text-[10px] font-mono text-emerald-400 hidden xs:inline">Lahat ay Customizable</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 mb-1 flex items-center space-x-1.5">
-                        <Wrench className="w-3.5 h-3.5 text-emerald-400" />
+                        <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>Kagamitan / Tools na Dapat Dalhin:</span>
                       </label>
                       <input
@@ -619,7 +703,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
 
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 mb-1 flex items-center space-x-1.5">
-                        <Coffee className="w-3.5 h-3.5 text-cyan-400" />
+                        <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                         <span>Paalala sa Tumbler / Hydration:</span>
                       </label>
                       <input
@@ -635,7 +719,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-mono text-slate-300 mb-1 flex items-center space-x-1.5">
-                        <Shirt className="w-3.5 h-3.5 text-teal-400" />
+                        <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                         <span>Dapat na Kasuotan (Attire):</span>
                       </label>
                       <input
@@ -663,33 +747,33 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                 </div>
 
                 {/* Section 4: Event QR Code Canvas & Primary Action */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/40 border-2 border-emerald-500/50 shadow-xl flex flex-col sm:flex-row items-center gap-5">
+                <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/40 border-2 border-emerald-500/50 shadow-xl flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
                   {/* QR Canvas Box */}
-                  <div className="p-2.5 bg-white rounded-2xl shadow-2xl border-2 border-emerald-400/50 shrink-0 text-center">
+                  <div className="p-2 sm:p-2.5 bg-white rounded-xl sm:rounded-2xl shadow-2xl border-2 border-emerald-400/50 shrink-0 text-center">
                     {qrDataUrl ? (
                       <img
                         src={qrDataUrl}
                         alt="Official Generated Event QR Code"
-                        className="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto"
+                        className="w-32 h-32 xs:w-40 xs:h-40 sm:w-44 sm:h-44 object-contain mx-auto"
                       />
                     ) : (
-                      <div className="w-40 h-40 sm:w-44 sm:h-44 flex items-center justify-center bg-slate-100 rounded-xl text-xs text-slate-500 animate-pulse">
+                      <div className="w-32 h-32 xs:w-40 xs:h-40 sm:w-44 sm:h-44 flex items-center justify-center bg-slate-100 rounded-xl text-xs text-slate-500 animate-pulse">
                         Generating QR Code...
                       </div>
                     )}
-                    <span className="text-[9px] font-mono font-black text-slate-950 uppercase tracking-tight block mt-1">
+                    <span className="text-[8px] sm:text-[9px] font-mono font-black text-slate-950 uppercase tracking-tight block mt-1">
                       SCAN ATTENDANCE
                     </span>
                   </div>
 
                   {/* QR Info & Actions */}
-                  <div className="space-y-3 flex-1 text-center sm:text-left">
+                  <div className="space-y-2.5 sm:space-y-3 flex-1 text-center sm:text-left w-full">
                     <div>
-                      <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold mb-1">
-                        <QrCode className="w-3 h-3 text-emerald-400" />
+                      <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold mb-1">
+                        <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
                         <span>OFFICIAL EVENT ATTENDANCE QR CODE</span>
                       </div>
-                      <h4 className="text-base sm:text-lg font-black text-white leading-tight">
+                      <h4 className="text-sm sm:text-lg font-black text-white leading-tight">
                         {activityTitle || currentAct?.title || 'Linis Dingalan Cleanup Event'}
                       </h4>
                       <p className="text-xs text-emerald-300 font-mono mt-0.5">
@@ -702,18 +786,18 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                         <a
                           href={qrDataUrl}
                           download={`Linis-Dingalan-QR-${barangay}-${eventDate}.png`}
-                          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer"
+                          className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer"
                         >
-                          <Download className="w-3.5 h-3.5 text-emerald-400" />
+                          <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                           <span>Download QR</span>
                         </a>
                       )}
                       <button
                         type="button"
                         onClick={() => window.print()}
-                        className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer"
+                        className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all shadow cursor-pointer"
                       >
-                        <Printer className="w-3.5 h-3.5 text-slate-400" />
+                        <Printer className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>Print</span>
                       </button>
                     </div>
@@ -723,7 +807,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       type="button"
                       onClick={handleSendToAllUsers}
                       disabled={isSending}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-sm tracking-wide shadow-[0_0_25px_rgba(0,229,153,0.5)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                      className="w-full py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs sm:text-sm tracking-wide shadow-[0_0_25px_rgba(0,229,153,0.5)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50 text-center leading-snug"
                     >
                       {isSending ? (
                         <span className="flex items-center space-x-2">
@@ -732,7 +816,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                         </span>
                       ) : (
                         <span className="flex items-center space-x-2">
-                          <Send className="w-4 h-4 text-slate-950" />
+                          <Send className="w-4 h-4 text-slate-950 shrink-0" />
                           <span>I-Broadcast ang Event QR Code at Paalala sa Lahat ng Users</span>
                         </span>
                       )}

@@ -112,44 +112,44 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-              <Terminal className="w-5 h-5 text-emerald-400" />
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              <Terminal className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">
+            <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
               PESO Manager Audit Trail & Security Ledger
             </h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Immutable log of all user registrations, attendance geotags, RBAC security blocks, and photo pruning events.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 shrink-0">
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center transition-colors"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center transition-colors"
           >
-            <Download className="w-4 h-4 mr-1.5" />
+            <Download className="w-3.5 h-3.5 mr-1" />
             Export Audit CSV
           </button>
         </div>
       </div>
 
       {/* Filter Controls */}
-      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-3">
         <div className="md:col-span-8 relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search audit trail by Action, Officer Name, IP Address, or Details..."
+            placeholder="Search audit trail by Action, Officer Name, IP..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
 
@@ -157,19 +157,60 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
           >
-            <option value="ALL">All Event Outcomes ({auditLogs.length})</option>
+            <option value="ALL">All Outcomes ({auditLogs.length})</option>
             <option value="SUCCESS">SUCCESS Only</option>
-            <option value="BLOCKED_RBAC">BLOCKED_RBAC (Security Violations)</option>
+            <option value="BLOCKED_RBAC">BLOCKED_RBAC (Security)</option>
             <option value="FAILED">FAILED Attempts</option>
           </select>
         </div>
       </div>
 
-      {/* Logs Table */}
-      <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+      {/* Logs Container */}
+      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl">
+        {/* MOBILE VIEW: Compact Cards (< 640px) */}
+        <div className="sm:hidden p-2 space-y-2">
+          {filteredLogs.map((log) => (
+            <div
+              key={log.id}
+              onClick={() => setSelectedLog(log)}
+              className="bg-slate-900/90 border border-slate-750 rounded-xl p-2.5 space-y-1.5 cursor-pointer hover:border-emerald-500/50 transition-colors shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-bold text-white text-xs">{log.action}</div>
+                  <span className="text-[10px] text-slate-400 block font-mono">
+                    {log.userName} [{log.department}]
+                  </span>
+                </div>
+                {log.status === 'SUCCESS' && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                    SUCCESS
+                  </span>
+                )}
+                {log.status === 'BLOCKED_RBAC' && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 shrink-0 animate-pulse">
+                    BLOCKED
+                  </span>
+                )}
+                {log.status === 'FAILED' && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                    FAILED
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 pt-1 border-t border-slate-800">
+                <span>{new Date(log.timestamp).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })} PST</span>
+                <span>{log.entityType} • {log.ipAddress}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* DESKTOP VIEW: Table (>= 640px) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-700 bg-slate-900/60 text-[10px] font-mono uppercase text-slate-400 tracking-wider">

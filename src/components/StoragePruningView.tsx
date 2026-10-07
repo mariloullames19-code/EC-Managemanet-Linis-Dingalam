@@ -54,60 +54,60 @@ export const StoragePruningView: React.FC<StoragePruningViewProps> = ({
   const avgPhotoKb = Math.round(metrics.averagePhotoSizeBytes / 1024);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Top Banner */}
-      <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-              <HardDrive className="w-5 h-5 text-emerald-400" />
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              <HardDrive className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">
+            <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
               Storage Optimization & Photo Pruning Utility
             </h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Standardized WebP compression and automated archival of verified accomplishment media.
           </p>
         </div>
 
         {!isSuperadmin && (
-          <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold rounded-xl flex items-center">
-            <ShieldAlert className="w-4 h-4 mr-1 text-amber-400" />
-            Superadmin Authority Required to Execute
+          <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono font-bold rounded-xl flex items-center shrink-0">
+            <ShieldAlert className="w-3.5 h-3.5 mr-1 text-amber-400" />
+            Superadmin Required
           </span>
         )}
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-slate-400">Total Active Photos</p>
-          <p className="text-2xl font-black text-white mt-1">{metrics.totalPhotos}</p>
-          <span className="text-[10px] text-slate-400 font-mono">In cloud storage</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-slate-400">Total Photos</p>
+          <p className="text-lg sm:text-2xl font-black text-white mt-0.5 sm:mt-1">{metrics.totalPhotos}</p>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">In cloud storage</span>
         </div>
 
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-cyan-400">Storage Footprint</p>
-          <p className="text-2xl font-black text-cyan-400 mt-1">{totalStorageMb} MB</p>
-          <span className="text-[10px] text-slate-400 font-mono">Standardized WebP/JPEG</span>
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-cyan-400">Footprint</p>
+          <p className="text-lg sm:text-2xl font-black text-cyan-400 mt-0.5 sm:mt-1">{totalStorageMb} MB</p>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">Standardized WebP</span>
         </div>
 
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-emerald-400">Total Pruned & Saved</p>
-          <p className="text-2xl font-black text-emerald-400 mt-1">{savedMb} MB</p>
-          <span className="text-[10px] text-emerald-500 font-mono">{metrics.totalPrunedCount} photos archived</span>
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-emerald-400">Pruned & Saved</p>
+          <p className="text-lg sm:text-2xl font-black text-emerald-400 mt-0.5 sm:mt-1">{savedMb} MB</p>
+          <span className="text-[9px] sm:text-[10px] text-emerald-500 font-mono">{metrics.totalPrunedCount} archived</span>
         </div>
 
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 shadow">
-          <p className="text-[11px] font-mono uppercase text-amber-400">Average Compressed Size</p>
-          <p className="text-2xl font-black text-amber-400 mt-1">{avgPhotoKb} KB</p>
-          <span className="text-[10px] text-slate-400 font-mono">1280x720 at 82% quality</span>
+        <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow">
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase text-amber-400">Avg Photo</p>
+          <p className="text-lg sm:text-2xl font-black text-amber-400 mt-0.5 sm:mt-1">{avgPhotoKb} KB</p>
+          <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono">1280x720 at 82%</span>
         </div>
       </div>
 
       {/* Pruning Control Console */}
-      <div className="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
+      <div className="bg-slate-800/90 border border-slate-700 rounded-xl sm:rounded-2xl p-3.5 sm:p-6 shadow-xl space-y-4 sm:space-y-6">
         <div>
           <h3 className="text-base font-bold text-white flex items-center">
             <Sliders className="w-5 h-5 text-emerald-400 mr-2" />

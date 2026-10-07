@@ -170,65 +170,61 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
       <div className="relative z-10 w-full px-2 sm:px-4 md:px-6 pt-1 pb-10">
         {/* Fit-To-Screen Hero Banner */}
         <section className="pt-1 pb-3">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-4">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xl space-y-3 sm:space-y-4">
             {/* Top Horizontal Row: Live Telemetry Badge + Small Horizontal Action Buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3.5 border-b border-slate-800/80">
-              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-950/70 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-[11px] font-mono font-semibold shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 sm:pb-3.5 border-b border-slate-800/80">
+              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3 py-1.5 sm:py-1 rounded-full bg-slate-950/70 border border-emerald-500/40 text-emerald-300 text-[9px] sm:text-[11px] font-mono font-semibold shadow-[0_0_15px_rgba(16,185,129,0.2)] text-center sm:text-left">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 <span className="tracking-wide">
                   LIVE FIELD TELEMETRY • COASTAL SECTOR 04 — DINGALAN PACIFIC SEAWALL
                 </span>
               </div>
 
-              {/* Smaller Horizontal Action Buttons in One Row */}
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {/* Generate Event QR Button (Matches exact screenshot styling) */}
-                {onOpenGenerateQrModal && (
-                  <button
-                    onClick={onOpenGenerateQrModal}
-                    className="px-4 py-2 rounded-full bg-gradient-to-r from-[#00e599] via-[#00d9b4] to-[#00d4ff] hover:from-[#00f2a5] hover:to-[#22e1ff] text-slate-950 font-mono font-bold text-xs sm:text-[13px] tracking-tight shadow-[0_0_20px_rgba(0,229,153,0.45)] flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer shrink-0"
-                  >
-                    <QrCode className="w-4 h-4 text-slate-950 shrink-0" />
-                    <span>Generate Event QR Code</span>
-                  </button>
-                )}
-
-                {onOpenAccomplishmentModal && (
-                  <button
-                    onClick={onOpenAccomplishmentModal}
-                    className="px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-bold text-[11px] font-mono shadow flex items-center space-x-1.5 transition-all cursor-pointer"
-                  >
-                    <Images className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Accomplishment Attendance ({attendances.length})</span>
-                  </button>
+              {/* Active User Status or Quick Telemetry Indicator (No duplicate buttons with Header) */}
+              <div className="flex items-center gap-2 shrink-0">
+                {currentUser && (
+                  <div className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900/80 border border-emerald-500/40 text-[11px] font-mono text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Naka-login: <strong className="text-white">{currentUser.name}</strong> ({currentUser.role})</span>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Main Title & Subtitle in Full Widescreen Width */}
             <div className="max-w-5xl">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-xl">
+              <h1 className="text-xl xs:text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.1] drop-shadow-xl">
                 Linis Dingalan{' '}
                 <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
                   EC Management
                 </span>
               </h1>
 
-              <p className="mt-2 text-xs sm:text-sm text-slate-200 font-normal leading-relaxed drop-shadow max-w-4xl">
+              <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm text-slate-200 font-normal leading-relaxed drop-shadow max-w-4xl">
                 Innovation in Action Project of MENRO in Collaboration with PESO. Activity-based participants' inventory monitoring with photographic compliance and real-time GPS watermarking across 11 coastal & river Barangays.
               </p>
 
-              {/* Primary Call-To-Action Button */}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {/* Admin & Super Admin Login Button */}
-                <button
-                  onClick={onOpenLoginModal}
-                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-[0_0_25px_rgba(16,185,129,0.45)] flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
-                >
-                  <Lock className="w-4 h-4 text-slate-950" />
-                  <span>Admin & Super Admin Login</span>
-                  <ArrowRight className="w-4 h-4 ml-0.5" />
-                </button>
+              {/* Primary Call-To-Action Button (Deduplicated: Field Terminal when logged in, Login when not logged in) */}
+              <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+                {currentUser ? (
+                  <button
+                    onClick={() => onNavigate('portal')}
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                  >
+                    <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950" />
+                    <span>Buksan ang Field Terminal</span>
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={onOpenLoginModal}
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                  >
+                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950" />
+                    <span>Admin & Super Admin Login</span>
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -237,9 +233,9 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
         {/* LATEST EVENT QR & PAALALA BROADCAST BANNER */}
         {eventBroadcast && (
           <section className="mb-6 animate-fadeIn">
-            <div className="bg-gradient-to-r from-slate-900/90 via-emerald-950/40 to-slate-900/90 border-2 border-emerald-500/50 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-900/90 via-emerald-950/40 to-slate-900/90 border-2 border-emerald-500/50 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xl relative overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start sm:items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left space-y-3 sm:space-y-0 sm:space-x-4 w-full">
                   {eventBroadcast.qrDataUrl ? (
                     <img
                       src={eventBroadcast.qrDataUrl}
@@ -254,8 +250,8 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
                     </div>
                   )}
 
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="space-y-1 w-full">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center">
                         <Sparkles className="w-3 h-3 mr-1 text-emerald-400" />
                         Admin Broadcast: Opisyal na Event QR & Paalala
@@ -269,7 +265,7 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
                       {eventBroadcast.activityTitle} — Brgy. {eventBroadcast.barangay}
                     </h3>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300 font-mono pt-0.5">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-xs text-slate-300 font-mono pt-0.5">
                       <span className="flex items-center space-x-1">
                         <Clock className="w-3.5 h-3.5 text-cyan-400" />
                         <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
@@ -282,11 +278,11 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 self-end md:self-center shrink-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto shrink-0">
                   {onOpenEventNoticeModal && (
                     <button
                       onClick={onOpenEventNoticeModal}
-                      className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
                     >
                       <FileText className="w-4 h-4 text-amber-400" />
                       <span>Basahin ang Lahat ng Paalala</span>
@@ -296,7 +292,7 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
                   {onOpenScanQrModal && (
                     <button
                       onClick={onOpenScanQrModal}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-lg flex items-center space-x-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-lg flex items-center justify-center space-x-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
                     >
                       <Camera className="w-4 h-4 text-slate-950" />
                       <span>I-Scan & I-Upload ang Patunay</span>
@@ -328,11 +324,11 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
           </div>
 
           {/* Asymmetric Bento Grid (4 core tiles) */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-5 items-stretch">
             {/* --------------------------------------------------------------------- */}
             {/* TILE 1: LARGE TILE (Span 7) - Camera HUD Crosshairs & Geotag Watermark */}
             {/* --------------------------------------------------------------------- */}
-            <div className="md:col-span-7 bg-slate-900/60 backdrop-blur-2xl border border-emerald-500/25 rounded-3xl p-5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden group">
+            <div className="md:col-span-7 bg-slate-900/60 backdrop-blur-2xl border border-emerald-500/25 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden group">
               {/* Subtle green ambient inner corner glow */}
               <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 blur-2xl pointer-events-none" />
 
@@ -446,7 +442,7 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
             {/* --------------------------------------------------------------------- */}
             {/* TILE 2: TALL TILE (Span 5) - Topographic GPS Radar Map */}
             {/* --------------------------------------------------------------------- */}
-            <div className="md:col-span-5 bg-slate-900/60 backdrop-blur-2xl border border-cyan-500/25 rounded-3xl p-5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden">
+            <div className="md:col-span-5 bg-slate-900/60 backdrop-blur-2xl border border-cyan-500/25 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden">
               {/* Subtle cyan ambient glow */}
               <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 blur-2xl pointer-events-none" />
 
@@ -600,7 +596,7 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
             {/* --------------------------------------------------------------------- */}
             {/* TILE 3: MEDIUM TILE (Span 6) - QR Verified-ID Badge */}
             {/* --------------------------------------------------------------------- */}
-            <div className="md:col-span-6 bg-slate-900/60 backdrop-blur-2xl border border-emerald-500/25 rounded-3xl p-5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden">
+            <div className="md:col-span-6 bg-slate-900/60 backdrop-blur-2xl border border-emerald-500/25 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden">
               <div>
                 {/* Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-slate-700/60">
@@ -696,7 +692,7 @@ export const CinematicBentoHomepage: React.FC<CinematicBentoHomepageProps> = ({
             {/* --------------------------------------------------------------------- */}
             {/* TILE 4: MEDIUM TILE (Span 6) - Circular Compliance Gauge */}
             {/* --------------------------------------------------------------------- */}
-            <div className="md:col-span-6 bg-slate-900/60 backdrop-blur-2xl border border-cyan-500/25 rounded-3xl p-5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden">
+            <div className="md:col-span-6 bg-slate-900/60 backdrop-blur-2xl border border-cyan-500/25 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] flex flex-col justify-between relative overflow-hidden">
               <div>
                 {/* Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-slate-700/60">

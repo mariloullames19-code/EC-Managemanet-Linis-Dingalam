@@ -164,14 +164,14 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-6 bg-slate-950/92 backdrop-blur-xl overflow-y-auto animate-fadeIn select-none">
-      <div className="relative w-full max-w-5xl bg-slate-900 border-2 border-emerald-500/60 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-6 bg-slate-950/92 backdrop-blur-xl overflow-y-auto animate-fadeIn select-none">
+      <div className="relative w-full max-w-5xl bg-slate-900 border-2 border-emerald-500/60 rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[94vh]">
         
         {/* Header Bar */}
-        <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/90 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black shadow-lg shrink-0">
-              <EyeOff className="w-5 h-5" />
+        <div className="px-3.5 sm:px-5 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black shadow-lg shrink-0">
+              <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
@@ -184,23 +184,23 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
                   </span>
                 )}
               </div>
-              <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-tight">
+              <h3 className="text-sm sm:text-lg font-black text-white tracking-tight leading-tight">
                 Mga Anonymous na Mensahe at Ulat sa Admin
               </h3>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
             {/* DELETE ALL BUTTON */}
             <button
               type="button"
               onClick={() => setIsDeleteAllConfirmOpen(true)}
               disabled={messages.length === 0}
-              className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 hover:text-rose-100 text-xs font-mono font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 hover:text-rose-100 text-xs font-mono font-bold flex items-center space-x-1 sm:space-x-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
               title="Permanenteng burahin ang lahat ng anonymous messages sa database"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-              <span>Burahin Lahat ({messages.length})</span>
+              <span>Burahin ({messages.length})</span>
             </button>
 
             {onOpenBroadcastModal && (
@@ -228,13 +228,13 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
         </div>
 
         {/* Filters and Search Strip */}
-        <div className="px-5 py-3 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs font-mono">
           {/* Tab Filters */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none">
+          <div className="flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto scrollbar-none w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
-              className={`px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer shrink-0 ${
                 activeFilter === 'all'
                   ? 'bg-emerald-500 text-slate-950 shadow-md'
                   : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
@@ -246,33 +246,33 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
             <button
               type="button"
               onClick={() => setActiveFilter('unread')}
-              className={`px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer flex items-center space-x-1 ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer flex items-center space-x-1 shrink-0 ${
                 activeFilter === 'unread'
                   ? 'bg-amber-500 text-slate-950 shadow-md'
                   : 'bg-slate-900 text-amber-300 hover:text-amber-200 border border-slate-800'
               }`}
             >
-              <span>Hindi pa Nababasa</span>
-              {unreadCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px]">{unreadCount}</span>}
+              <span>Hindi Nabasa</span>
+              {unreadCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px]">{unreadCount}</span>}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveFilter('urgent')}
-              className={`px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer flex items-center space-x-1 ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer flex items-center space-x-1 shrink-0 ${
                 activeFilter === 'urgent'
                   ? 'bg-rose-600 text-white shadow-md'
                   : 'bg-slate-900 text-rose-300 hover:text-rose-200 border border-slate-800'
               }`}
             >
               <span>Urgent</span>
-              {urgentCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px]">{urgentCount}</span>}
+              {urgentCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px]">{urgentCount}</span>}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveFilter('resolved')}
-              className={`px-3 py-1.5 rounded-xl transition-all font-bold cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer shrink-0 ${
                 activeFilter === 'resolved'
                   ? 'bg-cyan-500 text-slate-950 shadow-md'
                   : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
@@ -283,27 +283,27 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
           </div>
 
           {/* Search Box */}
-          <div className="relative min-w-[200px] flex-1 max-w-xs">
+          <div className="relative w-full sm:w-auto sm:min-w-[200px] flex-1 max-w-none sm:max-w-xs">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Hanapin sa mensahe o lugar..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-xs font-sans focus:border-emerald-400"
+              className="w-full pl-8 pr-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-xs font-sans focus:border-emerald-400"
             />
           </div>
         </div>
 
         {/* Auto-Purge Notice Strip (1 Month / 30 Days Retention Policy) */}
-        <div className="px-5 py-2 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
-          <div className="flex items-center space-x-2 text-cyan-300">
+        <div className="px-3 sm:px-5 py-1.5 sm:py-2 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between text-[10px] sm:text-[11px] font-mono text-slate-400 gap-1.5 sm:gap-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 text-cyan-300">
             <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <span>
-              <strong>1-Month Auto-Purge:</strong> Awtomatikong binubura ng sistema ang mga ulat kapag lumipas na ang <strong>30 araw (1 buwan)</strong>.
+              <strong>1-Month Auto-Purge:</strong> Auto-bura ang ulat pagkalipas ng <strong>30 araw</strong>.
             </span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-400">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>Kumpidensiyal & Auto-Cleaned</span>
           </div>

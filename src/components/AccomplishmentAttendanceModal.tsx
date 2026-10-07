@@ -3,6 +3,7 @@ import { AttendanceRecord, User } from '../types';
 import { FullScreenPhotoViewer } from './FullScreenPhotoViewer';
 import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
 import { formatPhilippineDateTime } from '../utils/philippineClock';
+import { exportAttendanceToExcel } from '../utils/excelExporter';
 import {
   Camera,
   Images,
@@ -20,6 +21,8 @@ import {
   Printer,
   Eye,
   FileText,
+  FileSpreadsheet,
+  Download,
   Filter,
   Trash2,
   AlertTriangle,
@@ -63,6 +66,7 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isAnonymousSendOpen, setIsAnonymousSendOpen] = useState<boolean>(false);
+  const [exportSuccessToast, setExportSuccessToast] = useState<string | null>(null);
 
   // Trigger auto-prune of records older than 1 month (30 days) when modal is opened
   useEffect(() => {
@@ -70,6 +74,27 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
       onAutoPruneStale();
     }
   }, [isOpen]);
+
+  // Automatic Excel Table Export for Print Record
+  const handlePrintRecordAsExcel = () => {
+    const recordsToExport = filteredAttendances.length > 0 ? filteredAttendances : attendances;
+    if (recordsToExport.length === 0) {
+      alert('Walang nakitang accomplishment attendance records na mai-export.');
+      return;
+    }
+
+    const result = exportAttendanceToExcel(
+      recordsToExport,
+      'Linis-Dingalan-Accomplishment-Attendance-Records'
+    );
+
+    if (result.success) {
+      setExportSuccessToast(
+        `Matagumpay na na-print at na-download ang Excel table file (${result.fileName}) na may kumpletong detalye ng ${result.count} na nakapag-upload ng larawan!`
+      );
+      setTimeout(() => setExportSuccessToast(null), 6000);
+    }
+  };
 
   const handleExecuteDeleteAll = async () => {
     if (!onDeleteAll) return;
@@ -131,81 +156,97 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-7xl bg-slate-900 border-2 border-emerald-500/50 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.2)] overflow-hidden my-auto flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
+      <div className="relative w-full max-w-7xl bg-slate-900 border-2 border-emerald-500/50 rounded-2xl sm:rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_50px_rgba(16,185,129,0.2)] overflow-hidden my-auto flex flex-col max-h-[94vh]">
         
         {/* ========================================================================= */}
         {/* MODAL HEADER                                                              */}
         {/* ========================================================================= */}
-        <div className="px-6 py-4.5 border-b border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.4)] shrink-0">
-              <Images className="w-6 h-6 text-slate-950" />
+        <div className="px-3 sm:px-6 py-2.5 sm:py-4.5 border-b border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-3.5">
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.4)] shrink-0">
+              <Images className="w-4 h-4 sm:w-6 sm:h-6 text-slate-950" />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
+              <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                <span className="text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400">
                   Admin Accomplishment Portal
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                   {attendances.length} Attendees
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                   {totalPhotosCount} Pictures
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-1 shadow-sm">
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40 hidden sm:inline-flex items-center gap-1 shadow-sm">
                   <Clock className="w-3 h-3 text-amber-400 shrink-0" />
-                  <span>Awtomatikong nabubura matapos ang 1 buwan (30 araw)</span>
+                  <span>Awtomatikong nabubura matapos ang 1 buwan</span>
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5">
+              <h2 className="text-sm sm:text-2xl font-black text-white tracking-tight mt-0.5 leading-tight">
                 Accomplishment Attendance Records
               </h2>
-              <p className="text-xs text-slate-400">
-                Pindutin ang pangalan ng attendee sa table upang makita ang mga larawan ng accomplishment
+              <p className="text-[10px] sm:text-xs text-slate-400">
+                Pindutin ang pangalan ng attendee upang makita ang mga larawan
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 self-end sm:self-center">
             {/* Delete All Button as requested */}
             {onDeleteAll && (
               <button
                 type="button"
                 onClick={() => setIsConfirmDeleteOpen(true)}
                 disabled={attendances.length === 0 || isDeleting}
-                className="px-3.5 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/70 text-rose-200 hover:text-white font-mono text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(244,63,94,0.4)]"
+                className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/70 text-rose-200 hover:text-white font-mono text-[11px] sm:text-xs font-bold flex items-center space-x-1 transition-all cursor-pointer shadow disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_15px_rgba(244,63,94,0.4)]"
                 title="Permanenteng burahin ang lahat ng Accomplishment Attendance records"
               >
-                <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>Burahin Lahat (Delete All)</span>
+                <Trash2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>Burahin Lahat</span>
               </button>
             )}
 
             <button
               type="button"
-              onClick={() => window.print()}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-sm"
-              title="I-print ang listahan ng records"
+              onClick={handlePrintRecordAsExcel}
+              className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 font-mono text-[11px] sm:text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 shrink-0"
+              title="I-print at i-download ang buong records sa Excel table file (.xlsx)"
             >
-              <Printer className="w-4 h-4 text-slate-400" />
-              <span className="hidden sm:inline">Print Record</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
+              <span>Print Record (Excel)</span>
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
               title="Isara ang modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
+        {/* Toast / Banner for Excel Print & Export Success */}
+        {exportSuccessToast && (
+          <div className="px-4 sm:px-6 py-2.5 bg-emerald-950 border-b border-emerald-500/50 text-emerald-200 text-xs font-bold flex items-center justify-between gap-2 animate-fadeIn shrink-0">
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{exportSuccessToast}</span>
+            </div>
+            <button
+              onClick={() => setExportSuccessToast(null)}
+              className="p-1 text-emerald-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* ========================================================================= */}
         {/* FILTER & SEARCH BAR                                                       */}
         {/* ========================================================================= */}
-        <div className="px-6 py-3.5 bg-slate-950/60 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 bg-slate-950/60 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -242,149 +283,228 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
         </div>
 
         {/* ========================================================================= */}
-        {/* ATTENDANCE RECORDS TABLE (TABLE VIEW AS REQUESTED)                        */}
+        {/* ATTENDANCE RECORDS (MOBILE CARDS + DESKTOP TABLE)                         */}
         {/* ========================================================================= */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+        <div className="p-2.5 sm:p-6 overflow-y-auto flex-1">
           {filteredAttendances.length === 0 ? (
-            <div className="text-center py-16 space-y-3 bg-slate-950/40 rounded-2xl border border-slate-800">
-              <Camera className="w-12 h-12 text-slate-600 mx-auto" />
-              <p className="text-slate-300 font-bold text-base">Walang nakitang accomplishment record</p>
+            <div className="text-center py-12 sm:py-16 space-y-3 bg-slate-950/40 rounded-2xl border border-slate-800">
+              <Camera className="w-10 h-10 sm:w-12 sm:h-12 text-slate-600 mx-auto" />
+              <p className="text-slate-300 font-bold text-sm sm:text-base">Walang nakitang accomplishment record</p>
               <p className="text-slate-500 text-xs">
                 Walang tugmang attendance records sa kasalukuyang search o filter.
               </p>
             </div>
           ) : (
-            <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/40 shadow-inner">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left font-sans border-collapse">
-                  <thead>
-                    <tr className="bg-slate-950/90 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800">
-                      <th className="py-3 px-3.5 text-center w-12">#</th>
-                      <th className="py-3 px-4 min-w-[200px]">Pangalan ng Attendee (Click to View Photos)</th>
-                      <th className="py-3 px-4 min-w-[180px]">Barangay at Lokasyon</th>
-                      <th className="py-3 px-4 min-w-[220px]">Gawain / Cleanup Activity</th>
-                      <th className="py-3 px-4 min-w-[170px]">Oras Naipasa (PST)</th>
-                      <th className="py-3 px-3 text-center min-w-[100px]">Larawan</th>
-                      <th className="py-3 px-3 text-center min-w-[120px]">Katayuan</th>
-                      <th className="py-3 px-3.5 text-center min-w-[130px]">Aksyon</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs">
-                    {currentAttendances.map((att, index) => {
-                      const photos = getRecordPhotos(att);
-                      const rowNumber = startIndex + index + 1;
+            <>
+              {/* MOBILE VIEW: Compact Cards (< 640px) */}
+              <div className="sm:hidden space-y-2">
+                {currentAttendances.map((att, index) => {
+                  const photos = getRecordPhotos(att);
+                  const dt = formatPhilippineDateTime(att.timestamp || att.localPhTime, att.localPhTime);
+                  const rowNumber = startIndex + index + 1;
 
-                      return (
-                        <tr
-                          key={att.id || `${att.beneficiaryCode}-${index}`}
-                          className="hover:bg-slate-800/40 transition-colors group"
+                  return (
+                    <div
+                      key={att.id || `${att.beneficiaryCode}-${index}`}
+                      className="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 space-y-2 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRecordForPhotos(att)}
+                          className="flex items-center space-x-2 text-left group cursor-pointer"
                         >
-                          {/* Row Number */}
-                          <td className="py-3 px-3.5 text-center font-mono font-bold text-slate-500">
-                            {rowNumber}
-                          </td>
-
-                          {/* Attendee Name - Clickable as requested */}
-                          <td className="py-3 px-4">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRecordForPhotos(att)}
-                              className="text-left group/btn flex items-center space-x-2.5 transition-all cursor-pointer"
-                              title="Pindutin ang pangalan upang lumabas ang larawan"
-                            >
-                              <div className="w-8 h-8 rounded-lg bg-emerald-950/90 border border-emerald-500/50 flex items-center justify-center text-emerald-300 font-mono font-black text-xs shrink-0 group-hover/btn:scale-110 group-hover/btn:border-emerald-400 transition-all">
-                                {att.beneficiaryName.charAt(0)}
-                              </div>
-                              <div>
-                                <span className="font-extrabold text-white text-sm group-hover/btn:text-emerald-300 group-hover/btn:underline decoration-emerald-400 underline-offset-2 flex items-center gap-1.5">
-                                  {att.beneficiaryName}
-                                  <Camera className="w-3.5 h-3.5 text-emerald-400 opacity-60 group-hover/btn:opacity-100 transition-opacity" />
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-block mt-0.5">
-                                  {att.beneficiaryCode}
-                                </span>
-                              </div>
-                            </button>
-                          </td>
-
-                          {/* Location & Barangay */}
-                          <td className="py-3 px-4 font-mono text-slate-300">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-200">
-                              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span className="truncate max-w-[200px]" title={att.locationDescription}>
-                                {att.locationDescription}
-                              </span>
+                          <div className="w-8 h-8 rounded-lg bg-emerald-950/90 border border-emerald-500/50 flex items-center justify-center text-emerald-300 font-mono font-black text-xs shrink-0">
+                            #{rowNumber}
+                          </div>
+                          <div>
+                            <div className="font-bold text-white text-xs leading-tight group-hover:text-emerald-300">
+                              {att.beneficiaryName}
                             </div>
-                          </td>
+                            <span className="font-mono text-[9px] text-emerald-400 block mt-0.5">
+                              {att.beneficiaryCode}
+                            </span>
+                          </div>
+                        </button>
 
-                          {/* Activity Title */}
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1 text-slate-200">
-                              <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
-                              <span className="font-semibold text-xs leading-snug truncate max-w-[240px]" title={att.activityTitle}>
-                                {att.activityTitle}
-                              </span>
-                            </div>
-                          </td>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRecordForPhotos(att)}
+                          className="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-mono font-bold text-[10px] inline-flex items-center gap-1 shrink-0"
+                        >
+                          <Camera className="w-3 h-3 text-emerald-400" />
+                          <span>{photos.length} Photo{photos.length > 1 ? 's' : ''}</span>
+                        </button>
+                      </div>
 
-                          {/* Time Submitted */}
-                          <td className="py-3 px-4 font-mono text-slate-300">
-                            {(() => {
-                              const dt = formatPhilippineDateTime(att.timestamp || att.localPhTime, att.localPhTime);
-                              return (
-                                <div className="flex flex-col text-[11px] text-cyan-300 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/30">
-                                  <span className="font-bold text-white flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
-                                    <span>{dt.exactTimeWithSeconds} PST</span>
+                      <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800/80 space-y-1 text-[10px]">
+                        <div className="flex items-center gap-1 text-slate-300 truncate">
+                          <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="truncate">{att.locationDescription}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-300 truncate">
+                          <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="truncate font-semibold text-white">{att.activityTitle}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[9px] font-mono text-cyan-300">
+                          <span>{dt.exactTimeWithSeconds} PST</span>
+                          <span className="text-slate-400">{dt.monthTagalog} {dt.dayNum}, {dt.yearNum}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                          <span>VERIFIED</span>
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRecordForPhotos(att)}
+                          className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 text-slate-950 font-mono font-black text-[10px] inline-flex items-center gap-1 shadow transition-all cursor-pointer"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Tingnan Larawan</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* DESKTOP VIEW: Table (>= 640px) */}
+              <div className="hidden sm:block border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/40 shadow-inner">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left font-sans border-collapse">
+                    <thead>
+                      <tr className="bg-slate-950/90 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-800">
+                        <th className="py-3 px-3.5 text-center w-12">#</th>
+                        <th className="py-3 px-4 min-w-[200px]">Pangalan ng Attendee (Click to View Photos)</th>
+                        <th className="py-3 px-4 min-w-[180px]">Barangay at Lokasyon</th>
+                        <th className="py-3 px-4 min-w-[220px]">Gawain / Cleanup Activity</th>
+                        <th className="py-3 px-4 min-w-[170px]">Oras Naipasa (PST)</th>
+                        <th className="py-3 px-3 text-center min-w-[100px]">Larawan</th>
+                        <th className="py-3 px-3 text-center min-w-[120px]">Katayuan</th>
+                        <th className="py-3 px-3.5 text-center min-w-[130px]">Aksyon</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-xs">
+                      {currentAttendances.map((att, index) => {
+                        const photos = getRecordPhotos(att);
+                        const rowNumber = startIndex + index + 1;
+
+                        return (
+                          <tr
+                            key={att.id || `${att.beneficiaryCode}-${index}`}
+                            className="hover:bg-slate-800/40 transition-colors group"
+                          >
+                            {/* Row Number */}
+                            <td className="py-3 px-3.5 text-center font-mono font-bold text-slate-500">
+                              {rowNumber}
+                            </td>
+
+                            {/* Attendee Name - Clickable as requested */}
+                            <td className="py-3 px-4">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRecordForPhotos(att)}
+                                className="text-left group/btn flex items-center space-x-2.5 transition-all cursor-pointer"
+                                title="Pindutin ang pangalan upang lumabas ang larawan"
+                              >
+                                <div className="w-8 h-8 rounded-lg bg-emerald-950/90 border border-emerald-500/50 flex items-center justify-center text-emerald-300 font-mono font-black text-xs shrink-0 group-hover/btn:scale-110 group-hover/btn:border-emerald-400 transition-all">
+                                  {att.beneficiaryName.charAt(0)}
+                                </div>
+                                <div>
+                                  <span className="font-extrabold text-white text-sm group-hover/btn:text-emerald-300 group-hover/btn:underline decoration-emerald-400 underline-offset-2 flex items-center gap-1.5">
+                                    {att.beneficiaryName}
+                                    <Camera className="w-3.5 h-3.5 text-emerald-400 opacity-60 group-hover/btn:opacity-100 transition-opacity" />
                                   </span>
-                                  <span className="text-[10px] text-slate-400">
-                                    {dt.dayOfWeekTagalog}, {dt.monthTagalog} {dt.dayNum}, {dt.yearNum}
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-block mt-0.5">
+                                    {att.beneficiaryCode}
                                   </span>
                                 </div>
-                              );
-                            })()}
-                          </td>
+                              </button>
+                            </td>
 
-                          {/* Photos Count Badge */}
-                          <td className="py-3 px-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRecordForPhotos(att)}
-                              className="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-mono font-bold text-[10px] inline-flex items-center gap-1 transition-all cursor-pointer"
-                              title="Tingnan ang mga larawan"
-                            >
-                              <Camera className="w-3 h-3 text-emerald-400" />
-                              <span>{photos.length} Photo{photos.length > 1 ? 's' : ''}</span>
-                            </button>
-                          </td>
+                            {/* Location & Barangay */}
+                            <td className="py-3 px-4 font-mono text-slate-300">
+                              <div className="flex items-center gap-1.5 text-xs text-slate-200">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span className="truncate max-w-[200px]" title={att.locationDescription}>
+                                  {att.locationDescription}
+                                </span>
+                              </div>
+                            </td>
 
-                          {/* Status */}
-                          <td className="py-3 px-3 text-center">
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              <span>VERIFIED</span>
-                            </span>
-                          </td>
+                            {/* Activity Title */}
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1 text-slate-200">
+                                <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                                <span className="font-semibold text-xs leading-snug truncate max-w-[240px]" title={att.activityTitle}>
+                                  {att.activityTitle}
+                                </span>
+                              </div>
+                            </td>
 
-                          {/* Action Button */}
-                          <td className="py-3 px-3.5 text-center">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRecordForPhotos(att)}
-                              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-slate-950 font-mono font-black text-[11px] inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
-                              title="Ipakita ang accomplishment pictures"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-slate-950" />
-                              <span>Tingnan</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            {/* Time Submitted */}
+                            <td className="py-3 px-4 font-mono text-slate-300">
+                              {(() => {
+                                const dt = formatPhilippineDateTime(att.timestamp || att.localPhTime, att.localPhTime);
+                                return (
+                                  <div className="flex flex-col text-[11px] text-cyan-300 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+                                    <span className="font-bold text-white flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
+                                      <span>{dt.exactTimeWithSeconds} PST</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {dt.dayOfWeekTagalog}, {dt.monthTagalog} {dt.dayNum}, {dt.yearNum}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+                            </td>
+
+                            {/* Photos Count Badge */}
+                            <td className="py-3 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRecordForPhotos(att)}
+                                className="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-mono font-bold text-[10px] inline-flex items-center gap-1 transition-all cursor-pointer"
+                                title="Tingnan ang mga larawan"
+                              >
+                                <Camera className="w-3 h-3 text-emerald-400" />
+                                <span>{photos.length} Photo{photos.length > 1 ? 's' : ''}</span>
+                              </button>
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-3 px-3 text-center">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                <span>VERIFIED</span>
+                              </span>
+                            </td>
+
+                            {/* Action Button */}
+                            <td className="py-3 px-3.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRecordForPhotos(att)}
+                                className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-slate-950 font-mono font-black text-[11px] inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+                                title="Ipakita ang accomplishment pictures"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-slate-950" />
+                                <span>Tingnan</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* ========================================================================= */}
