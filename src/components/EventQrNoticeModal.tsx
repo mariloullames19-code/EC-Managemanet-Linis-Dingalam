@@ -208,6 +208,22 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               </p>
             </div>
 
+            {/* Most Recent Program / Last Event Date Box */}
+            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-emerald-500/30 text-xs font-mono space-y-1.5 text-left shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  Most Recent Program / Last Event Date:
+                </span>
+                <span className="text-[9px] text-slate-400 font-mono font-semibold bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                  Completed Record
+                </span>
+              </div>
+              <div className="text-white font-bold text-xs sm:text-sm">
+                Dingalan Coastal Cleanliness & Environmental Compliance Operation — <span className="text-emerald-300 font-mono">October 06, 2026</span> (Brgy. Paltic)
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-300">
               <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-0.5">
                 <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Office Operations:</span>
@@ -253,10 +269,10 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
             </div>
             <div>
               <span className="text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-emerald-400 block">
-                Opisyal na Abiso mula sa Admin (PESO / MENRO)
+                Official Admin Advisory (PESO / MENRO)
               </span>
               <h3 className="text-sm sm:text-lg font-black text-white tracking-tight leading-tight">
-                Event QR Code & Mga Paalala sa Paglilinis
+                Event QR Code & Cleanup Guidelines
               </h3>
             </div>
           </div>
@@ -278,10 +294,10 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wide flex items-center space-x-2">
                 <History className="w-4 h-4 text-emerald-400" />
-                <span>Kasaysayan ng mga Event Paalala ({historyEvents.length} Naitala):</span>
+                <span>Event Advisory History ({historyEvents.length} Recorded):</span>
               </label>
               <span className="text-[10px] font-mono text-slate-400">
-                Pumili sa ibaba upang buksan ang QR at mga paalala
+                Select below to view QR code and guidelines
               </span>
             </div>
 
@@ -310,15 +326,15 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
                             </span>
-                            <span>AKTIBO (Active)</span>
+                            <span>Active</span>
                           </div>
                         ) : evt.status === 'completed' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-mono text-[10px] font-bold">
-                            Tapos Na (Completed)
+                            Completed
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] font-bold">
-                            Nakatakda (Scheduled)
+                            Scheduled
                           </span>
                         )}
 
@@ -357,15 +373,15 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                     </span>
-                    <span>Kasulukuyang Aktibong Event</span>
+                    <span>Currently Active Event</span>
                   </span>
                 ) : (
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                    Naunang Event sa History
+                    Past Event in History
                   </span>
                 )}
                 <span className="text-xs font-mono text-slate-400">
-                  Galing kay: <strong className="text-white">{currentEvent.adminName}</strong>
+                  Issued By: <strong className="text-white">{currentEvent.adminName}</strong>
                 </span>
               </div>
 
@@ -374,7 +390,7 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               </h4>
               <p className="text-xs text-emerald-300 flex items-center font-mono">
                 <MapPin className="w-3.5 h-3.5 mr-1 text-emerald-400 shrink-0" />
-                Brgy. {currentEvent.barangay} • {currentEvent.targetArea}
+                Brgy. {currentEvent.barangay} • {currentEvent.targetArea} • Event Date: <strong className="text-white ml-1">{currentEvent.date}</strong>
               </p>
             </div>
 
@@ -388,7 +404,7 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-lg flex items-center justify-center space-x-1.5 cursor-pointer shrink-0 transform hover:scale-105 active:scale-95 transition-all"
             >
               <Camera className="w-4 h-4 text-slate-950" />
-              <span>Mag-Upload ng Accomplishment</span>
+              <span>Upload Accomplishment</span>
             </button>
           </div>
 
@@ -425,16 +441,16 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/90 space-y-2">
                 <div className="flex items-center space-x-2 text-xs font-bold text-cyan-400 font-mono uppercase">
                   <Clock className="w-4 h-4" />
-                  <span>Oras ng Paglilinis & Tagal:</span>
+                  <span>Operation Hours & Duration:</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">ORAS:</span>
+                    <span className="text-slate-400 block text-[10px]">TIME:</span>
                     <span className="text-white font-bold">{currentEvent.startTime} – {currentEvent.endTime}</span>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">KABUUANG ORAS:</span>
-                    <span className="text-emerald-300 font-bold">{currentEvent.totalHours || '4 na Oras'}</span>
+                    <span className="text-slate-400 block text-[10px]">TOTAL DURATION:</span>
+                    <span className="text-emerald-300 font-bold">{currentEvent.totalHours || '4 Hours'}</span>
                   </div>
                 </div>
               </div>
@@ -443,7 +459,7 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/90 space-y-1.5">
                 <div className="flex items-center space-x-2 text-xs font-bold text-emerald-400 font-mono uppercase">
                   <Wrench className="w-4 h-4" />
-                  <span>Mga Dapat Dalhin na Kagamitan / Tools:</span>
+                  <span>Required Tools & Equipment:</span>
                 </div>
                 <p className="text-xs text-slate-200 font-sans leading-relaxed">
                   {currentEvent.tools}
@@ -454,7 +470,7 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/90 space-y-1.5">
                 <div className="flex items-center space-x-2 text-xs font-bold text-cyan-400 font-mono uppercase">
                   <Coffee className="w-4 h-4" />
-                  <span>Paalala sa Tubig & Tumbler:</span>
+                  <span>Hydration & Tumbler Reminder:</span>
                 </div>
                 <p className="text-xs text-slate-200 font-sans leading-relaxed">
                   {currentEvent.waterReminder}
@@ -465,7 +481,7 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/90 space-y-1.5">
                 <div className="flex items-center space-x-2 text-xs font-bold text-teal-400 font-mono uppercase">
                   <Shirt className="w-4 h-4" />
-                  <span>Dapat na Kasuotan (Attire):</span>
+                  <span>Recommended Attire:</span>
                 </div>
                 <p className="text-xs text-slate-200 font-sans leading-relaxed">
                   {currentEvent.attire}
@@ -477,11 +493,31 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
                 <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/40 space-y-1.5">
                   <div className="flex items-center space-x-2 text-xs font-bold text-amber-400 font-mono uppercase">
                     <Info className="w-4 h-4" />
-                    <span>Karagdagang Paalala mula sa PESO / MENRO:</span>
+                    <span>Additional Notes from PESO / MENRO:</span>
                   </div>
                   <p className="text-xs text-amber-200 font-sans leading-relaxed">
                     {currentEvent.notes}
                   </p>
+                </div>
+              )}
+
+              {/* Assigned Personnel / Staff */}
+              {((broadcast as any)?.assignedPersonnel?.length > 0 || (currentEvent as any)?.assignedPersonnel?.length > 0) && (
+                <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-2">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-emerald-400 font-mono uppercase">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Assigned Personnel / Supervisors:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {((broadcast as any)?.assignedPersonnel || (currentEvent as any)?.assignedPersonnel || []).map((person: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-xs font-mono font-bold"
+                      >
+                        👤 {person}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -498,7 +534,7 @@ export const EventQrNoticeModal: React.FC<EventQrNoticeModalProps> = ({
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black text-sm sm:text-base tracking-wide shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
           >
             <Camera className="w-5 h-5 text-slate-950" />
-            <span>Mag-Upload ng Accomplishment Pictures para sa Event na Ito</span>
+            <span>Upload Accomplishment Pictures for This Event</span>
           </button>
         </div>
       </div>

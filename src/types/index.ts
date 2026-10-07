@@ -81,7 +81,7 @@ export interface Activity {
   barangay: DingalanBarangay;
   menroSupervisorId: string;
   supervisorName: string;
-  targetBeneficiariesCount: number;
+  targetBeneficiariesCount: number | string;
   assignedBeneficiariesCount: number;
   attendedBeneficiariesCount: number;
   status: ActivityStatus;
@@ -178,6 +178,7 @@ export interface EventQrBroadcast {
   waterTumblerReminder?: string;
   recommendedAttire?: string;
   additionalNotes?: string;
+  assignedPersonnel?: string[];
   sentByAdminName: string;
   sentAt: string;
 }

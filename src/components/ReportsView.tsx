@@ -60,10 +60,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const verifiedCount = filteredAttendances.filter((a) => a.complianceStatus === 'verified').length;
   const totalTargetBeneficiaries = useMemo(() => {
     if (selectedActivityId === 'ALL') {
-      return activities.reduce((acc, curr) => acc + curr.targetBeneficiariesCount, 0);
+      return activities.reduce((acc, curr) => acc + (Number(curr.targetBeneficiariesCount) || 0), 0);
     }
     const act = activities.find((a) => a.id === selectedActivityId);
-    return act ? act.targetBeneficiariesCount : 0;
+    return act ? (Number(act.targetBeneficiariesCount) || 0) : 0;
   }, [activities, selectedActivityId]);
 
   const complianceRate = totalTargetBeneficiaries > 0

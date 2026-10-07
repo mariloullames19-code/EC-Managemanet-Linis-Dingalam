@@ -771,19 +771,17 @@ export default function App() {
           playsInline
           preload="auto"
           aria-hidden="true"
-          className="w-full h-full object-cover object-center filter contrast-[1.12] saturate-[1.15] brightness-[0.80] transform translate-z-0 opacity-100"
+          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-[1.25] saturate-[1.4] brightness-[1.02] opacity-100"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_sunset_background.mp4"
+          src="/dingalan_day_background.mp4"
         >
+          <source src="/dingalan_day_background.mp4" type="video/mp4" />
           <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
           <source src="/dingalan_tech_background.mp4" type="video/mp4" />
         </video>
 
-        {/* System Color-Tuned Ambient Gradients for Text Contrast while preserving 1080p video clarity */}
-        <div className="absolute inset-0 bg-slate-950/40 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-amber-950/15 to-slate-950/75" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-950/20 via-transparent to-slate-950/50" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-cyan-950/20 via-transparent to-transparent" />
+        {/* Optimized Minimal Ambient Overlay for Text Readability */}
+        <div className="absolute inset-0 bg-slate-950/20 pointer-events-none" />
 
         {/* Subtle Geometric System Grid */}
         <div

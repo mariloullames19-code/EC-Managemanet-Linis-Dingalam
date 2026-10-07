@@ -33,7 +33,7 @@ export async function generateStyledLguQrDataUrl(
     },
   });
 
-  if (typeof window === 'undefined' || !includeCenterBadge) {
+  if (typeof window === 'undefined') {
     return rawQrDataUrl;
   }
 
@@ -54,39 +54,46 @@ export async function generateStyledLguQrDataUrl(
       // Draw base QR code
       ctx.drawImage(img, 0, 0, width, width);
 
-      // Draw Center Logo / Badge (Safe zone: up to 20% of QR size with Level H)
+      // Draw Center Logo / Badge (Safe zone: ~20% of QR size with Level H error correction)
       const centerSize = Math.floor(width * 0.22);
       const centerX = (width - centerSize) / 2;
       const centerY = (width - centerSize) / 2;
       const radius = Math.floor(centerSize / 2);
 
-      // Draw smooth white circular background with border
+      // Draw smooth white circular background with outer emerald ring
       ctx.save();
       ctx.beginPath();
       ctx.arc(width / 2, width / 2, radius + 4, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#10b981'; // Emerald border
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = '#059669'; // Emerald ring border
       ctx.stroke();
       ctx.restore();
 
-      // Draw inner shield background
+      // Draw inner deep emerald seal circle
       ctx.save();
       ctx.beginPath();
       ctx.arc(width / 2, width / 2, radius, 0, Math.PI * 2);
-      ctx.fillStyle = '#064e3b'; // Deep emerald
+      ctx.fillStyle = '#022c22'; // Deep forest emerald
       ctx.fill();
 
-      // Inner icon / text
+      // Draw decorative inner gold ring
+      ctx.beginPath();
+      ctx.arc(width / 2, width / 2, radius - 3, 0, Math.PI * 2);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#fbbf24'; // Amber / Gold ring
+      ctx.stroke();
+
+      // Official LGU Shield Icon & Text Emblem
       ctx.fillStyle = '#34d399';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = `bold ${Math.floor(centerSize * 0.32)}px sans-serif`;
+      ctx.font = `900 ${Math.floor(centerSize * 0.32)}px system-ui, sans-serif`;
       ctx.fillText('LGU', width / 2, width / 2 - Math.floor(centerSize * 0.12));
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.floor(centerSize * 0.2)}px sans-serif`;
+      ctx.font = `800 ${Math.floor(centerSize * 0.19)}px system-ui, sans-serif`;
       ctx.fillText('DINGALAN', width / 2, width / 2 + Math.floor(centerSize * 0.18));
       ctx.restore();
 

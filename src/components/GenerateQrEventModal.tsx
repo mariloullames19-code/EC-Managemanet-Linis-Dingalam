@@ -26,6 +26,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
+import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
 
 const DINGALAN_BARANGAYS = [
   'Aplaya',
@@ -78,6 +79,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const [waterTumblerReminder, setWaterTumblerReminder] = useState<string>('');
   const [recommendedAttire, setRecommendedAttire] = useState<string>('');
   const [additionalNotes, setAdditionalNotes] = useState<string>('');
+  const [assignedPersonnel, setAssignedPersonnel] = useState<string[]>([]);
+  const [newPersonInput, setNewPersonInput] = useState<string>('');
 
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isSuccessSent, setIsSuccessSent] = useState<boolean>(false);
@@ -96,6 +99,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
   const [editWaterTumbler, setEditWaterTumbler] = useState<string>('');
   const [editRecommendedAttire, setEditRecommendedAttire] = useState<string>('');
   const [editAdditionalNotes, setEditAdditionalNotes] = useState<string>('');
+  const [editAssignedPersonnel, setEditAssignedPersonnel] = useState<string[]>([]);
+  const [editPersonInput, setEditPersonInput] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState<boolean>(false);
 
@@ -113,6 +118,29 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     setWaterTumblerReminder('');
     setRecommendedAttire('');
     setAdditionalNotes('');
+    setAssignedPersonnel([]);
+    setNewPersonInput('');
+  };
+
+  // Assigned personnel helper functions
+  const handleAddPerson = () => {
+    if (!newPersonInput.trim()) return;
+    setAssignedPersonnel((prev) => [...prev, newPersonInput.trim()]);
+    setNewPersonInput('');
+  };
+
+  const handleRemovePerson = (index: number) => {
+    setAssignedPersonnel((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditAddPerson = () => {
+    if (!editPersonInput.trim()) return;
+    setEditAssignedPersonnel((prev) => [...prev, editPersonInput.trim()]);
+    setEditPersonInput('');
+  };
+
+  const handleEditRemovePerson = (index: number) => {
+    setEditAssignedPersonnel((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Load broadcast history when opened
@@ -151,14 +179,10 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
       setQrRawPayload(payloadUrl);
 
       try {
-        const url = await QRCode.toDataURL(payloadUrl, {
-          width: 320,
-          margin: 1,
-          color: {
-            dark: '#022c22',
-            light: '#ffffff',
-          },
-          errorCorrectionLevel: 'H',
+        const url = await generateStyledLguQrDataUrl(payloadUrl, {
+          width: 480,
+          title: 'LINIS DINGALAN',
+          includeCenterBadge: true,
         });
         if (isMounted) {
           setQrDataUrl(url);
@@ -219,6 +243,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         waterTumblerReminder,
         recommendedAttire,
         additionalNotes,
+        assignedPersonnel,
         sentByAdminName: currentUser?.name || 'Admin Officer',
         sentAt: new Date().toISOString(),
       };
@@ -362,6 +387,8 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
     setEditWaterTumbler(item.waterTumblerReminder || '');
     setEditRecommendedAttire(item.recommendedAttire || '');
     setEditAdditionalNotes(item.additionalNotes || '');
+    setEditAssignedPersonnel(item.assignedPersonnel || []);
+    setEditPersonInput('');
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -375,14 +402,9 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
       
       let newQrDataUrl = editingBroadcast.qrDataUrl;
       try {
-        newQrDataUrl = await QRCode.toDataURL(payloadUrl, {
+        newQrDataUrl = await generateStyledLguQrDataUrl(payloadUrl, {
           width: 320,
-          margin: 1,
-          color: {
-            dark: '#022c22',
-            light: '#ffffff',
-          },
-          errorCorrectionLevel: 'H',
+          includeCenterBadge: true,
         });
       } catch (qrErr) {
         console.warn('QR update fallback:', qrErr);
@@ -401,6 +423,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
         waterTumblerReminder: editWaterTumbler.trim(),
         recommendedAttire: editRecommendedAttire.trim(),
         additionalNotes: editAdditionalNotes.trim(),
+        assignedPersonnel: editAssignedPersonnel,
         qrDataUrl: newQrDataUrl,
         qrPayload: payloadUrl,
       };
@@ -719,6 +742,60 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       />
                     </div>
                   </div>
+
+                  {/* Naka-Assign / Assigned Personnel Section */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
+                    <label className="block text-[11px] font-mono text-emerald-400 font-bold uppercase flex items-center space-x-1.5">
+                      <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Naka-Assign na Personnel / Staff (Assigned Personnel):</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newPersonInput}
+                        onChange={(e) => setNewPersonInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddPerson();
+                          }
+                        }}
+                        placeholder="I-type ang pangalan ng naka-assign..."
+                        className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddPerson}
+                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-bold rounded-xl transition-all cursor-pointer"
+                      >
+                        + Mag-Add
+                      </button>
+                    </div>
+
+                    {/* Assigned Personnel Badges with Delete button */}
+                    {assignedPersonnel.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {assignedPersonnel.map((person, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-500/50 text-emerald-300 text-xs font-mono"
+                          >
+                            <span>👤 {person}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePerson(idx)}
+                              className="text-slate-400 hover:text-rose-400 ml-1 transition-colors cursor-pointer"
+                              title="Burahin ang naka assign"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-mono text-slate-500 block">Walang naka-assign pa. Mag-add sa itaas.</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Section 4: Event QR Code Canvas & Primary Action */}
@@ -726,11 +803,21 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   {/* QR Canvas Box */}
                   <div className="p-2 sm:p-2.5 bg-white rounded-xl sm:rounded-2xl shadow-2xl border-2 border-emerald-400/50 shrink-0 text-center">
                     {qrDataUrl ? (
-                      <img
-                        src={qrDataUrl}
-                        alt="Official Generated Event QR Code"
-                        className="w-32 h-32 xs:w-40 xs:h-40 sm:w-44 sm:h-44 object-contain mx-auto"
-                      />
+                      <div className="relative inline-flex items-center justify-center">
+                        <img
+                          src={qrDataUrl}
+                          alt="Official Generated Event QR Code"
+                          className="w-32 h-32 xs:w-40 xs:h-40 sm:w-44 sm:h-44 object-contain mx-auto"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white p-0.5 border-2 border-emerald-600 shadow-sm flex items-center justify-center">
+                            <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.5 border border-amber-400">
+                              <span className="text-[7px] sm:text-[8px] font-black text-emerald-300 leading-none">LGU</span>
+                              <span className="text-[5px] sm:text-[6px] font-extrabold text-white leading-none tracking-tighter">DINGALAN</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="w-32 h-32 xs:w-40 xs:h-40 sm:w-44 sm:h-44 flex items-center justify-center bg-slate-100 rounded-xl text-xs text-slate-500 animate-pulse">
                         Generating QR Code...
@@ -1077,6 +1164,60 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   placeholder="Magtipon sa Covered Court bago mag-alas 6:00 ng umaga..."
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs outline-none resize-none"
                 />
+              </div>
+
+              {/* Naka-Assign / Assigned Personnel Manager in Edit Modal */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <label className="block text-xs font-mono font-bold text-emerald-400 uppercase flex items-center space-x-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Naka-Assign na Personnel / Staff (Assigned Personnel)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editPersonInput}
+                    onChange={(e) => setEditPersonInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleEditAddPerson();
+                      }
+                    }}
+                    placeholder="I-type ang bagong naka-assign..."
+                    className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleEditAddPerson}
+                    className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    + Mag-Add
+                  </button>
+                </div>
+
+                {/* List of assigned personnel in edit modal */}
+                {editAssignedPersonnel.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {editAssignedPersonnel.map((person, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-mono font-semibold"
+                      >
+                        <span>👤 {person}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleEditRemovePerson(idx)}
+                          className="text-slate-400 hover:text-rose-400 ml-1 transition-colors cursor-pointer"
+                          title="Burahin ang naka-assign"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-500 block">Walang naka-assign sa kasalukuyan.</span>
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-800 flex items-center justify-end space-x-3">

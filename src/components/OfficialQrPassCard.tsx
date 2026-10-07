@@ -129,12 +129,23 @@ export const OfficialQrPassCard: React.FC<OfficialQrPassCardProps> = ({
               <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent shadow-[0_0_12px_#10b981] animate-bounce pointer-events-none z-10 opacity-75 top-4" />
             )}
 
-            {/* QR Image */}
-            <img
-              src={qrCodeUrl}
-              alt="Official Scannable QR Code"
-              className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl select-none"
-            />
+            {/* QR Image with Fixed Center Logo Emblem Overlay */}
+            <div className="relative inline-flex items-center justify-center">
+              <img
+                src={qrCodeUrl}
+                alt="Official Scannable QR Code"
+                className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl select-none"
+              />
+              {/* Permanent Fixed Center LGU Dingalan Emblem Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white p-0.5 border-2 border-emerald-600 shadow-[0_0_12px_rgba(16,185,129,0.5)] flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.5 border border-amber-400">
+                    <span className="text-[9px] sm:text-[10px] font-black text-emerald-300 leading-none">LGU</span>
+                    <span className="text-[7px] sm:text-[8px] font-extrabold text-white leading-none tracking-tighter">DINGALAN</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Micro security watermark on QR */}
             <div className="mt-2 text-center border-t border-slate-200 pt-1.5 flex items-center justify-between px-1">

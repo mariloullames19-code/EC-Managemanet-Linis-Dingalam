@@ -164,8 +164,8 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-6 bg-slate-950/92 backdrop-blur-xl overflow-y-auto animate-fadeIn select-none">
-      <div className="relative w-full max-w-5xl bg-slate-900 border-2 border-emerald-500/60 rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-1.5 xs:p-3 sm:p-6 bg-slate-950/92 backdrop-blur-xl overflow-y-auto animate-fadeIn select-none">
+      <div className="relative w-full max-w-5xl bg-slate-900 border-2 border-emerald-500/60 rounded-xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_60px_rgba(16,185,129,0.25)] overflow-hidden my-auto flex flex-col h-[96vh] sm:max-h-[94vh]">
         
         {/* Header Bar */}
         <div className="px-3.5 sm:px-5 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0">

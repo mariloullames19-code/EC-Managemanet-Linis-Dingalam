@@ -69,15 +69,25 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State
-  const [newActivity, setNewActivity] = useState({
+  const [newActivity, setNewActivity] = useState<{
+    title: string;
+    programType: 'TUPAD' | 'CASH_FOR_WORK' | 'COASTAL_CLEANUP' | 'MANGROVE_REHAB' | 'DRAINAGE_DECLOGGING';
+    description: string;
+    date: string;
+    callTime: string;
+    targetArea: string;
+    barangay: DingalanBarangay;
+    targetBeneficiariesCount: number | string;
+    notes: string;
+  }>({
     title: '',
-    programType: 'COASTAL_CLEANUP' as const,
+    programType: 'COASTAL_CLEANUP',
     description: '',
     date: new Date().toISOString().split('T')[0],
     callTime: '06:00',
     targetArea: 'Dingalan Feeder Port Rock Wall',
-    barangay: 'Paltic' as DingalanBarangay,
-    targetBeneficiariesCount: 20,
+    barangay: 'Paltic',
+    targetBeneficiariesCount: '20',
     notes: '',
   });
 
@@ -681,13 +691,12 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
                     Target Beneficiaries Count *
                   </label>
                   <input
-                    type="number"
-                    min="1"
-                    max="500"
+                    type="text"
                     required
                     value={newActivity.targetBeneficiariesCount}
-                    onChange={(e) => setNewActivity({ ...newActivity, targetBeneficiariesCount: Number(e.target.value) })}
+                    onChange={(e) => setNewActivity({ ...newActivity, targetBeneficiariesCount: e.target.value })}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="e.g. 20"
                   />
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
 import QRCode from 'qrcode';
 import { checkEventCutoff } from '../utils/watermarkEngine';
 import { useDingalanClock, getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
+import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
 import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
 import {
   Lock,
@@ -116,6 +117,32 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Fallback state for activities if not passed in props
   const [localActivities, setLocalActivities] = useState<any[]>(propActivities);
   const allActivities = propActivities && propActivities.length > 0 ? propActivities : localActivities;
+
+  // Most recent completed/past activity or broadcast for the Advisory display
+  const lastCompletedEvent = useMemo(() => {
+    const acts = Array.isArray(allActivities) && allActivities.length > 0 ? allActivities : [];
+    if (acts.length > 0) {
+      const sorted = [...acts].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+      if (sorted[0]) return sorted[0];
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('ld_event_broadcasts_v1');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) {
+            const b = list[0];
+            return {
+              title: b.activityTitle || b.title,
+              date: b.eventDate || b.date,
+              barangay: b.barangay,
+            };
+          }
+        }
+      }
+    } catch {}
+    return null;
+  }, [allActivities]);
 
   // Filter strictly scheduled and ongoing activities from the Programs list (excluding completed/cancelled)
   const scheduledActivities = useMemo(() => {
@@ -345,11 +372,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://linis-dingalan.aurora.gov.ph';
     const payload = `${currentOrigin}/?action=upload&act_id=${eventBroadcast.activityId}&brgy=${encodeURIComponent(eventBroadcast.barangay)}&date=${encodeURIComponent(eventBroadcast.eventDate)}`;
 
-    QRCode.toDataURL(payload, {
-      width: 320,
-      margin: 1,
-      color: { dark: '#022c22', light: '#ffffff' },
-      errorCorrectionLevel: 'H',
+    generateStyledLguQrDataUrl(payload, {
+      width: 480,
+      title: 'LINIS DINGALAN',
+      includeCenterBadge: true,
     })
       .then((url) => setEventQrUrl(url))
       .catch((err) => console.error('Error generating event QR fallback:', err));
@@ -518,11 +544,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           if (targetBene) {
             setRegGeneratedBene(targetBene);
             const qrPayloadString = `${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(targetBene.beneCode)}&id=${encodeURIComponent(targetBene.id)}&name=${encodeURIComponent(targetBene.firstName + ' ' + targetBene.lastName)}&department=${encodeURIComponent(targetBene.assignedCluster)}&barangay=${encodeURIComponent(targetBene.barangay)}&qrHash=${encodeURIComponent(targetBene.qrHash || 'qr-hash')}`;
-            QRCode.toDataURL(qrPayloadString, {
-              width: 320,
-              margin: 2,
-              color: { dark: '#022c22', light: '#ffffff' },
-            }).then((url) => {
+            generateStyledLguQrDataUrl(qrPayloadString, { width: 320 }).then((url) => {
               setRegQrCodeDataUrl(url);
             });
           }
@@ -689,14 +711,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       // Generate QR Code canvas as a scannable URL that links directly to the app
       const qrPayloadString = `${window.location.origin}/?action=upload&beneCode=${encodeURIComponent(newBene.beneCode)}&id=${encodeURIComponent(newBene.id)}&name=${encodeURIComponent(newBene.firstName + ' ' + newBene.lastName)}&gender=${encodeURIComponent(regGender)}&phoneNumber=${encodeURIComponent(regPhoneNumber)}&department=${encodeURIComponent(newBene.assignedCluster)}&address=${encodeURIComponent(regAddress || 'Brgy. ' + newBene.barangay)}&barangay=${encodeURIComponent(newBene.barangay)}&qrHash=${encodeURIComponent(newBene.qrHash)}`;
 
-      const qrUrl = await QRCode.toDataURL(qrPayloadString, {
-        width: 320,
-        margin: 2,
-        color: {
-          dark: '#022c22',
-          light: '#ffffff',
-        },
-      });
+      const qrUrl = await generateStyledLguQrDataUrl(qrPayloadString, { width: 320 });
 
       setRegQrCodeDataUrl(qrUrl);
       setRegGeneratedBene(newBene);
@@ -741,16 +756,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
           aria-hidden="true"
-          className="w-full h-full object-cover object-center filter contrast-[1.05] saturate-[1.12] brightness-[1.0] transform translate-z-0"
+          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-[1.25] saturate-[1.4] brightness-[1.08]"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_sunset_background.mp4"
+          src="/dingalan_day_background.mp4"
         >
+          <source src="/dingalan_day_background.mp4" type="video/mp4" />
           <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
           <source src="/dingalan_tech_background.mp4" type="video/mp4" />
         </video>
 
-        {/* Clear, natural ambient sunset glow - non-darkening */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 pointer-events-none" />
+        {/* Crisp ultra-clear ambient daylight overlay - non-darkening */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}
@@ -878,7 +894,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {/* Unified Fit-To-Screen Tab Bar */}
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-lg w-full sm:w-auto sm:flex sm:items-center">
-            {/* Paalala & QR Code Button */}
+            {/* Notice & QR Code Button */}
             <button
               type="button"
               onClick={() => {
@@ -893,10 +909,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   ? 'text-slate-950 bg-emerald-400 border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)] font-extrabold'
                   : 'text-emerald-300 hover:text-white hover:bg-slate-800/80'
               }`}
-              title="Pindutin para makita ang Opisyal na Patnubay, Paalala at Event QR Code"
+              title="Click to view Official Admin Guidelines, Advisory & Event QR Code"
             >
               <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 animate-pulse text-emerald-300" />
-              <span className="truncate">Paalala & QR</span>
+              <span className="truncate">Advisory & QR</span>
             </button>
 
             {/* Admin Login Button */}
@@ -1034,7 +1050,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
                       <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
                         <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
-                        <span className="truncate">Opisyal na Patnubay at Paalala ng Admin</span>
+                        <span className="truncate">Official Admin Guidelines & Advisory</span>
                       </span>
                     </div>
 
@@ -1043,7 +1059,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         type="button"
                         onClick={() => setIsUnfolded(false)}
                         className="p-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
-                        title="Itago / Isara"
+                        title="Close Notice"
                       >
                         <X className="w-4 h-4 text-slate-400 hover:text-emerald-400" />
                       </button>
@@ -1076,11 +1092,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-col xs:flex-row items-center gap-3 sm:gap-4 animate-fadeIn">
                     <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
                       {eventQrUrl || eventBroadcast.qrDataUrl ? (
-                        <img
-                          src={eventQrUrl || eventBroadcast.qrDataUrl}
-                          alt="Official Event Attendance QR Code"
-                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
-                        />
+                        <div className="relative inline-flex items-center justify-center">
+                          <img
+                            src={eventQrUrl || eventBroadcast.qrDataUrl}
+                            alt="Official Event Attendance QR Code"
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white p-0.5 border border-emerald-600 shadow-sm flex items-center justify-center">
+                              <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.2 border border-amber-400">
+                                <span className="text-[5px] sm:text-[6px] font-black text-emerald-300 leading-none">LGU</span>
+                                <span className="text-[4px] sm:text-[5px] font-extrabold text-white leading-none tracking-tighter">DINGALAN</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-slate-100 rounded-lg">
                           <QrCode className="w-14 h-14 text-slate-800" />
@@ -1097,7 +1123,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         <span>EVENT ATTENDANCE QR CODE</span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-slate-200 font-sans leading-snug">
-                        I-scan gamit ang cellphone camera para mag-upload ng larawan at accomplishment attendance sa paglilinis.
+                        Scan using mobile camera to upload accomplishment photo and attendance proof.
                       </p>
                       
                       <button
@@ -1122,7 +1148,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
                         <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Dapat Dalhing Kagamitan:</span>
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Required Tools & Equipment:</span>
                           <span className="text-white text-xs leading-relaxed block">{eventBroadcast.requiredTools}</span>
                         </div>
                       </div>
@@ -1132,7 +1158,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
                         <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Paalala sa Hydration / Tubig:</span>
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Hydration & Water Reminder:</span>
                           <span className="text-white text-xs leading-relaxed block">{eventBroadcast.waterTumblerReminder}</span>
                         </div>
                       </div>
@@ -1142,7 +1168,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
                         <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Dapat Kasuotan (Attire):</span>
+                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Recommended Attire:</span>
                           <span className="text-white text-xs leading-relaxed block">{eventBroadcast.recommendedAttire}</span>
                         </div>
                       </div>
@@ -1150,13 +1176,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                     {eventBroadcast.additionalNotes && (
                       <div className="p-2.5 rounded-xl bg-slate-950/40 border border-emerald-500/25 text-xs font-sans text-slate-200 italic leading-relaxed">
-                        <strong className="text-emerald-300 not-italic font-semibold">Karagdagang Paalala ng LGU Admin:</strong> {eventBroadcast.additionalNotes}
+                        <strong className="text-emerald-300 not-italic font-semibold">Additional LGU Admin Notes:</strong> {eventBroadcast.additionalNotes}
                       </div>
                     )}
                   </div>
 
                   <div className="text-[10px] font-mono text-slate-400 pt-2 text-right border-t border-white/10">
-                    Ipinadala ni: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
+                    Broadcasted by: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
                   </div>
                 </div>
               ) : activeView === 'event' ? (
@@ -1209,6 +1235,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <p className="text-xs text-slate-400 leading-relaxed">
                       All verified beneficiaries, field supervisors, and participating workers will automatically receive the official event QR code and operational guidelines here as soon as a new schedule is broadcasted by the PESO & MENRO Operations Administrator.
                     </p>
+                  </div>
+
+                  {/* Most Recent Program / Last Event Date Box */}
+                  <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 text-xs font-mono space-y-1.5 text-left shadow-md">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        Most Recent Program / Last Event Date:
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-mono font-semibold bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                        Completed Record
+                      </span>
+                    </div>
+                    <div className="text-white font-bold text-xs sm:text-sm">
+                      {lastCompletedEvent ? (
+                        <span>
+                          {lastCompletedEvent.title} — <span className="text-emerald-300 font-mono">{lastCompletedEvent.date}</span> (Brgy. {lastCompletedEvent.barangay})
+                        </span>
+                      ) : (
+                        <span>
+                          Dingalan Coastal Cleanliness & Environmental Compliance Operation — <span className="text-emerald-300 font-mono">October 06, 2026</span> (Brgy. Paltic)
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Assistance & Office Hours Grid */}
