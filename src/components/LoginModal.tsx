@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
 import QRCode from 'qrcode';
 import { checkEventCutoff } from '../utils/watermarkEngine';
-import { useDingalanClock, getDingalanNow } from '../utils/philippineClock';
+import { useDingalanClock, getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
 import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
 import {
   Lock,
@@ -140,38 +140,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Helper to parse activity schedule in Dingalan PST
   const parseActivitySchedule = (act: any) => {
     try {
-      const datePart = act.date || new Date().toISOString().split('T')[0];
-      let timePart = act.callTime || '06:00 AM';
-      timePart = timePart.trim().toUpperCase();
-
-      const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/);
-      let hours = 6;
-      let minutes = 0;
-      if (match) {
-        hours = parseInt(match[1], 10);
-        minutes = parseInt(match[2], 10);
-        const ampm = match[3];
-        if (ampm === 'PM' && hours < 12) hours += 12;
-        if (ampm === 'AM' && hours === 12) hours = 0;
-      }
-
-      const [year, month, day] = datePart.split('-').map(Number);
-      const startUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
-      const endUtcMs = startUtcMs + (4.5 * 60 * 60 * 1000); // 4.5 hours duration
-      const nowUtcMs = getDingalanNow().getTime();
-
-      const hasArrived = nowUtcMs >= startUtcMs;
-      const isCurrentlyActive = hasArrived && nowUtcMs <= endUtcMs;
-      const isPastEnd = nowUtcMs > endUtcMs;
-
+      const isCurrentlyActive = checkIsBroadcastActive(convertActivityToBroadcast(act));
       return {
-        startUtcMs,
-        endUtcMs,
-        hasArrived,
+        startUtcMs: 0,
+        endUtcMs: 0,
+        hasArrived: true,
         isCurrentlyActive,
-        isPastEnd,
-        datePart,
-        timePart,
+        isPastEnd: !isCurrentlyActive,
+        datePart: act?.date || '',
+        timePart: act?.callTime || '',
       };
     } catch {
       return {
@@ -179,7 +156,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         endUtcMs: 0,
         hasArrived: false,
         isCurrentlyActive: false,
-        isPastEnd: false,
+        isPastEnd: true,
         datePart: act?.date || '',
         timePart: act?.callTime || '',
       };
@@ -286,7 +263,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   }, [scheduledActivities, selectedScheduledActivityId]);
 
   const isBroadcastCleared = typeof window !== 'undefined' && localStorage.getItem('ld_broadcasts_cleared') === 'true';
-  const eventBroadcast = isBroadcastCleared ? null : (activeBroadcast || propEventBroadcast);
+  const rawBroadcast = isBroadcastCleared ? null : (activeBroadcast || propEventBroadcast);
+  const eventBroadcast = (rawBroadcast && checkIsBroadcastActive(rawBroadcast)) ? rawBroadcast : null;
+
+  // Real-time ticker: automatically clears active broadcast as soon as PST time passes estimatedEndTime
+  useEffect(() => {
+    const checkExpiration = () => {
+      if (activeBroadcast && !checkIsBroadcastActive(activeBroadcast)) {
+        setActiveBroadcast(null);
+        setSelectedScheduledActivityId(null);
+      }
+    };
+    checkExpiration();
+    const interval = setInterval(checkExpiration, 1000);
+    return () => clearInterval(interval);
+  }, [activeBroadcast]);
 
   // Keep activeBroadcast synchronized with prop changes
   useEffect(() => {

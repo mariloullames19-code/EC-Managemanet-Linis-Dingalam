@@ -25,7 +25,7 @@ import {
   Save,
   Calendar,
 } from 'lucide-react';
-import { getDingalanNow } from '../utils/philippineClock';
+import { getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
 
 const DINGALAN_BARANGAYS = [
   'Aplaya',
@@ -50,32 +50,7 @@ interface GenerateQrEventModalProps {
 }
 
 const isBroadcastActive = (broadcast: any): boolean => {
-  if (!broadcast) return false;
-  try {
-    const datePart = broadcast.eventDate || new Date().toISOString().split('T')[0];
-    let timePart = broadcast.estimatedEndTime || '12:00 PM';
-    timePart = String(timePart).trim().toUpperCase();
-    const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/);
-    let hours = 12;
-    let minutes = 0;
-    if (match) {
-      hours = parseInt(match[1], 10);
-      minutes = parseInt(match[2], 10);
-      const ampm = match[3];
-      if (ampm === 'PM' && hours < 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-    }
-
-    const [year, month, day] = String(datePart).split('-').map(Number);
-    if (!year || !month || !day) return true;
-
-    const deadlineUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 0);
-    const nowUtcMs = getDingalanNow().getTime();
-
-    return nowUtcMs < deadlineUtcMs;
-  } catch {
-    return true;
-  }
+  return checkIsBroadcastActive(broadcast);
 };
 
 export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({

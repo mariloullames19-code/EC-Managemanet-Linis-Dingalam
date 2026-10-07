@@ -15,17 +15,38 @@ export async function syncDingalanTime(): Promise<number> {
     const res = await fetch('/api/time', { cache: 'no-store' });
     const t1 = Date.now();
     if (res.ok) {
-      const data = await res.json();
-      const roundTrip = t1 - t0;
-      const estimatedServerNow = data.epochMs + roundTrip / 2;
-      serverTimeOffsetMs = estimatedServerNow - t1;
-      isSynchronized = true;
-      return serverTimeOffsetMs;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        const roundTrip = t1 - t0;
+        const estimatedServerNow = data.epochMs + roundTrip / 2;
+        serverTimeOffsetMs = estimatedServerNow - t1;
+        isSynchronized = true;
+        return serverTimeOffsetMs;
+      }
     }
   } catch (err) {
-    // If backend endpoint is unavailable, fallback to public NTP or local clock
     console.warn('[Dingalan Clock] Server sync fallback:', err);
   }
+
+  // Fallback sync with WorldTimeAPI for Vercel / static deployment environments
+  try {
+    const t0Api = Date.now();
+    const resApi = await fetch('https://worldtimeapi.org/api/timezone/Asia/Manila', { cache: 'no-store' });
+    const t1Api = Date.now();
+    if (resApi.ok) {
+      const dataApi = await resApi.json();
+      if (dataApi && dataApi.unixtime) {
+        const serverEpochMs = dataApi.unixtime * 1000;
+        const roundTrip = t1Api - t0Api;
+        const estimatedServerNow = serverEpochMs + roundTrip / 2;
+        serverTimeOffsetMs = estimatedServerNow - t1Api;
+        isSynchronized = true;
+        return serverTimeOffsetMs;
+      }
+    }
+  } catch {}
+
   return serverTimeOffsetMs;
 }
 
@@ -59,12 +80,12 @@ export function formatDingalanTime(date?: Date): string {
     }).format(d);
     return `${formatted} PST`;
   } catch {
-    // Fallback if Intl timeZone fails
-    const utc = d.getTime() + d.getTimezoneOffset() * 60000;
-    const phDate = new Date(utc + 8 * 3600000);
-    let hours = phDate.getHours();
-    const minutes = String(phDate.getMinutes()).padStart(2, '0');
-    const seconds = String(phDate.getSeconds()).padStart(2, '0');
+    // Fallback if Intl timeZone fails (Using UTC getters to prevent local browser timezone shift)
+    const utcMs = d.getTime();
+    const phDate = new Date(utcMs + 8 * 3600000);
+    let hours = phDate.getUTCHours();
+    const minutes = String(phDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(phDate.getUTCSeconds()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
     hours = hours ? hours : 12;
@@ -230,19 +251,19 @@ export function formatPhilippineDateTime(timestampOrStr?: string | Date, fallbac
       fullCombinedTagalog: `${dayAndDateTagalog} • ${exactTimeWithSeconds} PST`,
     };
   } catch {
-    // Math fallback
-    const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+    // Math fallback (Using UTC getters to avoid local browser timezone conversion)
+    const utc = date.getTime();
     const pstDate = new Date(utc + 8 * 3600000);
-    const dayOfWeekTagalog = dayNamesTagalog[pstDate.getDay()];
-    const weekdayEn = dayNamesEnglish[pstDate.getDay()];
-    const monthTagalog = monthNamesTagalog[pstDate.getMonth()];
-    const monthEn = monthNamesEnglish[pstDate.getMonth()];
-    const dayNum = String(pstDate.getDate()).padStart(2, '0');
-    const yearNum = String(pstDate.getFullYear());
+    const dayOfWeekTagalog = dayNamesTagalog[pstDate.getUTCDay()];
+    const weekdayEn = dayNamesEnglish[pstDate.getUTCDay()];
+    const monthTagalog = monthNamesTagalog[pstDate.getUTCMonth()];
+    const monthEn = monthNamesEnglish[pstDate.getUTCMonth()];
+    const dayNum = String(pstDate.getUTCDate()).padStart(2, '0');
+    const yearNum = String(pstDate.getUTCFullYear());
 
-    let h = pstDate.getHours();
-    const min = String(pstDate.getMinutes()).padStart(2, '0');
-    const sec = String(pstDate.getSeconds()).padStart(2, '0');
+    let h = pstDate.getUTCHours();
+    const min = String(pstDate.getUTCMinutes()).padStart(2, '0');
+    const sec = String(pstDate.getUTCSeconds()).padStart(2, '0');
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
     const strH = String(h).padStart(2, '0');
@@ -262,6 +283,83 @@ export function formatPhilippineDateTime(timestampOrStr?: string | Date, fallbac
       exactTimeWithSeconds,
       fullCombinedTagalog: `${dayAndDateTagalog} • ${exactTimeWithSeconds} PST`,
     };
+  }
+}
+
+/**
+ * Authoritative PST check whether an event broadcast or activity schedule is active and NOT EXPIRED.
+ * Returns false as soon as the current PST time exceeds the event's estimatedEndTime or date.
+ */
+export function checkIsBroadcastActive(broadcast: any): boolean {
+  if (!broadcast) return false;
+  try {
+    const rawDate = broadcast.eventDate || broadcast.date;
+    const nowUtcMs = getDingalanNow().getTime();
+
+    // 1. Determine Date (YYYY-MM-DD or MM/DD/YYYY)
+    let year = 0, month = 0, day = 0;
+    if (rawDate && typeof rawDate === 'string') {
+      const parts = rawDate.split(/[\/\-]/).map(Number);
+      if (parts.length === 3) {
+        if (parts[0] > 1000) {
+          year = parts[0];
+          month = parts[1];
+          day = parts[2];
+        } else if (parts[2] > 1000) {
+          month = parts[0];
+          day = parts[1];
+          year = parts[2];
+        }
+      }
+    }
+
+    if (!year || !month || !day) {
+      const todayPst = getDingalanNow();
+      year = todayPst.getFullYear();
+      month = todayPst.getMonth() + 1;
+      day = todayPst.getDate();
+    }
+
+    // 2. Parse End Time
+    let rawTimeStr = broadcast.estimatedEndTime || broadcast.endTime || broadcast.callTime || '11:59 PM';
+    rawTimeStr = String(rawTimeStr).trim();
+
+    // Handle range strings like "6:00 am - 3;55 Pm (4 na Oras)" -> extract the second part "3;55 Pm (4 na Oras)"
+    if (rawTimeStr.includes('-')) {
+      const subParts = rawTimeStr.split('-');
+      rawTimeStr = subParts[subParts.length - 1].trim();
+    }
+
+    // Remove text inside parentheses like "(4 na Oras)"
+    rawTimeStr = rawTimeStr.replace(/\(.*?\)/g, '').trim();
+
+    // Match hh:mm or hh;mm with optional AM/PM
+    const timeMatch = rawTimeStr.match(/(\d+)[:;](\d+)\s*(AM|PM)?/i);
+
+    let hours = 23;
+    let minutes = 59;
+
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1], 10);
+      minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : '';
+
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+
+      // If no AM/PM specified but hours is 1-11, assume PM for afternoon/evening cleanup tasks
+      if (!ampm && hours >= 1 && hours <= 11) {
+        hours += 12;
+      }
+    }
+
+    // Target end epoch milliseconds in Philippine Standard Time (PST UTC+8)
+    const targetEndUtcMs = Date.UTC(year, month - 1, day, hours - 8, minutes, 59);
+
+    // Active ONLY IF current PST time is strictly BEFORE the target end time
+    return nowUtcMs < targetEndUtcMs;
+  } catch {
+    return true;
   }
 }
 

@@ -33,6 +33,7 @@ import { AdminAnonymousInboxModal } from './components/AdminAnonymousInboxModal'
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { EventQrBroadcast, AnonymousMessage } from './types';
 import { checkEventCutoff } from './utils/watermarkEngine';
+import { checkIsBroadcastActive } from './utils/philippineClock';
 import systemWallpaper from './assets/images/dingalan_system_wallpaper.jpg';
 import { db } from './firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -40,54 +41,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 const DINGALAN_SYSTEM_BG = systemWallpaper || 'https://i.ibb.co/YBstSFGf/1b06179e-22f5-43a2-9755-40255190d134-1.jpg';
 
 const isBroadcastActive = (broadcast: any): boolean => {
-  if (!broadcast) return false;
-  try {
-    const datePart = broadcast.eventDate || new Date().toISOString().split('T')[0];
-    let timePart = broadcast.estimatedEndTime || '12:00 PM';
-    timePart = timePart.trim().toUpperCase();
-    const match = timePart.match(/(\d+):(\d+)\s*(AM|PM)?/);
-    let hours = 12;
-    let minutes = 0;
-    if (match) {
-      hours = parseInt(match[1], 10);
-      minutes = parseInt(match[2], 10);
-      const ampm = match[3];
-      if (ampm === 'PM' && hours < 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-    }
-
-    // Parse the event date and time using standard local browser date representation
-    const [year, month, day] = datePart.split('-').map(Number);
-    const endDateTime = new Date(year, month - 1, day, hours, minutes, 0);
-
-    // Get current Asia/Manila clock time as a local Date object
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Manila',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
-    const parts = formatter.formatToParts(new Date());
-    const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]));
-    
-    const manilaNow = new Date(
-      parseInt(partMap.year, 10),
-      parseInt(partMap.month, 10) - 1,
-      parseInt(partMap.day, 10),
-      parseInt(partMap.hour, 10) === 24 ? 0 : parseInt(partMap.hour, 10),
-      parseInt(partMap.minute, 10),
-      parseInt(partMap.second, 10)
-    );
-
-    return manilaNow.getTime() < endDateTime.getTime();
-  } catch (err) {
-    console.error("Error checking broadcast active status:", err);
-    return true;
-  }
+  return checkIsBroadcastActive(broadcast);
 };
 
 export default function App() {
