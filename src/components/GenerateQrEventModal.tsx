@@ -584,18 +584,13 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                       <label className="block text-[11px] font-mono text-slate-400 mb-1">
                         Barangay (11 Coastal Barangays):
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={barangay}
                         onChange={(e) => setBarangay(e.target.value)}
+                        placeholder="Hal. Paltic (Free text)"
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-400 focus:outline-none"
-                      >
-                        <option value="">-- Pumili ng Barangay --</option>
-                        {DINGALAN_BARANGAYS.map((b) => (
-                          <option key={b} value={b}>
-                            Barangay {b}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>
@@ -1026,17 +1021,14 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
                     Barangay <span className="text-rose-400">*</span>
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    required
                     value={editBarangay}
                     onChange={(e) => setEditBarangay(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all cursor-pointer"
-                  >
-                    {DINGALAN_BARANGAYS.map((b) => (
-                      <option key={b} value={b}>
-                        Brgy. {b}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Hal. Paltic"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-xs sm:text-sm font-semibold outline-none transition-all"
+                  />
                 </div>
 
                 <div>

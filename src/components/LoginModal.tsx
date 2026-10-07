@@ -742,7 +742,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-y-auto bg-transparent font-sans text-slate-100 flex flex-col justify-between">
+    <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-hidden bg-transparent font-sans text-slate-100 flex flex-col justify-between">
       {/* ========================================================================= */}
       {/* NATIVE HTML5 HD 1080P SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN TWILIGHT) */}
       {/* ========================================================================= */}
@@ -974,8 +974,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       {/* ========================================================================= */}
       {/* MAIN CENTER HERO CONTAINER (FIT TO MOBILE SCREEN)                          */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-2 sm:pt-6 lg:pt-8 pb-6 sm:pb-12 mt-1 sm:mt-2 mb-auto">
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-5 sm:gap-8 lg:gap-12 items-start lg:items-center">
+      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-1 sm:pt-3 lg:pt-4 pb-2 sm:pb-4 my-auto">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center lg:items-center">
           
           {/* --------------------------------------------------------------------- */}
           {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
@@ -1043,7 +1043,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 /* ========================================================================= */
                 /* EVENT BROADCAST CARD: OFFICIAL PATNUBAY AT PAALALA NG ADMIN                */
                 /* ========================================================================= */
-                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/75 hover:bg-slate-950/80 backdrop-blur-md p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
+                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/75 hover:bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 space-y-2.5 sm:space-y-3 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
                   <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
@@ -1189,7 +1189,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 /* ========================================================================= */
                 /* NO ACTIVE SCHEDULE: OFFICIAL PROFESSIONAL ENGLISH ADVISORY CARD          */
                 /* ========================================================================= */
-                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-slate-700/80 shadow-[0_0_50px_rgba(0,0,0,0.7),inset_0_0_20px_rgba(16,185,129,0.1)] bg-slate-950/80 hover:bg-slate-950/85 backdrop-blur-md p-4 sm:p-6 space-y-4 transition-all duration-500 hover:border-slate-600 animate-scaleIn w-full text-left">
+                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-slate-700/80 shadow-[0_0_50px_rgba(0,0,0,0.7),inset_0_0_20px_rgba(16,185,129,0.1)] bg-slate-950/80 hover:bg-slate-950/85 backdrop-blur-md p-3 sm:p-4 space-y-3 transition-all duration-500 hover:border-slate-600 animate-scaleIn w-full text-left">
                   {/* Top Bar inside Card */}
                   <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
