@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
 import QRCode from 'qrcode';
 import { checkEventCutoff } from '../utils/watermarkEngine';
-import { useDingalanClock, getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
+import { useDingalanClock, getDingalanNow, checkIsBroadcastActive, setDingalanTimeOverride, resetDingalanTimeOverride } from '../utils/philippineClock';
 import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
 import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
 import {
@@ -108,6 +108,36 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [isUnfolded, setIsUnfolded] = useState<boolean>(true);
   const [isBroadcastHidden, setIsBroadcastHidden] = useState<boolean>(false);
   const [isAnonymousModalOpen, setIsAnonymousModalOpen] = useState<boolean>(false);
+  const [isEditClockOpen, setIsEditClockOpen] = useState<boolean>(false);
+  const [customTimeInput, setCustomTimeInput] = useState<string>('');
+  const [customDateInput, setCustomDateInput] = useState<string>('');
+
+  const handleOpenEditClock = () => {
+    const now = clock.now;
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    setCustomDateInput(`${yyyy}-${mm}-${dd}`);
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    setCustomTimeInput(`${hh}:${min}`);
+    setIsEditClockOpen(true);
+  };
+
+  const handleSaveCustomTime = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customDateInput || !customTimeInput) return;
+    const target = new Date(`${customDateInput}T${customTimeInput}:00+08:00`);
+    if (!isNaN(target.getTime())) {
+      setDingalanTimeOverride(target);
+      setIsEditClockOpen(false);
+    }
+  };
+
+  const handleResetClock = () => {
+    resetDingalanTimeOverride();
+    setIsEditClockOpen(false);
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
@@ -871,7 +901,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 Municipality of Dingalan, Aurora
               </h1>
               {/* Mobile Live Clock Pill */}
-              <div className="flex sm:hidden items-center space-x-1.5 text-[10px] font-mono text-emerald-300 pt-0.5 select-none">
+              <div
+                onClick={handleOpenEditClock}
+                className="flex sm:hidden items-center space-x-1.5 text-[10px] font-mono text-emerald-300 pt-0.5 select-none cursor-pointer hover:text-white"
+                title="Pindutin para i-edit ang oras"
+              >
                 <Clock className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
                 <span className="font-bold">{clock.dayOfWeek}, {clock.month} {clock.dayNum} • {clock.timeWithSeconds}</span>
               </div>
@@ -947,8 +981,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           <div
-            className="hidden sm:flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/90 border border-emerald-500/60 px-3.5 py-1.5 rounded-full shadow-[0_0_18px_rgba(16,185,129,0.35)] select-none shrink-0"
-            title="Opisyal at Awtorisadong Oras sa Dingalan, Aurora (Philippine Standard Time UTC+8)"
+            onClick={handleOpenEditClock}
+            className="hidden sm:flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/90 border border-emerald-500/60 px-3.5 py-1.5 rounded-full shadow-[0_0_18px_rgba(16,185,129,0.35)] select-none shrink-0 cursor-pointer hover:border-white transition-all"
+            title="Pindutin para i-edit o baguhin ang opisyal na oras sa Dingalan, Aurora"
           >
             <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
             <div className="flex items-center space-x-1.5 font-bold tracking-tight">
@@ -1457,6 +1492,77 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               : undefined
           }
         />
+      )}
+
+      {/* ========================================================================= */}
+      {/* EDIT SYSTEM CLOCK & TIME OVERRIDE MODAL                                   */}
+      {/* ========================================================================= */}
+      {isEditClockOpen && (
+        <div className="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border-2 border-emerald-500/60 shadow-[0_0_50px_rgba(16,185,129,0.4)] p-6 space-y-5 text-left font-sans text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-emerald-400 font-mono font-bold text-sm">
+                <Clock className="w-5 h-5 animate-pulse" />
+                <span>Baguhin o I-edit ang Oras at Petsa</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditClockOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomTime} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                  Petsa (Date):
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={customDateInput}
+                  onChange={(e) => setCustomDateInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-sm font-semibold outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
+                  Oras (Time HH:MM):
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={customTimeInput}
+                  onChange={(e) => setCustomTimeInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-sm font-semibold outline-none"
+                />
+              </div>
+
+              <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                I-set ang sariling oras at petsa para sa pagsubok o operational compliance sa Dingalan, Aurora (Philippine Standard Time UTC+8).
+              </p>
+
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={handleResetClock}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-bold transition-all cursor-pointer"
+                >
+                  I-reset sa Live Dingalan Time
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-mono font-black shadow-lg transition-all cursor-pointer active:scale-95"
+                >
+                  I-save ang Oras
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -4,7 +4,36 @@
  */
 
 let serverTimeOffsetMs = 0;
+let manualTimeOverrideOffsetMs = 0;
 let isSynchronized = false;
+
+if (typeof window !== 'undefined') {
+  const saved = localStorage.getItem('dingalan_manual_time_offset');
+  if (saved) {
+    manualTimeOverrideOffsetMs = parseInt(saved, 10) || 0;
+  }
+}
+
+export function setDingalanTimeOverride(targetDate: Date) {
+  const naturalNow = Date.now() + serverTimeOffsetMs;
+  manualTimeOverrideOffsetMs = targetDate.getTime() - naturalNow;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('dingalan_manual_time_offset', String(manualTimeOverrideOffsetMs));
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('dingalan-time-updated'));
+  }
+}
+
+export function resetDingalanTimeOverride() {
+  manualTimeOverrideOffsetMs = 0;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('dingalan_manual_time_offset');
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('dingalan-time-updated'));
+  }
+}
 
 /**
  * Synchronize with the authoritative server time in Dingalan, Aurora
@@ -61,7 +90,7 @@ if (typeof window !== 'undefined') {
  * Returns the authoritative current Date in Dingalan, Aurora
  */
 export function getDingalanNow(): Date {
-  return new Date(Date.now() + serverTimeOffsetMs);
+  return new Date(Date.now() + serverTimeOffsetMs + manualTimeOverrideOffsetMs);
 }
 
 /**
@@ -474,7 +503,19 @@ export function useDingalanClock() {
       setClockState(getClockState());
     }, 1000);
 
-    return () => clearInterval(timer);
+    const handleManualUpdate = () => {
+      setClockState(getClockState());
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('dingalan-time-updated', handleManualUpdate);
+    }
+
+    return () => {
+      clearInterval(timer);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('dingalan-time-updated', handleManualUpdate);
+      }
+    };
   }, []);
 
   return {
