@@ -230,11 +230,11 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
         {/* Filters and Search Strip */}
         <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs font-mono">
           {/* Tab Filters */}
-          <div className="flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto scrollbar-none w-full sm:w-auto">
+          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs transition-all font-bold cursor-pointer shrink-0 whitespace-nowrap ${
                 activeFilter === 'all'
                   ? 'bg-emerald-500 text-slate-950 shadow-md'
                   : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
@@ -246,33 +246,33 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
             <button
               type="button"
               onClick={() => setActiveFilter('unread')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer flex items-center space-x-1 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs transition-all font-bold cursor-pointer flex items-center space-x-1.5 shrink-0 whitespace-nowrap ${
                 activeFilter === 'unread'
                   ? 'bg-amber-500 text-slate-950 shadow-md'
                   : 'bg-slate-900 text-amber-300 hover:text-amber-200 border border-slate-800'
               }`}
             >
               <span>Hindi Nabasa</span>
-              {unreadCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px]">{unreadCount}</span>}
+              {unreadCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px]">{unreadCount}</span>}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveFilter('urgent')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer flex items-center space-x-1 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs transition-all font-bold cursor-pointer flex items-center space-x-1.5 shrink-0 whitespace-nowrap ${
                 activeFilter === 'urgent'
                   ? 'bg-rose-600 text-white shadow-md'
                   : 'bg-slate-900 text-rose-300 hover:text-rose-200 border border-slate-800'
               }`}
             >
               <span>Urgent</span>
-              {urgentCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px]">{urgentCount}</span>}
+              {urgentCount > 0 && <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px]">{urgentCount}</span>}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveFilter('resolved')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs transition-all font-bold cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs transition-all font-bold cursor-pointer shrink-0 whitespace-nowrap ${
                 activeFilter === 'resolved'
                   ? 'bg-cyan-500 text-slate-950 shadow-md'
                   : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
