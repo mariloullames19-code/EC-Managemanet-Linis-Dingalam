@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
 import QRCode from 'qrcode';
 import { checkEventCutoff } from '../utils/watermarkEngine';
-import { useDingalanClock, getDingalanNow, checkIsBroadcastActive, setDingalanTimeOverride, resetDingalanTimeOverride } from '../utils/philippineClock';
+import { useDingalanClock, getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
 import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
 import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
 import {
@@ -108,41 +108,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [isUnfolded, setIsUnfolded] = useState<boolean>(true);
   const [isBroadcastHidden, setIsBroadcastHidden] = useState<boolean>(false);
   const [isAnonymousModalOpen, setIsAnonymousModalOpen] = useState<boolean>(false);
-  const [isEditClockOpen, setIsEditClockOpen] = useState<boolean>(false);
-  const [customTimeInput, setCustomTimeInput] = useState<string>('');
-  const [customDateInput, setCustomDateInput] = useState<string>('');
-
-  const handleOpenEditClock = () => {
-    const now = clock.now;
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    setCustomDateInput(`${yyyy}-${mm}-${dd}`);
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    setCustomTimeInput(`${hh}:${min}`);
-    setIsEditClockOpen(true);
-  };
-
-  const handleSaveCustomTime = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customDateInput || !customTimeInput) return;
-    const target = new Date(`${customDateInput}T${customTimeInput}:00+08:00`);
-    if (!isNaN(target.getTime())) {
-      setDingalanTimeOverride(target);
-      setIsEditClockOpen(false);
-    }
-  };
-
-  const handleResetClock = () => {
-    resetDingalanTimeOverride();
-    setIsEditClockOpen(false);
-  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
   // Switchable Active View: Defaults to 'event' (Paalala at Patnubay Box automatic na bubungad sa initial load)
-  const [activeView, setActiveView] = useState<'login' | 'event'>('event');
+  const [activeView, setActiveView] = useState<'login' | 'event' | 'overview'>('event');
 
   // Fallback state for activities if not passed in props
   const [localActivities, setLocalActivities] = useState<any[]>(propActivities);
@@ -772,7 +742,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div ref={modalScrollRef} className="fixed inset-0 z-50 w-screen h-screen overflow-hidden bg-transparent font-sans text-slate-100 flex flex-col justify-between">
+    <div
+      ref={modalScrollRef}
+      className="fixed inset-0 z-50 w-screen h-screen max-h-screen overflow-hidden bg-transparent font-sans text-slate-100 flex flex-col justify-between"
+    >
       {/* ========================================================================= */}
       {/* NATIVE HTML5 HD 1080P SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN TWILIGHT) */}
       {/* ========================================================================= */}
@@ -796,19 +769,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         </video>
 
         {/* Crisp ultra-clear ambient daylight overlay - non-darkening */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/15 pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}
-      {/* TOP NAVIGATION / STATUS BAR */}
+      {/* TOP NAVIGATION / STATUS BAR (COMPACT TO PREVENT SCREEN OVERFLOW)           */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/15 bg-slate-950/25 backdrop-blur-md">
+      <div className="relative z-10 w-full px-3 sm:px-6 lg:px-10 xl:px-14 py-2 sm:py-2.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 border-b border-white/15 bg-slate-950/35 backdrop-blur-md shrink-0">
         {/* Official eC access Logo & National Branding */}
-        <div className="flex items-center justify-between sm:justify-start space-x-3.5 sm:space-x-4 w-full sm:w-auto">
-          <div className="flex items-center space-x-3 sm:space-x-3.5 shrink-0">
+        <div className="flex items-center justify-between sm:justify-start space-x-3 sm:space-x-4 w-full sm:w-auto">
+          <div className="flex items-center space-x-2.5 sm:space-x-3.5 shrink-0">
             <svg
               viewBox="0 0 205 64"
-              className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto drop-shadow-[0_4px_14px_rgba(0,0,0,0.85)]"
+              className="h-8 sm:h-10 lg:h-11 w-auto drop-shadow-[0_4px_14px_rgba(0,0,0,0.85)]"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -891,21 +864,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </text>
             </svg>
 
-            <div className="h-8 sm:h-10 w-px bg-slate-700/80 hidden sm:block" />
+            <div className="h-6 sm:h-8 w-px bg-slate-700/80 hidden sm:block" />
 
-            <div className="text-left space-y-0.5">
-              <span className="text-[9px] sm:text-xs font-mono font-extrabold text-emerald-400 tracking-wider uppercase block">
+            <div className="text-left space-y-0">
+              <span className="text-[8px] sm:text-[9px] lg:text-[10px] font-mono font-extrabold text-emerald-400 tracking-wider uppercase block leading-tight">
                 REPUBLIC OF THE PHILIPPINES
               </span>
-              <h1 className="text-xs sm:text-base md:text-lg font-black text-white tracking-tight leading-tight drop-shadow">
+              <h1 className="text-xs sm:text-sm lg:text-base font-black text-white tracking-tight leading-tight drop-shadow">
                 Municipality of Dingalan, Aurora
               </h1>
               {/* Mobile Live Clock Pill */}
-              <div
-                onClick={handleOpenEditClock}
-                className="flex sm:hidden items-center space-x-1.5 text-[10px] font-mono text-emerald-300 pt-0.5 select-none cursor-pointer hover:text-white"
-                title="Pindutin para i-edit ang oras"
-              >
+              <div className="flex sm:hidden items-center space-x-1.5 text-[10px] font-mono text-emerald-300 pt-0.5 select-none">
                 <Clock className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
                 <span className="font-bold">{clock.dayOfWeek}, {clock.month} {clock.dayNum} • {clock.timeWithSeconds}</span>
               </div>
@@ -916,7 +885,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="sm:hidden p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0"
+              className="sm:hidden p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0"
               title="Isara o Pumunta sa System Overview"
             >
               <X className="w-4 h-4" />
@@ -924,10 +893,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           )}
         </div>
 
-        {/* Right Header Action Buttons: 3-column unified segmented tab bar on mobile, row on desktop */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        {/* Right Header Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           {/* Unified Fit-To-Screen Tab Bar */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-lg w-full sm:w-auto sm:flex sm:items-center">
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-xl sm:rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-md w-full sm:w-auto sm:flex sm:items-center">
             {/* Notice & QR Code Button */}
             <button
               type="button"
@@ -938,30 +907,54 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 50);
               }}
-              className={`flex items-center justify-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono font-bold px-2 sm:px-4 py-2 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+              className={`flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'event'
-                  ? 'text-slate-950 bg-emerald-400 border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)] font-extrabold'
+                  ? 'text-slate-950 bg-emerald-400 border border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.5)] font-extrabold'
                   : 'text-emerald-300 hover:text-white hover:bg-slate-800/80'
               }`}
               title="Click to view Official Admin Guidelines, Advisory & Event QR Code"
             >
-              <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 animate-pulse text-emerald-300" />
-              <span className="truncate">Advisory & QR</span>
+              <Radio className="w-3.5 h-3.5 shrink-0 animate-pulse text-emerald-300" />
+              <span className="truncate hidden xs:inline">Advisory & QR</span>
+              <span className="truncate xs:hidden">Advisory</span>
             </button>
 
             {/* Admin Login Button */}
             <button
               type="button"
               onClick={handleAdminPortalClick}
-              className={`flex items-center justify-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono font-bold px-2 sm:px-4 py-2 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+              className={`flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'login'
-                  ? 'text-slate-950 bg-white border border-white shadow-[0_0_20px_rgba(255,255,255,0.4)] font-extrabold'
+                  ? 'text-slate-950 bg-white border border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] font-extrabold'
                   : 'text-white hover:bg-slate-800/80'
               }`}
               title="Pindutin para lumabas ang Admin Login Portal"
             >
-              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="truncate">Admin Login</span>
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate hidden xs:inline">Admin Login</span>
+              <span className="truncate xs:hidden">Admin</span>
+            </button>
+
+            {/* System Overview / Mensahe Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsUnfolded(true);
+                setActiveView('overview');
+                setTimeout(() => {
+                  modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 50);
+              }}
+              className={`flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+                isUnfolded && activeView === 'overview'
+                  ? 'text-slate-950 bg-teal-400 border border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.5)] font-extrabold'
+                  : 'text-teal-300 hover:text-white hover:bg-slate-800/80'
+              }`}
+              title="Tingnan ang System Overview at Magpadala ng Mensahe"
+            >
+              <EyeOff className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate hidden xs:inline">Mensahe & Info</span>
+              <span className="truncate xs:hidden">Mensahe</span>
             </button>
 
             {/* Upload Attendance Button */}
@@ -972,18 +965,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   onOpenUploadAccomplishment();
                 }
               }}
-              className="flex items-center justify-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono font-bold px-2 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-teal-700 via-emerald-600 to-cyan-700 hover:from-teal-600 hover:to-cyan-600 text-white shadow transition-all active:scale-95 cursor-pointer"
+              className="flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-teal-700 via-emerald-600 to-cyan-700 hover:from-teal-600 hover:to-cyan-600 text-white shadow transition-all active:scale-95 cursor-pointer"
               title="Pindutin para mag-upload ng Attendance Pictures"
             >
-              <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-200 shrink-0" />
+              <Camera className="w-3.5 h-3.5 text-cyan-200 shrink-0" />
               <span className="truncate uppercase font-black">Upload</span>
             </button>
           </div>
 
           <div
-            onClick={handleOpenEditClock}
-            className="hidden sm:flex items-center space-x-2 text-xs font-mono text-emerald-300 bg-slate-900/90 border border-emerald-500/60 px-3.5 py-1.5 rounded-full shadow-[0_0_18px_rgba(16,185,129,0.35)] select-none shrink-0 cursor-pointer hover:border-white transition-all"
-            title="Pindutin para i-edit o baguhin ang opisyal na oras sa Dingalan, Aurora"
+            className="hidden sm:flex items-center space-x-2 text-[11px] lg:text-xs font-mono text-emerald-300 bg-slate-900/90 border border-emerald-500/60 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)] select-none shrink-0"
+            title="Opisyal at Awtorisadong Oras sa Dingalan, Aurora (Philippine Standard Time UTC+8)"
           >
             <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
             <div className="flex items-center space-x-1.5 font-bold tracking-tight">
@@ -997,168 +989,186 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="hidden sm:flex p-2 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+              className="hidden sm:flex p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
               title="Isara o Pumunta sa System Overview"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* MAIN CENTER HERO CONTAINER (FIT TO MOBILE SCREEN)                          */}
+      {/* MAIN CENTER HERO CONTAINER (FITS 100% INTO WHOLE SCREEN MOBILE & DESKTOP) */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-1 sm:pt-3 lg:pt-4 pb-2 sm:pb-4 my-auto">
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center lg:items-center">
+      <div className="relative z-10 w-full max-w-[1750px] mx-auto px-2 xs:px-3 sm:px-6 lg:px-10 xl:px-14 flex-1 min-h-0 flex items-center justify-center overflow-y-auto lg:overflow-hidden my-auto py-0.5 sm:py-2">
+        <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-2 sm:gap-5 lg:gap-6 xl:gap-8 items-center justify-center">
           
           {/* --------------------------------------------------------------------- */}
-          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (ORDER-2 ON MOBILE WHEN BUTTON OPENED) */}
+          {/* LEFT SIDE: HERO TYPOGRAPHY & BRANDING (SHOWN ON DESKTOP & OVERVIEW VIEW) */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-4 sm:space-y-6 w-full ${isUnfolded ? 'order-2 lg:order-1' : 'order-1'}`}>
-            <div className="space-y-2.5 sm:space-y-3">
-              <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white tracking-tight leading-[1.1] drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
+          <div className={`lg:col-span-6 xl:col-span-6 text-left space-y-2 sm:space-y-3 w-full ${activeView === 'overview' ? 'block' : 'hidden lg:block'}`}>
+            <div className="space-y-1.5 sm:space-y-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-black text-white tracking-tight leading-[1.1] drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
                 Linis Dingalan <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
                   EC Management
                 </span>
               </h1>
-              <p className="text-xs sm:text-base lg:text-lg text-slate-100 font-medium leading-relaxed max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] text-left sm:text-justify">
+              <p className="text-xs sm:text-sm lg:text-sm text-slate-100 font-medium leading-relaxed max-w-xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] text-left">
                 Innovation in Action Project of Municipal Environment and Natural Resources Office in Collaboration with Public Employment Service Office.
               </p>
-              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[9px] sm:text-xs font-mono font-bold tracking-wide shadow-lg backdrop-blur-md text-center sm:text-left">
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+              <div className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] sm:text-[10px] lg:text-[11px] font-mono font-bold tracking-wide shadow-md backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="leading-tight">PESO & MENRO INTEGRATED OPERATIONS PLATFORM</span>
               </div>
             </div>
 
-            <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-950/45 hover:bg-slate-950/50 border border-slate-700/60 backdrop-blur-xl shadow-2xl space-y-2.5 sm:space-y-3 max-w-xl transition-colors">
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans text-left sm:text-justify">
+            {/* Feature Card */}
+            <div className="p-2.5 sm:p-3 lg:p-3.5 rounded-2xl bg-slate-950/50 hover:bg-slate-950/60 border border-slate-700/60 backdrop-blur-xl shadow-xl space-y-1.5 max-w-xl transition-colors">
+              <p className="text-[11px] sm:text-xs text-slate-200 leading-relaxed font-sans text-left">
                 Activity-based participants' inventory monitoring with photographic compliance and real-time GPS watermarking across 11 coastal and river Barangays with Offline First to Online Sync Feature.
               </p>
-              <div className="flex items-center justify-between sm:justify-start space-x-4 pt-2 border-t border-slate-800 text-xs font-mono text-emerald-400">
-                <span className="flex items-center space-x-2">
+              <div className="flex items-center justify-between sm:justify-start space-x-4 pt-1.5 border-t border-slate-800 text-[11px] font-mono text-emerald-400">
+                <span className="flex items-center space-x-1.5">
                   <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
                   <span className="font-semibold tracking-wide">11 Coastal Barangays Covered</span>
                 </span>
               </div>
             </div>
 
-            {/* Anonymous Citizen & Participant Reporting Box (Green Theme) */}
-            <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-slate-950/50 hover:bg-slate-950/60 border border-emerald-500/40 backdrop-blur-xl shadow-xl space-y-2.5 max-w-xl transition-all">
+            {/* Anonymous Citizen & Participant Reporting Box */}
+            <div className="p-2.5 sm:p-3 lg:p-3.5 rounded-2xl bg-slate-950/55 hover:bg-slate-950/65 border border-emerald-500/40 backdrop-blur-xl shadow-xl space-y-1.5 max-w-xl transition-all">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-emerald-300 font-mono font-bold text-xs">
-                  <EyeOff className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div className="flex items-center space-x-1.5 text-emerald-300 font-mono font-bold text-[11px] sm:text-xs">
+                  <EyeOff className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>KUMPIDENSIYAL NA MENSAHE SA ADMIN</span>
                 </div>
-                <span className="text-[9px] sm:text-[10px] font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase">
+                <span className="text-[8.5px] sm:text-[9.5px] font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase">
                   100% Anonymous
                 </span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans text-left sm:text-justify">
-                May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ng Admin ang inyong pangalan o pagkakakilanlan.
+              <p className="text-[11px] sm:text-xs text-slate-300 leading-snug font-sans text-left">
+                May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ang inyong pagkakakilanlan.
               </p>
               <button
                 type="button"
                 onClick={() => setIsAnonymousModalOpen(true)}
-                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-bold text-xs flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all cursor-pointer hover:scale-[1.01] active:scale-95 border border-emerald-400/50"
+                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-bold text-[11px] sm:text-xs flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all cursor-pointer hover:scale-[1.01] active:scale-95 border border-emerald-400/50"
               >
-                <EyeOff className="w-4 h-4 text-emerald-200" />
+                <EyeOff className="w-3.5 h-3.5 text-emerald-200" />
                 <span>Pindutin para Mag-send ng Anonymous Message</span>
+              </button>
+            </div>
+
+            {/* Mobile quick switcher to Admin Login if in Overview mode */}
+            <div className="flex sm:hidden items-center justify-between pt-1 px-1 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setActiveView('login')}
+                className="text-white hover:text-emerald-300 font-bold underline flex items-center gap-1 cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Pumunta sa Admin Login</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('event')}
+                className="text-emerald-300 hover:text-white font-bold underline flex items-center gap-1 cursor-pointer"
+              >
+                <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Tingnan ang Advisory</span>
               </button>
             </div>
           </div>
 
           {/* --------------------------------------------------------------------- */}
-          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD                         */}
+          {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (FITS WHOLE SCREEN)     */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-xl xl:max-w-2xl mx-auto self-start ${isUnfolded ? 'order-1 lg:order-2 mb-2 lg:mb-0 block' : 'hidden'}`}>
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-xl xl:max-w-2xl mx-auto self-center ${activeView === 'overview' ? 'hidden lg:block' : 'block'}`}>
             {isUnfolded && (
-              activeView === 'event' && eventBroadcast ? (
+              (activeView === 'event' || activeView === 'overview') && eventBroadcast ? (
                 /* ========================================================================= */
-                /* EVENT BROADCAST CARD: OFFICIAL PATNUBAY AT PAALALA NG ADMIN                */
+                /* EVENT BROADCAST CARD: FITS 100% ON MOBILE AND DESKTOP WITHOUT CUTOFFS     */
                 /* ========================================================================= */
-                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/75 hover:bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 space-y-2.5 sm:space-y-3 transition-all duration-500 hover:border-emerald-300 animate-scaleIn w-full">
+                <div className="relative rounded-2xl lg:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_35px_rgba(16,185,129,0.35),inset_0_0_15px_rgba(16,185,129,0.15)] bg-slate-950/85 hover:bg-slate-950/90 backdrop-blur-md p-2.5 xs:p-3 sm:p-4 lg:p-4 xl:p-5 space-y-1.5 sm:space-y-2.5 transition-all duration-300 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
-                        <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
-                        <span className="truncate">Official Admin Guidelines & Advisory</span>
+                  <div className="flex items-center justify-between border-b border-white/10 pb-1.5 gap-2">
+                    <div className="flex items-center space-x-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                      <span className="px-2 py-0.5 rounded-full text-[8.5px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm truncate">
+                        <Radio className="w-3 h-3 text-emerald-400 animate-pulse shrink-0" />
+                        <span className="truncate">Admin Guidelines & Advisory</span>
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-2 shrink-0">
+                    <div className="flex items-center space-x-1.5 shrink-0">
+                      <span className="text-[9px] font-mono text-emerald-300 font-bold hidden xs:inline">
+                        {eventBroadcast.startTime} PST
+                      </span>
                       <button
                         type="button"
                         onClick={() => setIsUnfolded(false)}
-                        className="p-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        className="p-1 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
                         title="Close Notice"
                       >
-                        <X className="w-4 h-4 text-slate-400 hover:text-emerald-400" />
+                        <X className="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400" />
                       </button>
                     </div>
                   </div>
 
                   {/* Title & Location */}
-                  <div className="space-y-1.5 text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
-                        {eventBroadcast.startTime} PST • SCHEDULED WORK PROGRAM
-                      </span>
-                    </div>
-                    <h3 className="text-base sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                  <div className="space-y-0.5 text-left">
+                    <h3 className="text-xs xs:text-sm sm:text-base lg:text-lg xl:text-xl font-black text-white leading-tight drop-shadow-md">
                       {eventBroadcast.activityTitle}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono">
-                      <p className="text-emerald-300 font-semibold flex items-center gap-1.5 drop-shadow">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:text-xs font-mono">
+                      <p className="text-emerald-300 font-semibold flex items-center gap-1 drop-shadow">
+                        <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span className="truncate">Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
                       </p>
-                      <p className="text-cyan-300 font-medium flex items-center gap-1.5 drop-shadow">
-                        <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <p className="text-cyan-300 font-medium flex items-center gap-1 drop-shadow">
+                        <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
                         <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
                       </p>
                     </div>
                   </div>
 
                   {/* Event QR Code Box & Attendance Upload */}
-                  <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-lg flex flex-col xs:flex-row items-center gap-3 sm:gap-4 animate-fadeIn">
-                    <div className="p-1.5 bg-white rounded-xl shadow-md border-2 border-emerald-400/40 flex flex-col items-center shrink-0">
+                  <div className="p-1.5 sm:p-2.5 rounded-xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-md flex flex-row items-center gap-2 sm:gap-3.5 animate-fadeIn">
+                    <div className="p-1 bg-white rounded-lg shadow-sm border border-emerald-400/40 flex flex-col items-center shrink-0">
                       {eventQrUrl || eventBroadcast.qrDataUrl ? (
                         <div className="relative inline-flex items-center justify-center">
                           <img
                             src={eventQrUrl || eventBroadcast.qrDataUrl}
                             alt="Official Event Attendance QR Code"
-                            className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                            className="w-14 h-14 sm:w-20 sm:h-20 lg:w-22 lg:h-22 object-contain"
                           />
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white p-0.5 border border-emerald-600 shadow-sm flex items-center justify-center">
+                            <div className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-white p-0.5 border border-emerald-600 shadow-sm flex items-center justify-center">
                               <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.2 border border-amber-400">
-                                <span className="text-[5px] sm:text-[6px] font-black text-emerald-300 leading-none">LGU</span>
-                                <span className="text-[4px] sm:text-[5px] font-extrabold text-white leading-none tracking-tighter">DINGALAN</span>
+                                <span className="text-[3.5px] sm:text-[5.5px] font-black text-emerald-300 leading-none">LGU</span>
                               </div>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center bg-slate-100 rounded-lg">
-                          <QrCode className="w-14 h-14 text-slate-800" />
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center bg-slate-100 rounded-md">
+                          <QrCode className="w-10 h-10 text-slate-800" />
                         </div>
                       )}
-                      <span className="text-[8px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
+                      <span className="text-[6.5px] sm:text-[7.5px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
                         SCAN ATTENDANCE
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-center xs:text-left flex-1 min-w-0 w-full">
-                      <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] sm:text-[10px] font-mono font-bold">
-                        <QrCode className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <div className="space-y-1 text-left flex-1 min-w-0 w-full">
+                      <div className="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[7.5px] sm:text-[9.5px] font-mono font-bold">
+                        <QrCode className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
                         <span>EVENT ATTENDANCE QR CODE</span>
                       </div>
-                      <p className="text-[11px] sm:text-xs text-slate-200 font-sans leading-snug">
-                        Scan using mobile camera to upload accomplishment photo and attendance proof.
+                      <p className="text-[9px] sm:text-[11px] text-slate-200 font-sans leading-tight">
+                        I-scan sa mobile camera o i-tap para mag-upload ng attendance:
                       </p>
                       
                       <button
@@ -1168,69 +1178,89 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             onOpenUploadAccomplishment();
                           }
                         }}
-                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-xs flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.45)] transition-all cursor-pointer border border-emerald-300 active:scale-95"
+                        className="w-full py-1.5 px-2.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-[10px] sm:text-xs flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all cursor-pointer border border-emerald-300 active:scale-95"
                       >
-                        <Camera className="w-4 h-4 text-slate-950 shrink-0" />
-                        <span className="uppercase font-extrabold">Upload Attendance Photo</span>
-                        <Upload className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                        <Camera className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                        <span className="uppercase font-extrabold truncate">Upload Attendance Photo</span>
+                        <Upload className="w-3 h-3 text-slate-950 shrink-0" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Specific Advisories Grid */}
-                  <div className="space-y-2.5 pt-2 border-t border-white/10 text-xs font-mono text-slate-300 text-left">
+                  {/* 3-Column Compact Reminder Grid (3 columns on both Mobile and Desktop to NEVER overflow vertically) */}
+                  <div className="grid grid-cols-3 gap-1 sm:gap-1.5 text-[9.5px] sm:text-[11px] font-mono text-slate-300 text-left">
                     {eventBroadcast.requiredTools && (
-                      <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
-                        <Wrench className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Required Tools & Equipment:</span>
-                          <span className="text-white text-xs leading-relaxed block">{eventBroadcast.requiredTools}</span>
+                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
+                            <Wrench className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 shrink-0" />
+                            <span className="truncate">Tools:</span>
+                          </div>
+                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
+                            {eventBroadcast.requiredTools}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     {eventBroadcast.waterTumblerReminder && (
-                      <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
-                        <Coffee className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Hydration & Water Reminder:</span>
-                          <span className="text-white text-xs leading-relaxed block">{eventBroadcast.waterTumblerReminder}</span>
+                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
+                            <Coffee className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 shrink-0" />
+                            <span className="truncate">Hydration:</span>
+                          </div>
+                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
+                            {eventBroadcast.waterTumblerReminder}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     {eventBroadcast.recommendedAttire && (
-                      <div className="flex items-start space-x-2.5 bg-slate-950/40 p-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
-                        <Shirt className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Recommended Attire:</span>
-                          <span className="text-white text-xs leading-relaxed block">{eventBroadcast.recommendedAttire}</span>
+                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
+                            <Shirt className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-teal-400 shrink-0" />
+                            <span className="truncate">Attire:</span>
+                          </div>
+                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
+                            {eventBroadcast.recommendedAttire}
+                          </span>
                         </div>
-                      </div>
-                    )}
-
-                    {eventBroadcast.additionalNotes && (
-                      <div className="p-2.5 rounded-xl bg-slate-950/40 border border-emerald-500/25 text-xs font-sans text-slate-200 italic leading-relaxed">
-                        <strong className="text-emerald-300 not-italic font-semibold">Additional LGU Admin Notes:</strong> {eventBroadcast.additionalNotes}
                       </div>
                     )}
                   </div>
 
-                  <div className="text-[10px] font-mono text-slate-400 pt-2 text-right border-t border-white/10">
-                    Broadcasted by: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
+                  {/* Additional LGU Admin Notes */}
+                  {eventBroadcast.additionalNotes && (
+                    <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-slate-950/45 border border-emerald-500/25 text-[9.5px] sm:text-[11px] font-sans text-slate-200 leading-snug text-left">
+                      <strong className="text-emerald-300 font-semibold">Admin Notes:</strong> {eventBroadcast.additionalNotes}
+                    </div>
+                  )}
+
+                  {/* Bottom Author Row */}
+                  <div className="text-[8.5px] sm:text-[10px] font-mono text-slate-400 pt-1 text-right border-t border-white/10 flex items-center justify-between">
+                    <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span>{eventTimeLeft.formatted} remaining</span>
+                    </span>
+                    <span className="truncate">
+                      Broadcasted by: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
+                    </span>
                   </div>
                 </div>
               ) : activeView === 'event' ? (
                 /* ========================================================================= */
-                /* NO ACTIVE SCHEDULE: OFFICIAL PROFESSIONAL ENGLISH ADVISORY CARD          */
+                /* NO ACTIVE SCHEDULE: COMPACT PROFESSIONAL ADVISORY CARD                   */
                 /* ========================================================================= */
-                <div className="relative rounded-2xl sm:rounded-3xl border-2 border-slate-700/80 shadow-[0_0_50px_rgba(0,0,0,0.7),inset_0_0_20px_rgba(16,185,129,0.1)] bg-slate-950/80 hover:bg-slate-950/85 backdrop-blur-md p-3 sm:p-4 space-y-3 transition-all duration-500 hover:border-slate-600 animate-scaleIn w-full text-left">
+                <div className="relative rounded-2xl lg:rounded-3xl border-2 border-slate-700/80 shadow-[0_0_40px_rgba(0,0,0,0.7),inset_0_0_20px_rgba(16,185,129,0.1)] bg-slate-950/80 hover:bg-slate-950/85 backdrop-blur-md p-3.5 sm:p-5 space-y-2.5 sm:space-y-3 transition-all duration-300 hover:border-slate-600 animate-scaleIn w-full text-left">
                   {/* Top Bar inside Card */}
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2 gap-2">
                     <div className="flex items-center space-x-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-                      <span className="px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
-                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                      <span className="px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
+                        <ShieldCheck className="w-3 h-3 text-cyan-400 shrink-0" />
                         <span className="truncate">Public Advisory • PESO & MENRO Operations</span>
                       </span>
                     </div>
@@ -1239,51 +1269,51 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setIsUnfolded(false)}
-                        className="p-1.5 rounded-xl bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        className="p-1 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
                         title="Close Notice"
                       >
-                        <X className="w-4 h-4 text-slate-400 hover:text-white" />
+                        <X className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
                       </button>
                     </div>
                   </div>
 
                   {/* Official Notice Header */}
-                  <div className="space-y-1.5 text-left">
-                    <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-[10px] font-mono font-bold text-slate-400">
+                  <div className="space-y-1 text-left">
+                    <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-[9px] font-mono font-bold text-slate-400">
                       <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                       <span>OFFICIAL STATUS: NO SCHEDULE RECORDED FOR TODAY</span>
                     </div>
-                    <h3 className="text-base sm:text-2xl font-black text-white leading-tight drop-shadow-md">
+                    <h3 className="text-sm sm:text-lg lg:text-xl font-black text-white leading-tight drop-shadow-md">
                       No Official Work Program Scheduled for Today
                     </h3>
-                    <p className="text-xs font-mono text-emerald-300 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <p className="text-[11px] sm:text-xs font-mono text-emerald-300 flex items-center gap-1.5">
+                      <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                       <span>Municipality of Dingalan, Aurora • Environmental Compliance Platform</span>
                     </p>
                   </div>
 
                   {/* Professional Notice Statement Box */}
-                  <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs sm:text-sm font-sans space-y-2.5 text-slate-200 leading-relaxed shadow-inner">
+                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] sm:text-xs font-sans space-y-1.5 text-slate-200 leading-relaxed shadow-inner">
                     <p>
                       Please be advised that <strong>there are currently no active field operations, coastal cleanup drives, or official environmental compliance activities scheduled for today</strong>.
                     </p>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <p className="text-[10.5px] sm:text-[11px] text-slate-400 leading-snug">
                       All verified beneficiaries, field supervisors, and participating workers will automatically receive the official event QR code and operational guidelines here as soon as a new schedule is broadcasted by the PESO & MENRO Operations Administrator.
                     </p>
                   </div>
 
                   {/* Most Recent Program / Last Event Date Box */}
-                  <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 text-xs font-mono space-y-1.5 text-left shadow-md">
+                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 text-[11px] font-mono space-y-1 text-left shadow-md">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-[9.5px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-emerald-400 shrink-0" />
                         Most Recent Program / Last Event Date:
                       </span>
-                      <span className="text-[9px] text-slate-400 font-mono font-semibold bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                      <span className="text-[8.5px] text-slate-400 font-mono font-semibold bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-700">
                         Completed Record
                       </span>
                     </div>
-                    <div className="text-white font-bold text-xs sm:text-sm">
+                    <div className="text-white font-bold text-xs">
                       {lastCompletedEvent ? (
                         <span>
                           {lastCompletedEvent.title} — <span className="text-emerald-300 font-mono">{lastCompletedEvent.date}</span> (Brgy. {lastCompletedEvent.barangay})
@@ -1297,19 +1327,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   </div>
 
                   {/* Assistance & Office Hours Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-300">
-                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-0.5">
-                      <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Office Operations:</span>
-                      <span className="text-white text-[11px]">Monday to Friday: 8:00 AM – 5:00 PM PST</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px] font-mono text-slate-300">
+                    <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 space-y-0.5">
+                      <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block">Office Operations:</span>
+                      <span className="text-white text-[10.5px]">Monday to Friday: 8:00 AM – 5:00 PM PST</span>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-0.5">
-                      <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Operations Center:</span>
-                      <span className="text-white text-[11px]">Barangay Poblacion, Dingalan, Aurora</span>
+                    <div className="p-2 rounded-lg bg-slate-900/60 border border-slate-800 space-y-0.5">
+                      <span className="text-[9px] text-cyan-400 font-bold uppercase tracking-wider block">Operations Center:</span>
+                      <span className="text-white text-[10.5px]">Barangay Poblacion, Dingalan, Aurora</span>
                     </div>
                   </div>
 
                   {/* Live Monitoring Badge */}
-                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[9.5px] sm:text-[10px] font-mono text-slate-400">
                     <div className="flex items-center space-x-1.5 text-emerald-400">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                       <span>Live Scheduler Active • Automatically updates when a schedule is posted</span>
@@ -1320,65 +1350,65 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               ) : (
                 /* ULTRA-SMOOTH POP-UP GREEN DIAGONAL CARD (SEMI-TRANSPARENT FROSTED GLASS) */
                 <div
-                  className="relative rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_60px_rgba(16,185,129,0.5),inset_0_0_25px_rgba(16,185,129,0.2)] bg-slate-950/40 hover:bg-slate-950/45 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-700 ease-out transform scale-100 opacity-100 translate-y-0"
+                  className="relative rounded-2xl lg:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_50px_rgba(16,185,129,0.4),inset_0_0_20px_rgba(16,185,129,0.15)] bg-slate-950/50 hover:bg-slate-950/55 backdrop-blur-md overflow-hidden grid grid-cols-1 md:grid-cols-12 transition-all duration-500 ease-out transform scale-100 opacity-100 translate-y-0"
                   style={{
                     perspective: '1200px',
                     transformStyle: 'preserve-3d',
-                    animation: 'smoothPopup 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    animation: 'smoothPopup 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                   }}
                 >
                   {/* Pop-Up Close Icon (X) on Top Right */}
                   <button
                     type="button"
                     onClick={() => setIsUnfolded(false)}
-                    className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer shadow-lg hover:scale-110 backdrop-blur-sm"
+                    className="absolute top-3 right-3 z-30 p-1.5 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-md hover:scale-105 backdrop-blur-sm"
                     title="Isara ang Login Box"
                   >
-                    <X className="w-5 h-5 text-emerald-400" />
+                    <X className="w-4 h-4 text-emerald-400" />
                   </button>
 
                   {/* LEFT SIDE FORM PANEL */}
-                  <div className="md:col-span-7 p-4 sm:p-8 flex flex-col justify-between space-y-4 sm:space-y-5 relative z-10 animate-fadeIn">
+                  <div className="md:col-span-7 p-3.5 sm:p-5 lg:p-6 flex flex-col justify-between space-y-3 sm:space-y-4 relative z-10 animate-fadeIn">
                     {/* Top Badge */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold w-fit">
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10.5px] sm:text-xs font-mono font-bold w-fit">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                         <span>ADMIN PORTAL</span>
                       </div>
                     </div>
 
                     {/* Error Banner */}
                     {errorMessage && (
-                      <div className="p-3 rounded-xl bg-rose-950/90 border border-rose-500/60 text-rose-200 text-xs font-semibold flex items-start space-x-2 animate-fadeIn">
-                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                      <div className="p-2.5 rounded-xl bg-rose-950/90 border border-rose-500/60 text-rose-200 text-xs font-semibold flex items-start space-x-2 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                         <span>{errorMessage}</span>
                       </div>
                     )}
 
                     {/* Pending Notice Banner */}
                     {pendingNotice && (
-                      <div className="p-3 rounded-xl bg-amber-950/90 border border-amber-500/60 text-amber-200 text-xs space-y-1 animate-fadeIn">
-                        <div className="flex items-center space-x-2 font-bold text-amber-300 font-mono">
-                          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <div className="p-2.5 rounded-xl bg-amber-950/90 border border-amber-500/60 text-amber-200 text-xs space-y-1 animate-fadeIn">
+                        <div className="flex items-center space-x-1.5 font-bold text-amber-300 font-mono text-[11px]">
+                          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                           <span>ACCOUNT PENDING</span>
                         </div>
-                        <p className="leading-tight">{pendingNotice}</p>
+                        <p className="leading-tight text-[11px]">{pendingNotice}</p>
                       </div>
                     )}
 
                     {/* Form Heading */}
-                    <div className="text-left space-y-1">
-                      <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                    <div className="text-left space-y-0.5">
+                      <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
                         Login
                       </h2>
                     </div>
 
                     {/* Form Fields */}
-                    <form onSubmit={handleLoginSubmit} className="space-y-4 sm:space-y-6">
+                    <form onSubmit={handleLoginSubmit} className="space-y-3 sm:space-y-4">
                       {/* Underlined Username/Email Field */}
-                      <div className="space-y-1 text-left">
-                        <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
-                          <UserIcon className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
+                      <div className="space-y-0.5 text-left">
+                        <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-1.5">
+                          <UserIcon className="w-4 h-4 text-emerald-300 mr-2 shrink-0" />
                           <input
                             type="text"
                             autoComplete="username"
@@ -1387,15 +1417,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Username"
                             style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
-                            className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
+                            className="w-full bg-transparent text-white placeholder-slate-300 text-sm font-medium font-sans focus:outline-none"
                           />
                         </div>
                       </div>
 
                       {/* Underlined Password Field */}
-                      <div className="space-y-1 text-left">
-                        <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-2">
-                          <Lock className="w-5 h-5 text-emerald-300 mr-2.5 shrink-0" />
+                      <div className="space-y-0.5 text-left">
+                        <div className="flex items-center border-b-2 border-slate-400/60 hover:border-emerald-400 focus-within:border-emerald-300 transition-colors py-1.5">
+                          <Lock className="w-4 h-4 text-emerald-300 mr-2 shrink-0" />
                           <input
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="current-password"
@@ -1404,14 +1434,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Password"
                             style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
-                            className="w-full bg-transparent text-white placeholder-slate-300 text-base font-medium font-sans focus:outline-none"
+                            className="w-full bg-transparent text-white placeholder-slate-300 text-sm font-medium font-sans focus:outline-none"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className="text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
                           >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
                         </div>
                       </div>
@@ -1420,22 +1450,82 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-sm sm:text-base tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.6)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                        className="w-full py-2.5 sm:py-3 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs sm:text-sm tracking-wide shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
                       >
                         {isLoading ? (
                           <span className="flex items-center space-x-2">
-                            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Logging in...</span>
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Naglo-log in...</span>
                           </span>
                         ) : (
-                          <span>Login</span>
+                          <span className="flex items-center space-x-1.5 uppercase font-extrabold tracking-wider">
+                            <LogIn className="w-4 h-4" />
+                            <span>Login sa Admin</span>
+                          </span>
                         )}
                       </button>
+
+                      {/* Quick One-Tap Admin Access (Highly User Friendly on Mobile & Desktop) */}
+                      <div className="pt-2 border-t border-slate-700/60 text-left space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                          <span className="font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-emerald-400" />
+                            Quick Admin Access:
+                          </span>
+                          <span className="text-slate-400 text-[9px]">Pindutin para mabilisang mag-fill</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEmail('superadmin');
+                              setPassword('pesoadmin');
+                            }}
+                            className="p-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 text-[10px] sm:text-[10.5px] font-mono text-emerald-300 font-bold flex items-center justify-center space-x-1 transition-all active:scale-95 cursor-pointer"
+                            title="Auto-fill Superadmin Account (Engr. John Mark N. Orlasan)"
+                          >
+                            <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                            <span className="truncate">Superadmin (PESO)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEmail('admin');
+                              setPassword('admin123');
+                            }}
+                            className="p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-[10px] sm:text-[10.5px] font-mono text-white font-bold flex items-center justify-center space-x-1 transition-all active:scale-95 cursor-pointer"
+                            title="Auto-fill Operations Admin Account"
+                          >
+                            <UserIcon className="w-3 h-3 text-cyan-400 shrink-0" />
+                            <span className="truncate">Admin (MENRO)</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quick Mobile Helper Navigation Links */}
+                      <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-300">
+                        <button
+                          type="button"
+                          onClick={() => setIsAnonymousModalOpen(true)}
+                          className="text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <EyeOff className="w-3 h-3" />
+                          <span>Anonymous Report</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveView('event')}
+                          className="text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Radio className="w-3 h-3" />
+                          <span>Advisory & QR</span>
+                        </button>
+                      </div>
                     </form>
                   </div>
 
-                  {/* RIGHT SIDE DIAGONAL GREEN PANEL (TRANSLUCENT FROSTED GLASS) */}
-                  <div className="md:col-span-5 relative hidden md:flex flex-col justify-center items-center p-6 text-center text-white overflow-hidden min-h-[360px]">
+                  {/* RIGHT SIDE DIAGONAL GREEN PANEL */}
+                  <div className="md:col-span-5 relative hidden md:flex flex-col justify-center items-center p-4 text-center text-white overflow-hidden min-h-[300px]">
                     {/* Diagonal Green Panel Background */}
                     <div
                       className="absolute inset-0 bg-gradient-to-br from-emerald-500/75 via-emerald-600/60 to-teal-900/65 backdrop-blur-sm shadow-[inset_0_0_30px_rgba(0,0,0,0.2)]"
@@ -1443,15 +1533,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     />
 
                     {/* Right Side Overlay Content */}
-                    <div className="relative z-10 pl-6 space-y-3">
-                      <h2 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight uppercase drop-shadow-md leading-tight">
+                    <div className="relative z-10 pl-4 space-y-2">
+                      <h2 className="text-xl lg:text-2xl xl:text-3xl font-extrabold text-white tracking-tight uppercase drop-shadow-md leading-tight">
                         WELCOME BACK!
                       </h2>
-                      <p className="text-xs sm:text-sm text-emerald-100 font-medium leading-relaxed max-w-xs drop-shadow">
+                      <p className="text-xs text-emerald-100 font-medium leading-relaxed max-w-xs drop-shadow">
                         Already a Member? Please Login.
                       </p>
 
-                      <div className="pt-4 border-t border-emerald-400/30 text-[10px] font-mono text-emerald-200">
+                      <div className="pt-2 border-t border-emerald-400/30 text-[9.5px] font-mono text-emerald-200">
                         Linis Dingalan EC Management <br />
                         PESO & MENRO Operations
                       </div>
@@ -1465,13 +1555,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* BOTTOM FOOTER BAR */}
+      {/* BOTTOM FOOTER BAR (SLIM FIT TO NEVER GET PUSHED OFF THE SCREEN)            */}
       {/* ========================================================================= */}
-      <div className="relative z-10 w-full px-4 sm:px-8 lg:px-14 xl:px-20 py-3 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-slate-300 border-t border-white/10 bg-slate-950/30 backdrop-blur-sm gap-2">
-        <div className="drop-shadow text-center sm:text-left text-[11px] sm:text-xs">
+      <div className="relative z-10 w-full px-3 sm:px-6 lg:px-10 xl:px-14 py-2 sm:py-2.5 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between text-[10px] sm:text-[11px] font-mono text-slate-300 border-t border-white/10 bg-slate-950/40 backdrop-blur-md gap-1.5 shrink-0">
+        <div className="drop-shadow text-center sm:text-left">
           Linis Dingalan EC Management Platform • PESO & MENRO Operations • Municipality of Dingalan, Aurora
         </div>
-        <div className="flex flex-wrap justify-center items-center gap-2 sm:space-x-3 text-emerald-300 drop-shadow text-[10px] sm:text-[11px]">
+        <div className="flex flex-wrap justify-center items-center gap-1.5 sm:space-x-2.5 text-emerald-300 drop-shadow text-[9.5px] sm:text-[10.5px]">
           <span>Lead Approver: ENGR. JOHN MARK N. ORLASAN</span>
           <span className="hidden sm:inline">•</span>
           <span>Offline-First Synced</span>
@@ -1493,77 +1583,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           }
         />
       )}
-
-      {/* ========================================================================= */}
-      {/* EDIT SYSTEM CLOCK & TIME OVERRIDE MODAL                                   */}
-      {/* ========================================================================= */}
-      {isEditClockOpen && (
-        <div className="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border-2 border-emerald-500/60 shadow-[0_0_50px_rgba(16,185,129,0.4)] p-6 space-y-5 text-left font-sans text-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2 text-emerald-400 font-mono font-bold text-sm">
-                <Clock className="w-5 h-5 animate-pulse" />
-                <span>Baguhin o I-edit ang Oras at Petsa</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEditClockOpen(false)}
-                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveCustomTime} className="space-y-4">
-              <div>
-                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
-                  Petsa (Date):
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={customDateInput}
-                  onChange={(e) => setCustomDateInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-sm font-semibold outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">
-                  Oras (Time HH:MM):
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={customTimeInput}
-                  onChange={(e) => setCustomTimeInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-emerald-400 text-white text-sm font-semibold outline-none"
-                />
-              </div>
-
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                I-set ang sariling oras at petsa para sa pagsubok o operational compliance sa Dingalan, Aurora (Philippine Standard Time UTC+8).
-              </p>
-
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={handleResetClock}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-bold transition-all cursor-pointer"
-                >
-                  I-reset sa Live Dingalan Time
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-mono font-black shadow-lg transition-all cursor-pointer active:scale-95"
-                >
-                  I-save ang Oras
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+

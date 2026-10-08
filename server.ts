@@ -2,6 +2,10 @@ import express, { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import {
   INITIAL_USERS,
   INITIAL_BENEFICIARIES,
@@ -70,6 +74,9 @@ async function startServer() {
   const app = express();
   const port = Number(process.env.PORT) || 3000;
 
+  // Serve static assets from public directory
+  app.use(express.static(path.resolve(__dirname, 'public')));
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -131,6 +138,18 @@ async function startServer() {
   // ----------------------------------------------------------------------------
   // API ROUTES
   // ----------------------------------------------------------------------------
+
+  // Authoritative Background Video stream for Login Page with Range Requests support
+  app.get('/api/video/background', (req: Request, res: Response) => {
+    const videoPath = path.resolve(process.cwd(), 'public', 'dingalan_bg_video.mp4');
+    res.sendFile(videoPath, {
+      headers: {
+        'Content-Type': 'video/mp4',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
+    });
+  });
 
   // Authoritative Philippine Standard Time (PST UTC+8) for Dingalan, Aurora
   app.get('/api/time', (req: Request, res: Response) => {

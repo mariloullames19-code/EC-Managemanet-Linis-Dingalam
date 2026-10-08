@@ -34,11 +34,12 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { EventQrBroadcast, AnonymousMessage } from './types';
 import { checkEventCutoff } from './utils/watermarkEngine';
 import { checkIsBroadcastActive } from './utils/philippineClock';
+import mountainViewWallpaper from './assets/images/dingalan_mountain_view_1791439053773.jpg';
 import systemWallpaper from './assets/images/dingalan_system_wallpaper.jpg';
 import { db } from './firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 
-const DINGALAN_SYSTEM_BG = systemWallpaper || 'https://i.ibb.co/YBstSFGf/1b06179e-22f5-43a2-9755-40255190d134-1.jpg';
+const DINGALAN_SYSTEM_BG = mountainViewWallpaper || systemWallpaper;
 
 const isBroadcastActive = (broadcast: any): boolean => {
   return checkIsBroadcastActive(broadcast);
@@ -761,26 +762,18 @@ export default function App() {
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* ========================================================================= */}
-      {/* FULL SYSTEM DASHBOARD BACKGROUND: DINGALAN AURORA HD TECH VIDEO (1080P) */}
+      {/* FULL SYSTEM DASHBOARD BACKGROUND: DINGALAN MOUNTAIN VIEW SCENIC PICTURE   */}
       {/* ========================================================================= */}
       <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-slate-950 flex items-center justify-center">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-[1.25] saturate-[1.4] brightness-[1.02] opacity-100"
+        <img
+          src={mountainViewWallpaper}
+          alt="Dingalan Aurora Mountain View Admin Background"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 w-full h-full object-cover object-[center_35%] scale-100 transition-all duration-700 filter contrast-[1.08] saturate-[1.2] brightness-[0.98]"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_day_background.mp4"
-        >
-          <source src="/dingalan_day_background.mp4" type="video/mp4" />
-          <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
-          <source src="/dingalan_tech_background.mp4" type="video/mp4" />
-        </video>
+        />
 
-        {/* Optimized Minimal Ambient Overlay for Text Readability */}
+        {/* Optimized Minimal Ambient Overlay for Text Readability While Keeping Full View Vivid */}
         <div className="absolute inset-0 bg-slate-950/20 pointer-events-none" />
 
         {/* Subtle Geometric System Grid */}
