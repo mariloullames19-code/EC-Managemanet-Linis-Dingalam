@@ -8,6 +8,7 @@ import { checkEventCutoff } from '../utils/watermarkEngine';
 import { useDingalanClock, getDingalanNow, checkIsBroadcastActive } from '../utils/philippineClock';
 import { generateStyledLguQrDataUrl } from '../utils/qrPassGenerator';
 import { SendAnonymousMessageModal } from './SendAnonymousMessageModal';
+import dingalanBgImg from '../assets/images/dingalan_lighthouse_natural_drone_1791512687510.jpg';
 import {
   Lock,
   Mail,
@@ -778,27 +779,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       className="fixed inset-0 z-50 w-screen h-screen max-h-screen overflow-hidden bg-transparent font-sans text-slate-100 flex flex-col justify-between"
     >
       {/* ========================================================================= */}
-      {/* NATIVE HTML5 1080P NATURAL DINGALAN LIGHTHOUSE DRONE BACKGROUND VIDEO     */}
+      {/* STATIC HIGH-RESOLUTION DINGALAN LIGHTHOUSE BACKGROUND IMAGE (NO VIDEO)     */}
       {/* ========================================================================= */}
       <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-slate-950 flex items-center justify-center">
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          aria-hidden="true"
-          poster="/src/assets/images/dingalan_lighthouse_natural_drone_1791512687510.jpg"
+        <img
+          src={dingalanBgImg}
+          alt="Dingalan Background"
           className="absolute inset-0 w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.2] brightness-[1.02]"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_natural_drone.mp4"
-        >
-          <source src="/dingalan_natural_drone.mp4" type="video/mp4" />
-          <source src="/dingalan_day_background.mp4" type="video/mp4" />
-          <source src="/dingalan_bg_video.mp4" type="video/mp4" />
-          <source src="/dingalan_tech_1080p.mp4" type="video/mp4" />
-        </video>
+        />
 
         {/* Ambient overlay - cinematic clarity with legible contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-black/30 pointer-events-none" />
