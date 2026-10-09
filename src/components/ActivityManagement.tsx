@@ -430,7 +430,7 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
                 onClick={() => setActivityToDelete(null)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-colors cursor-pointer"
               >
-                Kanselahin
+                Cancel
               </button>
               <button
                 type="button"
@@ -448,7 +448,7 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{isDeleting ? 'Binubura...' : 'Oo, Burahin Box'}</span>
+                <span>{isDeleting ? 'Deleting...' : 'Yes, Delete Box'}</span>
               </button>
             </div>
           </div>
@@ -493,7 +493,7 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
                 onClick={() => setIsConfirmDeleteAllOpen(false)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-colors cursor-pointer"
               >
-                Kanselahin
+                Cancel
               </button>
               <button
                 type="button"
@@ -511,7 +511,7 @@ export const ActivityManagement: React.FC<ActivityManagementProps> = ({
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center space-x-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{isDeleting ? 'Binubura ang Lahat...' : 'Oo, Permanenteng Burahin Lahat'}</span>
+                <span>{isDeleting ? 'Deleting All...' : 'Yes, Permanently Delete All'}</span>
               </button>
             </div>
           </div>

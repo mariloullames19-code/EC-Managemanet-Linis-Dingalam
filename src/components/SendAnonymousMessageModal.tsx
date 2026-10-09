@@ -327,7 +327,7 @@ export const SendAnonymousMessageModal: React.FC<SendAnonymousMessageModalProps>
                   onClick={handleResetAndClose}
                   className="py-3 rounded-xl fluid-btn-slate text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700/60 active:scale-95 hover:text-white"
                 >
-                  Kanselahin
+                  Cancel
                 </button>
 
                 <button
@@ -338,12 +338,12 @@ export const SendAnonymousMessageModal: React.FC<SendAnonymousMessageModalProps>
                   {isSubmitting ? (
                     <>
                       <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Ipinapadala nang Lihim...</span>
+                      <span>Sending Anonymously...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4 text-slate-950 shrink-0" />
-                      <span className="tracking-tight">Ipadala sa Admin (Anonymous)</span>
+                      <span className="tracking-tight">Send to Admin (Anonymous)</span>
                     </>
                   )}
                 </button>

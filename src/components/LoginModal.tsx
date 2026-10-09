@@ -1525,70 +1525,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </div>
 
 
-                      {/* One-Tap Instant Admin Access Buttons */}
-                      <div className="pt-2 border-t border-slate-700/60 text-left space-y-2">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                          <span className="font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-emerald-400" />
-                            Admin Access:
-                          </span>
-                          <span className="text-slate-400 text-[9px]">Pindutin para mag-login</span>
-                        </div>
+                      {/* Main Login Submit Button */}
+                      <div className="pt-2">
                         {isLoading ? (
-                          <div className="w-full py-2.5 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold flex items-center justify-center space-x-2 shadow-inner">
+                          <div className="w-full py-3 rounded-xl bg-slate-900 border border-emerald-500/50 text-emerald-300 font-mono text-xs font-bold flex items-center justify-center space-x-2 shadow-inner">
                             <span className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                            <span>Naglo-log in sa system...</span>
+                            <span>Logging in to system...</span>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEmail('superadmin');
-                                setPassword('pesoadmin');
-                                handleDirectLogin('superadmin', 'pesoadmin');
-                              }}
-                              className="py-2.5 px-2 rounded-xl fluid-btn-emerald text-[11px] sm:text-xs font-mono text-slate-950 font-black flex items-center justify-center space-x-1.5 transition-all active:scale-95 cursor-pointer shadow-md border border-emerald-300/60"
-                              title="Instant Login as Superadmin (Engr. John Mark N. Orlasan)"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5 text-slate-950 shrink-0" />
-                              <span className="truncate">Superadmin (PESO)</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEmail('admin');
-                                setPassword('admin123');
-                                handleDirectLogin('admin', 'admin123');
-                              }}
-                              className="py-2.5 px-2 rounded-xl fluid-btn-slate text-[11px] sm:text-xs font-mono text-cyan-300 font-bold flex items-center justify-center space-x-1.5 transition-all active:scale-95 cursor-pointer shadow-md border border-cyan-500/40 hover:border-cyan-300"
-                              title="Instant Login as Operations Admin (MENRO)"
-                            >
-                              <UserIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                              <span className="truncate">Admin (MENRO)</span>
-                            </button>
-                          </div>
+                          <button
+                            type="submit"
+                            className="w-full py-2.5 px-3 rounded-xl fluid-btn-emerald text-xs sm:text-sm font-mono text-slate-950 font-black flex items-center justify-center space-x-2 transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.4)] border-2 border-emerald-300 hover:shadow-[0_0_25px_rgba(16,185,129,0.8)] hover:scale-[1.02] relative overflow-hidden group"
+                          >
+                            <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                            <ShieldCheck className="w-4 h-4 text-slate-950 shrink-0 animate-pulse" />
+                            <span className="relative z-10 tracking-wider">LOG IN TO SYSTEM</span>
+                          </button>
                         )}
-                      </div>
-
-                      {/* Quick Mobile Helper Navigation Links */}
-                      <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-300">
-                        <button
-                          type="button"
-                          onClick={() => setIsAnonymousModalOpen(true)}
-                          className="text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <EyeOff className="w-3 h-3" />
-                          <span>Anonymous Report</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveView('event')}
-                          className="text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Radio className="w-3 h-3" />
-                          <span>Advisory & QR</span>
-                        </button>
                       </div>
                     </form>
                   </div>

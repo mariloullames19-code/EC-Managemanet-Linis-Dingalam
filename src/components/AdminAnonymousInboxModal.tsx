@@ -555,7 +555,7 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
                 onClick={() => setIsDeleteAllConfirmOpen(false)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-mono font-bold text-xs transition-colors cursor-pointer"
               >
-                Kanselahin
+                Cancel
               </button>
 
               <button
@@ -565,7 +565,7 @@ export const AdminAnonymousInboxModal: React.FC<AdminAnonymousInboxModalProps> =
                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-mono font-black text-xs flex items-center space-x-2 shadow-[0_0_20px_rgba(244,63,94,0.5)] transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeletingAll ? 'Binubura ang Lahat...' : 'Oo, Permanenteng Burahin Lahat'}</span>
+                <span>{isDeletingAll ? 'Deleting All...' : 'Yes, Permanently Delete All'}</span>
               </button>
             </div>
           </div>

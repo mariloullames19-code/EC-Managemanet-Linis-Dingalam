@@ -1219,7 +1219,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   disabled={isSavingEdit}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-all cursor-pointer"
                 >
-                  Kanselahin
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -1227,7 +1227,7 @@ export const GenerateQrEventModal: React.FC<GenerateQrEventModalProps> = ({
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 text-xs font-mono font-black flex items-center space-x-2 shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer"
                 >
                   <Save className="w-4 h-4 text-slate-950" />
-                  <span>{isSavingEdit ? 'Sine-save ang Pagbabago...' : 'I-Save ang mga Pagbabago'}</span>
+                  <span>{isSavingEdit ? 'Saving Changes...' : 'Save Changes'}</span>
                 </button>
               </div>
             </form>

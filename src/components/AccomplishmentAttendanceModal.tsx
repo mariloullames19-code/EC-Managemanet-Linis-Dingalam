@@ -813,7 +813,7 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                 onClick={() => setIsConfirmDeleteOpen(false)}
                 className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer"
               >
-                Kanselahin
+                Cancel
               </button>
               <button
                 type="button"
@@ -824,12 +824,12 @@ export const AccomplishmentAttendanceModal: React.FC<AccomplishmentAttendanceMod
                 {isDeleting ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Binubura...</span>
+                    <span>Deleting...</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Oo, Burahin Lahat</span>
+                    <span>Yes, Delete All</span>
                   </>
                 )}
               </button>

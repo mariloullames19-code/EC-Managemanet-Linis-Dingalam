@@ -339,7 +339,7 @@ export const ScanQrModal: React.FC<ScanQrModalProps> = ({
             }}
             className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
           >
-            Kanselahin
+            Cancel
           </button>
         </div>
       </div>
