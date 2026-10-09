@@ -1111,14 +1111,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1.5 text-emerald-300 font-mono font-bold text-[11px] sm:text-xs">
                   <EyeOff className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>KUMPIDENSIYAL NA MENSAHE SA ADMIN</span>
+                  <span>CONFIDENTIAL MESSAGE TO ADMIN</span>
                 </div>
                 <span className="text-[8.5px] sm:text-[9.5px] font-mono font-black text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40 uppercase">
                   100% Anonymous
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-300 leading-snug font-sans text-left">
-                May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ang inyong pagkakakilanlan.
+                Want to report about work, waste, suggestions or inquiries? You can send an anonymous message. Only the Admin account can view this and your identity remains confidential.
               </p>
               <button
                 type="button"
@@ -1126,7 +1126,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 className="w-full py-2.5 px-3 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-[11px] sm:text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer hover:scale-[1.01] active:scale-95 border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
               >
                 <EyeOff className="w-3.5 h-3.5 text-slate-950" />
-                <span>Pindutin para Mag-send ng Anonymous Message</span>
+                <span>Send Anonymous Message</span>
               </button>
             </div>
 
@@ -1138,7 +1138,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 className="text-white hover:text-emerald-300 font-bold underline flex items-center gap-1 cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Pumunta sa Admin Login</span>
+                <span>Go to Admin Login</span>
               </button>
               <button
                 type="button"
@@ -1146,7 +1146,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 className="text-emerald-300 hover:text-white font-bold underline flex items-center gap-1 cursor-pointer"
               >
                 <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Tingnan ang Advisory</span>
+                <span>View Advisory</span>
               </button>
             </div>
           </div>
