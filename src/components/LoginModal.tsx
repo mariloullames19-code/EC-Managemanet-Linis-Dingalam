@@ -914,17 +914,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {onClose && (
-            <motion.button
+            <button
               type="button"
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={onClose}
-              className="sm:hidden p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+              className="sm:hidden p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0"
               title="Isara o Pumunta sa System Overview"
             >
               <X className="w-4 h-4" />
-            </motion.button>
+            </button>
           )}
         </div>
 
@@ -936,8 +933,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <motion.button
               type="button"
               whileTap={{ scale: 0.94 }}
-              whileHover={{ scale: 1.04, y: -1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              whileHover={{ scale: 1.02 }}
               onClick={() => {
                 setIsUnfolded(true);
                 setActiveView('event');
@@ -955,7 +951,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {isUnfolded && activeView === 'event' && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute inset-0 rounded-lg sm:rounded-xl fluid-btn-emerald border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+                  className="absolute inset-0 rounded-lg sm:rounded-xl fluid-btn-emerald border border-emerald-300"
                   transition={{ type: 'spring', stiffness: 500, damping: 32 }}
                 />
               )}
@@ -970,8 +966,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <motion.button
               type="button"
               whileTap={{ scale: 0.94 }}
-              whileHover={{ scale: 1.04, y: -1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              whileHover={{ scale: 1.02 }}
               onClick={handleAdminPortalClick}
               className={`relative flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-colors duration-200 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'login'
@@ -983,7 +978,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {isUnfolded && activeView === 'login' && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute inset-0 rounded-lg sm:rounded-xl bg-white border border-white shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+                  className="absolute inset-0 rounded-lg sm:rounded-xl bg-white border border-white shadow-[0_0_16px_rgba(255,255,255,0.45)]"
                   transition={{ type: 'spring', stiffness: 500, damping: 32 }}
                 />
               )}
@@ -998,8 +993,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <motion.button
               type="button"
               whileTap={{ scale: 0.94 }}
-              whileHover={{ scale: 1.04, y: -1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              whileHover={{ scale: 1.02 }}
               onClick={() => {
                 setIsUnfolded(true);
                 setActiveView('overview');
@@ -1017,7 +1011,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {isUnfolded && activeView === 'overview' && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute inset-0 rounded-lg sm:rounded-xl bg-teal-400 border border-teal-300 shadow-[0_0_20px_rgba(45,212,191,0.65)]"
+                  className="absolute inset-0 rounded-lg sm:rounded-xl bg-teal-400 border border-teal-300 shadow-[0_0_16px_rgba(45,212,191,0.55)]"
                   transition={{ type: 'spring', stiffness: 500, damping: 32 }}
                 />
               )}
@@ -1032,8 +1026,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <motion.button
               type="button"
               whileTap={{ scale: 0.94 }}
-              whileHover={{ scale: 1.05, y: -2, boxShadow: '0 0 25px rgba(16,185,129,0.7)' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              whileHover={{ scale: 1.03 }}
               onClick={() => {
                 if (onOpenUploadAccomplishment) {
                   onOpenUploadAccomplishment();
@@ -1062,17 +1055,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {onClose && (
-            <motion.button
+            <button
               type="button"
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={onClose}
-              className="hidden sm:flex p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+              className="hidden sm:flex p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
               title="Isara o Pumunta sa System Overview"
             >
               <X className="w-4 h-4" />
-            </motion.button>
+            </button>
           )}
         </div>
       </div>
@@ -1130,48 +1120,41 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <p className="text-[11px] sm:text-xs text-slate-300 leading-snug font-sans text-left">
                 May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ang inyong pagkakakilanlan.
               </p>
-              <motion.button
+              <button
                 type="button"
-                whileHover={{ scale: 1.03, y: -2, boxShadow: '0 0 30px rgba(16,185,129,0.7)' }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                 onClick={() => setIsAnonymousModalOpen(true)}
-                className="w-full py-2.5 px-3 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-[11px] sm:text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)] group"
+                className="w-full py-2.5 px-3 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-[11px] sm:text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer hover:scale-[1.01] active:scale-95 border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
               >
-                <EyeOff className="w-3.5 h-3.5 text-slate-950 group-hover:rotate-12 transition-transform duration-300" />
+                <EyeOff className="w-3.5 h-3.5 text-slate-950" />
                 <span>Pindutin para Mag-send ng Anonymous Message</span>
-              </motion.button>
+              </button>
             </div>
 
             {/* Mobile quick switcher to Admin Login if in Overview mode */}
             <div className="flex sm:hidden items-center justify-between pt-1 px-1 text-[11px] font-mono">
-              <motion.button
+              <button
                 type="button"
-                whileHover={{ scale: 1.05, x: 2 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveView('login')}
                 className="text-white hover:text-emerald-300 font-bold underline flex items-center gap-1 cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Pumunta sa Admin Login</span>
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="button"
-                whileHover={{ scale: 1.05, x: -2 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveView('event')}
                 className="text-emerald-300 hover:text-white font-bold underline flex items-center gap-1 cursor-pointer"
               >
                 <Radio className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Tingnan ang Advisory</span>
-              </motion.button>
+              </button>
             </div>
           </div>
 
           {/* --------------------------------------------------------------------- */}
           {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (FITS WHOLE SCREEN)     */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-2xl xl:max-w-3xl mx-auto self-center ${activeView === 'overview' ? 'hidden lg:block' : 'block'}`}>
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-xl xl:max-w-2xl mx-auto self-center ${activeView === 'overview' ? 'hidden lg:block' : 'block'}`}>
             <AnimatePresence mode="wait">
               {isUnfolded && (
                 <motion.div
@@ -1184,120 +1167,114 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 >
                   {(activeView === 'event' || activeView === 'overview') && eventBroadcast ? (
                 /* ========================================================================= */
-                /* EVENT BROADCAST CARD: LARGER & MORE PROMINENT CONTENT                     */
+                /* EVENT BROADCAST CARD: FITS 100% ON MOBILE AND DESKTOP WITHOUT CUTOFFS     */
                 /* ========================================================================= */
-                <div className="relative rounded-3xl lg:rounded-3xl border-2 border-emerald-400 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_20px_rgba(16,185,129,0.2)] bg-slate-950/90 backdrop-blur-xl p-4 sm:p-6 lg:p-8 space-y-3 sm:space-y-4 transition-all duration-300 hover:border-emerald-300 animate-scaleIn w-full">
+                <div className="relative rounded-2xl lg:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_35px_rgba(16,185,129,0.35),inset_0_0_15px_rgba(16,185,129,0.15)] bg-slate-950/85 hover:bg-slate-950/90 backdrop-blur-md p-2.5 xs:p-3 sm:p-4 lg:p-4 xl:p-5 space-y-1.5 sm:space-y-2.5 transition-all duration-300 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
-                  <div className="flex items-center justify-between border-b border-white/15 pb-3 gap-2">
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="px-3 py-1 rounded-full text-xs sm:text-sm font-mono font-bold bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
-                        <Radio className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                  <div className="flex items-center justify-between border-b border-white/10 pb-1.5 gap-2">
+                    <div className="flex items-center space-x-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                      <span className="px-2 py-0.5 rounded-full text-[8.5px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm truncate">
+                        <Radio className="w-3 h-3 text-emerald-400 animate-pulse shrink-0" />
                         <span className="truncate">Admin Guidelines & Advisory</span>
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-2 shrink-0">
-                      <span className="text-xs font-mono text-emerald-300 font-bold hidden xs:inline">
+                    <div className="flex items-center space-x-1.5 shrink-0">
+                      <span className="text-[9px] font-mono text-emerald-300 font-bold hidden xs:inline">
                         {eventBroadcast.startTime} PST
                       </span>
-                      <motion.button
+                      <button
                         type="button"
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.9 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                         onClick={() => setIsUnfolded(false)}
-                        className="p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-all cursor-pointer shadow"
+                        className="p-1 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
                         title="Close Notice"
                       >
-                        <X className="w-4 h-4 text-slate-300 hover:text-emerald-400" />
-                      </motion.button>
+                        <X className="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400" />
+                      </button>
                     </div>
                   </div>
 
                   {/* Title & Location */}
-                  <div className="space-y-1.5 text-left">
-                    <h3 className="text-base sm:text-xl lg:text-2xl xl:text-3xl font-black text-white leading-tight drop-shadow-md">
+                  <div className="space-y-0.5 text-left">
+                    <h3 className="text-xs xs:text-sm sm:text-base lg:text-lg xl:text-xl font-black text-white leading-tight drop-shadow-md">
                       {eventBroadcast.activityTitle}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm font-mono">
-                      <p className="text-emerald-300 font-bold flex items-center gap-1.5 drop-shadow">
-                        <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:text-xs font-mono">
+                      <p className="text-emerald-300 font-semibold flex items-center gap-1 drop-shadow">
+                        <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                         <span className="truncate">Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
                       </p>
-                      <p className="text-cyan-300 font-semibold flex items-center gap-1.5 drop-shadow">
-                        <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <p className="text-cyan-300 font-medium flex items-center gap-1 drop-shadow">
+                        <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
                         <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
                       </p>
                     </div>
                   </div>
 
                   {/* Event QR Code Box & Attendance Upload */}
-                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-950/80 border-2 border-emerald-400/60 backdrop-blur-md shadow-lg flex flex-row items-center gap-3.5 sm:gap-5 animate-fadeIn">
-                    <div className="p-2 bg-white rounded-xl shadow-md border border-emerald-400/50 flex flex-col items-center shrink-0">
+                  <div className="p-1.5 sm:p-2.5 rounded-xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-md flex flex-row items-center gap-2 sm:gap-3.5 animate-fadeIn">
+                    <div className="p-1 bg-white rounded-lg shadow-sm border border-emerald-400/40 flex flex-col items-center shrink-0">
                       {eventQrUrl || eventBroadcast.qrDataUrl ? (
                         <div className="relative inline-flex items-center justify-center">
                           <img
                             src={eventQrUrl || eventBroadcast.qrDataUrl}
                             alt="Official Event Attendance QR Code"
-                            className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 object-contain"
+                            className="w-14 h-14 sm:w-20 sm:h-20 lg:w-22 lg:h-22 object-contain"
                           />
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white p-0.5 border border-emerald-600 shadow-md flex items-center justify-center">
-                              <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.5 border border-amber-400">
-                                <span className="text-[6px] sm:text-[8px] font-black text-emerald-300 leading-none">LGU</span>
+                            <div className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-white p-0.5 border border-emerald-600 shadow-sm flex items-center justify-center">
+                              <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.2 border border-amber-400">
+                                <span className="text-[3.5px] sm:text-[5.5px] font-black text-emerald-300 leading-none">LGU</span>
                               </div>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center bg-slate-100 rounded-lg">
-                          <QrCode className="w-16 h-16 text-slate-800" />
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center bg-slate-100 rounded-md">
+                          <QrCode className="w-10 h-10 text-slate-800" />
                         </div>
                       )}
-                      <span className="text-[9px] sm:text-[11px] font-mono font-black text-slate-900 mt-1 uppercase tracking-tight">
+                      <span className="text-[6.5px] sm:text-[7.5px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
                         SCAN ATTENDANCE
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-left flex-1 min-w-0 w-full">
-                      <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 text-xs sm:text-sm font-mono font-bold">
-                        <QrCode className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="space-y-1 text-left flex-1 min-w-0 w-full">
+                      <div className="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[7.5px] sm:text-[9.5px] font-mono font-bold">
+                        <QrCode className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
                         <span>EVENT ATTENDANCE QR CODE</span>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-100 font-sans leading-relaxed">
-                        I-scan sa mobile camera o i-tap ang button sa ibaba para mag-upload ng iyong attendance:
+                      <p className="text-[9px] sm:text-[11px] text-slate-200 font-sans leading-tight">
+                        I-scan sa mobile camera o i-tap para mag-upload ng attendance:
                       </p>
                       
-                      <motion.button
+                      <button
                         type="button"
-                        whileHover={{ scale: 1.03, y: -2, boxShadow: '0 0 30px rgba(16,185,129,0.8)' }}
-                        whileTap={{ scale: 0.97 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                         onClick={() => {
                           if (onOpenUploadAccomplishment) {
                             onOpenUploadAccomplishment();
                           }
                         }}
-                        className="w-full py-3 px-4 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all cursor-pointer border border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.6)] group"
+                        className="w-full py-2 px-3 rounded-lg sm:rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-[10px] sm:text-xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer border border-emerald-300 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
                       >
-                        <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 shrink-0 group-hover:rotate-12 transition-transform duration-300" />
-                        <span className="uppercase font-black truncate tracking-wide text-xs sm:text-sm">Upload Attendance Photo</span>
-                        <Upload className="w-4 h-4 text-slate-950 shrink-0 group-hover:-translate-y-0.5 transition-transform duration-300" />
-                      </motion.button>
+                        <Camera className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                        <span className="uppercase font-black truncate tracking-wide">Upload Attendance Photo</span>
+                        <Upload className="w-3 h-3 text-slate-950 shrink-0" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* 3-Column Reminder Grid (Larger and clearer) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs sm:text-sm font-mono text-slate-200 text-left">
+                  {/* 3-Column Compact Reminder Grid (3 columns on both Mobile and Desktop to NEVER overflow vertically) */}
+                  <div className="grid grid-cols-3 gap-1 sm:gap-1.5 text-[9.5px] sm:text-[11px] font-mono text-slate-300 text-left">
                     {eventBroadcast.requiredTools && (
-                      <div className="bg-slate-950/70 p-3 rounded-2xl border border-white/15 backdrop-blur-sm flex flex-col justify-between shadow-md">
+                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center space-x-1.5 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">
-                            <Wrench className="w-4 h-4 text-emerald-400 shrink-0" />
-                            <span className="truncate">Tools Required:</span>
+                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
+                            <Wrench className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 shrink-0" />
+                            <span className="truncate">Tools:</span>
                           </div>
-                          <span className="text-white text-xs sm:text-sm leading-relaxed block">
+                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
                             {eventBroadcast.requiredTools}
                           </span>
                         </div>
@@ -1305,13 +1282,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     )}
 
                     {eventBroadcast.waterTumblerReminder && (
-                      <div className="bg-slate-950/70 p-3 rounded-2xl border border-white/15 backdrop-blur-sm flex flex-col justify-between shadow-md">
+                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center space-x-1.5 text-cyan-400 font-bold text-xs uppercase tracking-wider mb-1">
-                            <Coffee className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
+                            <Coffee className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 shrink-0" />
                             <span className="truncate">Hydration:</span>
                           </div>
-                          <span className="text-white text-xs sm:text-sm leading-relaxed block">
+                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
                             {eventBroadcast.waterTumblerReminder}
                           </span>
                         </div>
@@ -1319,13 +1296,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     )}
 
                     {eventBroadcast.recommendedAttire && (
-                      <div className="bg-slate-950/70 p-3 rounded-2xl border border-white/15 backdrop-blur-sm flex flex-col justify-between shadow-md">
+                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center space-x-1.5 text-teal-400 font-bold text-xs uppercase tracking-wider mb-1">
-                            <Shirt className="w-4 h-4 text-teal-400 shrink-0" />
-                            <span className="truncate">Recommended Attire:</span>
+                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
+                            <Shirt className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-teal-400 shrink-0" />
+                            <span className="truncate">Attire:</span>
                           </div>
-                          <span className="text-white text-xs sm:text-sm leading-relaxed block">
+                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
                             {eventBroadcast.recommendedAttire}
                           </span>
                         </div>
@@ -1335,20 +1312,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                   {/* Additional LGU Admin Notes */}
                   {eventBroadcast.additionalNotes && (
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-950/60 border border-emerald-500/35 text-xs sm:text-sm font-sans text-slate-100 leading-relaxed text-left shadow-md">
-                      <strong className="text-emerald-300 font-bold block mb-0.5 text-xs uppercase tracking-wider">Admin Notes & Instructions:</strong> 
-                      {eventBroadcast.additionalNotes}
+                    <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-slate-950/45 border border-emerald-500/25 text-[9.5px] sm:text-[11px] font-sans text-slate-200 leading-snug text-left">
+                      <strong className="text-emerald-300 font-semibold">Admin Notes:</strong> {eventBroadcast.additionalNotes}
                     </div>
                   )}
 
                   {/* Bottom Author Row */}
-                  <div className="text-xs sm:text-sm font-mono text-slate-300 pt-2 text-right border-t border-white/15 flex items-center justify-between">
-                    <span className="text-emerald-300 font-bold flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div className="text-[8.5px] sm:text-[10px] font-mono text-slate-400 pt-1 text-right border-t border-white/10 flex items-center justify-between">
+                    <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
                       <span>{eventTimeLeft.formatted} remaining</span>
                     </span>
                     <span className="truncate">
-                      Broadcasted by: <strong className="text-emerald-400 font-bold">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
+                      Broadcasted by: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
                     </span>
                   </div>
                 </div>
@@ -1368,17 +1344,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-2 shrink-0">
-                      <motion.button
+                      <button
                         type="button"
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.9 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                         onClick={() => setIsUnfolded(false)}
                         className="p-1 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
                         title="Close Notice"
                       >
                         <X className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
-                      </motion.button>
+                      </button>
                     </div>
                   </div>
 
@@ -1463,17 +1436,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   }}
                 >
                   {/* Pop-Up Close Icon (X) on Top Right */}
-                  <motion.button
+                  <button
                     type="button"
-                    whileHover={{ scale: 1.15, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                     onClick={() => setIsUnfolded(false)}
-                    className="absolute top-3 right-3 z-30 p-1.5 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-md backdrop-blur-sm"
+                    className="absolute top-3 right-3 z-30 p-1.5 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-md hover:scale-105 backdrop-blur-sm"
                     title="Isara ang Login Box"
                   >
                     <X className="w-4 h-4 text-emerald-400" />
-                  </motion.button>
+                  </button>
 
                   {/* LEFT SIDE FORM PANEL */}
                   <div className="md:col-span-7 p-3.5 sm:p-5 lg:p-6 flex flex-col justify-between space-y-3 sm:space-y-4 relative z-10 animate-fadeIn">
@@ -1544,39 +1514,81 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
                             className="w-full bg-transparent text-white placeholder-slate-300 text-sm font-medium font-sans focus:outline-none"
                           />
-                          <motion.button
+                          <button
                             type="button"
-                            whileHover={{ scale: 1.2, rotate: 15 }}
-                            whileTap={{ scale: 0.9 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                             onClick={() => setShowPassword(!showPassword)}
                             className="text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
                           >
                             {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </motion.button>
+                          </button>
                         </div>
                       </div>
 
 
-                      {/* Clean Login Submit Button */}
-                      <div className="pt-2">
+                      {/* One-Tap Instant Admin Access Buttons */}
+                      <div className="pt-2 border-t border-slate-700/60 text-left space-y-2">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                          <span className="font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-emerald-400" />
+                            Admin Access:
+                          </span>
+                          <span className="text-slate-400 text-[9px]">Pindutin para mag-login</span>
+                        </div>
                         {isLoading ? (
-                          <div className="w-full py-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-mono text-sm font-bold flex items-center justify-center space-x-2 shadow-inner">
+                          <div className="w-full py-2.5 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold flex items-center justify-center space-x-2 shadow-inner">
                             <span className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
                             <span>Naglo-log in sa system...</span>
                           </div>
                         ) : (
-                          <motion.button
-                            type="submit"
-                            whileHover={{ scale: 1.03, y: -2, boxShadow: '0 0 30px rgba(16,185,129,0.7)' }}
-                            whileTap={{ scale: 0.97 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                            className="w-full py-3 px-4 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all cursor-pointer border border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.5)] group"
-                          >
-                            <LogIn className="w-4 h-4 text-slate-950 shrink-0 group-hover:translate-x-1 transition-transform duration-300" />
-                            <span className="uppercase font-black tracking-wider">Mag-log in sa System</span>
-                          </motion.button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEmail('superadmin');
+                                setPassword('pesoadmin');
+                                handleDirectLogin('superadmin', 'pesoadmin');
+                              }}
+                              className="py-2.5 px-2 rounded-xl fluid-btn-emerald text-[11px] sm:text-xs font-mono text-slate-950 font-black flex items-center justify-center space-x-1.5 transition-all active:scale-95 cursor-pointer shadow-md border border-emerald-300/60"
+                              title="Instant Login as Superadmin (Engr. John Mark N. Orlasan)"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                              <span className="truncate">Superadmin (PESO)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEmail('admin');
+                                setPassword('admin123');
+                                handleDirectLogin('admin', 'admin123');
+                              }}
+                              className="py-2.5 px-2 rounded-xl fluid-btn-slate text-[11px] sm:text-xs font-mono text-cyan-300 font-bold flex items-center justify-center space-x-1.5 transition-all active:scale-95 cursor-pointer shadow-md border border-cyan-500/40 hover:border-cyan-300"
+                              title="Instant Login as Operations Admin (MENRO)"
+                            >
+                              <UserIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <span className="truncate">Admin (MENRO)</span>
+                            </button>
+                          </div>
                         )}
+                      </div>
+
+                      {/* Quick Mobile Helper Navigation Links */}
+                      <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-300">
+                        <button
+                          type="button"
+                          onClick={() => setIsAnonymousModalOpen(true)}
+                          className="text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <EyeOff className="w-3 h-3" />
+                          <span>Anonymous Report</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveView('event')}
+                          className="text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Radio className="w-3 h-3" />
+                          <span>Advisory & QR</span>
+                        </button>
                       </div>
                     </form>
                   </div>
