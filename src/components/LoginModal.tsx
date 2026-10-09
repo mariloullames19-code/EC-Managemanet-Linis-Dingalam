@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { User, UserRole, Beneficiary, EventQrBroadcast } from '../types';
 import { api } from '../services/api';
 import { INITIAL_EVENT_BROADCAST } from '../data/seedData';
@@ -113,6 +114,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   // Switchable Active View: Defaults to 'event' (Paalala at Patnubay Box automatic na bubungad sa initial load)
   const [activeView, setActiveView] = useState<'login' | 'event' | 'overview'>('event');
+
+  // On computer/desktop screens (>= 1024px), ensure activeView stays on 'event' or 'login'
+  // because the Mensahe button is hidden on computer and the system overview is already visible on the left
+  useEffect(() => {
+    const handleCheckDesktop = () => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+        if (activeView === 'overview') {
+          setActiveView('event');
+        }
+      }
+    };
+    handleCheckDesktop();
+    window.addEventListener('resize', handleCheckDesktop);
+    return () => window.removeEventListener('resize', handleCheckDesktop);
+  }, [activeView]);
 
   // Fallback state for activities if not passed in props
   const [localActivities, setLocalActivities] = useState<any[]>(propActivities);
@@ -464,22 +480,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     return () => clearInterval(timer);
   }, [eventBroadcast]);
 
-  // Precision 5-second video loop controller & guaranteed autoplay
+  // Full 1080p HD Cyber Dingalan Lighthouse Background Video controller & guaranteed autoplay
   useEffect(() => {
     if (isOpen && videoRef.current) {
       videoRef.current.muted = true;
       videoRef.current.playsInline = true;
-      videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
     }
   }, [isOpen]);
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current && videoRef.current.currentTime >= 5.0) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-    }
-  };
 
   // Login State
   const [email, setEmail] = useState<string>('');
@@ -642,6 +650,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }, 250);
   };
 
+  // Direct One-Tap Login Handler for Quick Admin Access buttons
+  const handleDirectLogin = (directEmail: string, directPass: string) => {
+    setErrorMessage(null);
+    setPendingNotice(null);
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      const lower = directEmail.toLowerCase();
+      if (lower === 'superadmin') {
+        onLogin('superadmin');
+        return;
+      }
+      if (lower === 'admin') {
+        onLogin('admin');
+        return;
+      }
+      const authRes = api.authenticate(directEmail, directPass);
+      if (authRes.success && authRes.user) {
+        onLogin(authRes.user);
+      }
+    }, 200);
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -747,9 +778,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       className="fixed inset-0 z-50 w-screen h-screen max-h-screen overflow-hidden bg-transparent font-sans text-slate-100 flex flex-col justify-between"
     >
       {/* ========================================================================= */}
-      {/* NATIVE HTML5 HD 1080P SUNSET BACKGROUND VIDEO (CINEMATIC DINGALAN TWILIGHT) */}
+      {/* NATIVE HTML5 1080P NATURAL DINGALAN LIGHTHOUSE DRONE BACKGROUND VIDEO     */}
       {/* ========================================================================= */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-transparent flex items-center justify-center">
+      <div className="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-slate-950 flex items-center justify-center">
         <video
           ref={videoRef}
           autoPlay
@@ -757,19 +788,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           muted
           playsInline
           preload="auto"
-          onTimeUpdate={handleTimeUpdate}
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-[1.25] saturate-[1.4] brightness-[1.08]"
+          poster="/src/assets/images/dingalan_lighthouse_natural_drone_1791512687510.jpg"
+          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-[1.08] saturate-[1.2] brightness-[1.02]"
           style={{ imageRendering: '-webkit-optimize-contrast', transform: 'translateZ(0)' }}
-          src="/dingalan_day_background.mp4"
+          src="/dingalan_natural_drone.mp4"
         >
+          <source src="/dingalan_natural_drone.mp4" type="video/mp4" />
           <source src="/dingalan_day_background.mp4" type="video/mp4" />
-          <source src="/dingalan_sunset_background.mp4" type="video/mp4" />
-          <source src="/dingalan_tech_background.mp4" type="video/mp4" />
+          <source src="/dingalan_bg_video.mp4" type="video/mp4" />
+          <source src="/dingalan_tech_1080p.mp4" type="video/mp4" />
         </video>
 
-        {/* Crisp ultra-clear ambient daylight overlay - non-darkening */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/15 pointer-events-none" />
+        {/* Ambient overlay - cinematic clarity with legible contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-black/30 pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}
@@ -882,24 +914,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {onClose && (
-            <button
+            <motion.button
               type="button"
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={onClose}
-              className="sm:hidden p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0"
+              className="sm:hidden p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.15)]"
               title="Isara o Pumunta sa System Overview"
             >
               <X className="w-4 h-4" />
-            </button>
+            </motion.button>
           )}
         </div>
 
         {/* Right Header Action Buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-          {/* Unified Fit-To-Screen Tab Bar */}
-          <div className="grid grid-cols-4 gap-1 p-1 rounded-xl sm:rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-md w-full sm:w-auto sm:flex sm:items-center">
+          {/* Unified Fit-To-Screen Tab Bar with Animated Spring Indicator */}
+          <div className="grid grid-cols-4 sm:flex sm:items-center lg:flex lg:items-center gap-1 p-1 rounded-xl sm:rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-md w-full sm:w-auto relative select-none">
             {/* Notice & QR Code Button */}
-            <button
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.04, y: -1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={() => {
                 setIsUnfolded(true);
                 setActiveView('event');
@@ -907,37 +945,61 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 50);
               }}
-              className={`flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+              className={`relative flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-colors duration-200 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'event'
-                  ? 'text-slate-950 bg-emerald-400 border border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.5)] font-extrabold'
-                  : 'text-emerald-300 hover:text-white hover:bg-slate-800/80'
+                  ? 'text-slate-950 font-black'
+                  : 'text-emerald-300 hover:text-white hover:bg-slate-800/60'
               }`}
               title="Click to view Official Admin Guidelines, Advisory & Event QR Code"
             >
-              <Radio className="w-3.5 h-3.5 shrink-0 animate-pulse text-emerald-300" />
-              <span className="truncate hidden xs:inline">Advisory & QR</span>
-              <span className="truncate xs:hidden">Advisory</span>
-            </button>
+              {isUnfolded && activeView === 'event' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 rounded-lg sm:rounded-xl fluid-btn-emerald border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+                  transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center space-x-1 sm:space-x-1.5">
+                <Radio className={`w-3.5 h-3.5 shrink-0 ${isUnfolded && activeView === 'event' ? 'text-slate-950 animate-pulse' : 'text-emerald-300'}`} />
+                <span className="truncate hidden xs:inline">Advisory & QR</span>
+                <span className="truncate xs:hidden">Advisory</span>
+              </span>
+            </motion.button>
 
             {/* Admin Login Button */}
-            <button
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.04, y: -1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={handleAdminPortalClick}
-              className={`flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+              className={`relative flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-colors duration-200 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'login'
-                  ? 'text-slate-950 bg-white border border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] font-extrabold'
-                  : 'text-white hover:bg-slate-800/80'
+                  ? 'text-slate-950 font-black'
+                  : 'text-white hover:bg-slate-800/60'
               }`}
               title="Pindutin para lumabas ang Admin Login Portal"
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate hidden xs:inline">Admin Login</span>
-              <span className="truncate xs:hidden">Admin</span>
-            </button>
+              {isUnfolded && activeView === 'login' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 rounded-lg sm:rounded-xl bg-white border border-white shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+                  transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center space-x-1 sm:space-x-1.5">
+                <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${isUnfolded && activeView === 'login' ? 'text-slate-950' : 'text-slate-200'}`} />
+                <span className="truncate hidden xs:inline">Admin Login</span>
+                <span className="truncate xs:hidden">Admin</span>
+              </span>
+            </motion.button>
 
-            {/* System Overview / Mensahe Button */}
-            <button
+            {/* System Overview / Mensahe Button (SHOWN ON MOBILE/TABLET ONLY, HIDDEN ON COMPUTER) */}
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.04, y: -1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={() => {
                 setIsUnfolded(true);
                 setActiveView('overview');
@@ -945,32 +1007,46 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   modalScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 50);
               }}
-              className={`flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm ${
+              className={`relative flex lg:hidden items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl transition-colors duration-200 cursor-pointer shadow-sm ${
                 isUnfolded && activeView === 'overview'
-                  ? 'text-slate-950 bg-teal-400 border border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.5)] font-extrabold'
-                  : 'text-teal-300 hover:text-white hover:bg-slate-800/80'
+                  ? 'text-slate-950 font-black'
+                  : 'text-teal-300 hover:text-white hover:bg-slate-800/60'
               }`}
               title="Tingnan ang System Overview at Magpadala ng Mensahe"
             >
-              <EyeOff className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate hidden xs:inline">Mensahe & Info</span>
-              <span className="truncate xs:hidden">Mensahe</span>
-            </button>
+              {isUnfolded && activeView === 'overview' && (
+                <motion.div
+                  layoutId="activeTabIndicator"
+                  className="absolute inset-0 rounded-lg sm:rounded-xl bg-teal-400 border border-teal-300 shadow-[0_0_20px_rgba(45,212,191,0.65)]"
+                  transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center space-x-1 sm:space-x-1.5">
+                <EyeOff className={`w-3.5 h-3.5 shrink-0 ${isUnfolded && activeView === 'overview' ? 'text-slate-950' : 'text-teal-300'}`} />
+                <span className="truncate hidden xs:inline">Mensahe & Info</span>
+                <span className="truncate xs:hidden">Mensahe</span>
+              </span>
+            </motion.button>
 
-            {/* Upload Attendance Button */}
-            <button
+            {/* Upload Attendance Button with Fluid Color Flow */}
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.05, y: -2, boxShadow: '0 0 25px rgba(16,185,129,0.7)' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={() => {
                 if (onOpenUploadAccomplishment) {
                   onOpenUploadAccomplishment();
                 }
               }}
-              className="flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-1.5 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-teal-700 via-emerald-600 to-cyan-700 hover:from-teal-600 hover:to-cyan-600 text-white shadow transition-all active:scale-95 cursor-pointer"
+              className="relative flex items-center justify-center space-x-1 sm:space-x-1.5 text-[10px] sm:text-xs font-mono font-bold px-2 sm:px-3.5 py-1.5 rounded-lg sm:rounded-xl fluid-btn-emerald text-slate-950 shadow transition-all cursor-pointer overflow-hidden group select-none border border-emerald-300/60"
               title="Pindutin para mag-upload ng Attendance Pictures"
             >
-              <Camera className="w-3.5 h-3.5 text-cyan-200 shrink-0" />
-              <span className="truncate uppercase font-black">Upload</span>
-            </button>
+              <span className="relative z-10 flex items-center space-x-1 sm:space-x-1.5">
+                <Camera className="w-3.5 h-3.5 text-slate-950 shrink-0 group-hover:rotate-12 transition-transform duration-300" />
+                <span className="truncate uppercase font-black text-slate-950">Upload</span>
+              </span>
+            </motion.button>
           </div>
 
           <div
@@ -986,14 +1062,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           {onClose && (
-            <button
+            <motion.button
               type="button"
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               onClick={onClose}
-              className="hidden sm:flex p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+              className="hidden sm:flex p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.15)]"
               title="Isara o Pumunta sa System Overview"
             >
               <X className="w-4 h-4" />
-            </button>
+            </motion.button>
           )}
         </div>
       </div>
@@ -1051,152 +1130,174 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <p className="text-[11px] sm:text-xs text-slate-300 leading-snug font-sans text-left">
                 May nais iulat ukol sa gawain, basura, suhestiyon o katanungan? Pwedeng magpadala ng anonymous na mensahe. Ang Admin account lamang ang makakakita nito at hindi malalaman ang inyong pagkakakilanlan.
               </p>
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.03, y: -2, boxShadow: '0 0 30px rgba(16,185,129,0.7)' }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                 onClick={() => setIsAnonymousModalOpen(true)}
-                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-bold text-[11px] sm:text-xs flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all cursor-pointer hover:scale-[1.01] active:scale-95 border border-emerald-400/50"
+                className="w-full py-2.5 px-3 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-[11px] sm:text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer border border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)] group"
               >
-                <EyeOff className="w-3.5 h-3.5 text-emerald-200" />
+                <EyeOff className="w-3.5 h-3.5 text-slate-950 group-hover:rotate-12 transition-transform duration-300" />
                 <span>Pindutin para Mag-send ng Anonymous Message</span>
-              </button>
+              </motion.button>
             </div>
 
             {/* Mobile quick switcher to Admin Login if in Overview mode */}
             <div className="flex sm:hidden items-center justify-between pt-1 px-1 text-[11px] font-mono">
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.05, x: 2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveView('login')}
                 className="text-white hover:text-emerald-300 font-bold underline flex items-center gap-1 cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Pumunta sa Admin Login</span>
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.05, x: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveView('event')}
                 className="text-emerald-300 hover:text-white font-bold underline flex items-center gap-1 cursor-pointer"
               >
                 <Radio className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Tingnan ang Advisory</span>
-              </button>
+              </motion.button>
             </div>
           </div>
 
           {/* --------------------------------------------------------------------- */}
           {/* RIGHT SIDE: POP-UP LOGIN BOX / BROADCAST CARD (FITS WHOLE SCREEN)     */}
           {/* --------------------------------------------------------------------- */}
-          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-xl xl:max-w-2xl mx-auto self-center ${activeView === 'overview' ? 'hidden lg:block' : 'block'}`}>
-            {isUnfolded && (
-              (activeView === 'event' || activeView === 'overview') && eventBroadcast ? (
+          <div className={`lg:col-span-6 xl:col-span-6 w-full max-w-full lg:max-w-2xl xl:max-w-3xl mx-auto self-center ${activeView === 'overview' ? 'hidden lg:block' : 'block'}`}>
+            <AnimatePresence mode="wait">
+              {isUnfolded && (
+                <motion.div
+                  key={activeView === 'login' ? 'login' : 'event'}
+                  initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  className="w-full"
+                >
+                  {(activeView === 'event' || activeView === 'overview') && eventBroadcast ? (
                 /* ========================================================================= */
-                /* EVENT BROADCAST CARD: FITS 100% ON MOBILE AND DESKTOP WITHOUT CUTOFFS     */
+                /* EVENT BROADCAST CARD: LARGER & MORE PROMINENT CONTENT                     */
                 /* ========================================================================= */
-                <div className="relative rounded-2xl lg:rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_35px_rgba(16,185,129,0.35),inset_0_0_15px_rgba(16,185,129,0.15)] bg-slate-950/85 hover:bg-slate-950/90 backdrop-blur-md p-2.5 xs:p-3 sm:p-4 lg:p-4 xl:p-5 space-y-1.5 sm:space-y-2.5 transition-all duration-300 hover:border-emerald-300 animate-scaleIn w-full">
+                <div className="relative rounded-3xl lg:rounded-3xl border-2 border-emerald-400 shadow-[0_0_50px_rgba(16,185,129,0.45),inset_0_0_20px_rgba(16,185,129,0.2)] bg-slate-950/90 backdrop-blur-xl p-4 sm:p-6 lg:p-8 space-y-3 sm:space-y-4 transition-all duration-300 hover:border-emerald-300 animate-scaleIn w-full">
                   {/* Top Bar inside Card */}
-                  <div className="flex items-center justify-between border-b border-white/10 pb-1.5 gap-2">
-                    <div className="flex items-center space-x-1.5 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="px-2 py-0.5 rounded-full text-[8.5px] sm:text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm truncate">
-                        <Radio className="w-3 h-3 text-emerald-400 animate-pulse shrink-0" />
+                  <div className="flex items-center justify-between border-b border-white/15 pb-3 gap-2">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                      <span className="px-3 py-1 rounded-full text-xs sm:text-sm font-mono font-bold bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-sm truncate">
+                        <Radio className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
                         <span className="truncate">Admin Guidelines & Advisory</span>
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-1.5 shrink-0">
-                      <span className="text-[9px] font-mono text-emerald-300 font-bold hidden xs:inline">
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-xs font-mono text-emerald-300 font-bold hidden xs:inline">
                         {eventBroadcast.startTime} PST
                       </span>
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                         onClick={() => setIsUnfolded(false)}
-                        className="p-1 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        className="p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-all cursor-pointer shadow"
                         title="Close Notice"
                       >
-                        <X className="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400" />
-                      </button>
+                        <X className="w-4 h-4 text-slate-300 hover:text-emerald-400" />
+                      </motion.button>
                     </div>
                   </div>
 
                   {/* Title & Location */}
-                  <div className="space-y-0.5 text-left">
-                    <h3 className="text-xs xs:text-sm sm:text-base lg:text-lg xl:text-xl font-black text-white leading-tight drop-shadow-md">
+                  <div className="space-y-1.5 text-left">
+                    <h3 className="text-base sm:text-xl lg:text-2xl xl:text-3xl font-black text-white leading-tight drop-shadow-md">
                       {eventBroadcast.activityTitle}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:text-xs font-mono">
-                      <p className="text-emerald-300 font-semibold flex items-center gap-1 drop-shadow">
-                        <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm font-mono">
+                      <p className="text-emerald-300 font-bold flex items-center gap-1.5 drop-shadow">
+                        <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span className="truncate">Brgy. {eventBroadcast.barangay} • {eventBroadcast.targetArea}</span>
                       </p>
-                      <p className="text-cyan-300 font-medium flex items-center gap-1 drop-shadow">
-                        <Clock className="w-3 h-3 text-cyan-400 shrink-0" />
+                      <p className="text-cyan-300 font-semibold flex items-center gap-1.5 drop-shadow">
+                        <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
                         <span>{eventBroadcast.startTime} – {eventBroadcast.estimatedEndTime} ({eventBroadcast.totalHours})</span>
                       </p>
                     </div>
                   </div>
 
                   {/* Event QR Code Box & Attendance Upload */}
-                  <div className="p-1.5 sm:p-2.5 rounded-xl bg-slate-950/70 border border-emerald-400/50 backdrop-blur-md shadow-md flex flex-row items-center gap-2 sm:gap-3.5 animate-fadeIn">
-                    <div className="p-1 bg-white rounded-lg shadow-sm border border-emerald-400/40 flex flex-col items-center shrink-0">
+                  <div className="p-3 sm:p-4 rounded-2xl bg-slate-950/80 border-2 border-emerald-400/60 backdrop-blur-md shadow-lg flex flex-row items-center gap-3.5 sm:gap-5 animate-fadeIn">
+                    <div className="p-2 bg-white rounded-xl shadow-md border border-emerald-400/50 flex flex-col items-center shrink-0">
                       {eventQrUrl || eventBroadcast.qrDataUrl ? (
                         <div className="relative inline-flex items-center justify-center">
                           <img
                             src={eventQrUrl || eventBroadcast.qrDataUrl}
                             alt="Official Event Attendance QR Code"
-                            className="w-14 h-14 sm:w-20 sm:h-20 lg:w-22 lg:h-22 object-contain"
+                            className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 object-contain"
                           />
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                            <div className="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-white p-0.5 border border-emerald-600 shadow-sm flex items-center justify-center">
-                              <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.2 border border-amber-400">
-                                <span className="text-[3.5px] sm:text-[5.5px] font-black text-emerald-300 leading-none">LGU</span>
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white p-0.5 border border-emerald-600 shadow-md flex items-center justify-center">
+                              <div className="w-full h-full rounded-full bg-[#022c22] flex flex-col items-center justify-center text-center p-0.5 border border-amber-400">
+                                <span className="text-[6px] sm:text-[8px] font-black text-emerald-300 leading-none">LGU</span>
                               </div>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center bg-slate-100 rounded-md">
-                          <QrCode className="w-10 h-10 text-slate-800" />
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center bg-slate-100 rounded-lg">
+                          <QrCode className="w-16 h-16 text-slate-800" />
                         </div>
                       )}
-                      <span className="text-[6.5px] sm:text-[7.5px] font-mono font-black text-slate-900 mt-0.5 uppercase tracking-tight">
+                      <span className="text-[9px] sm:text-[11px] font-mono font-black text-slate-900 mt-1 uppercase tracking-tight">
                         SCAN ATTENDANCE
                       </span>
                     </div>
 
-                    <div className="space-y-1 text-left flex-1 min-w-0 w-full">
-                      <div className="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[7.5px] sm:text-[9.5px] font-mono font-bold">
-                        <QrCode className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                    <div className="space-y-2 text-left flex-1 min-w-0 w-full">
+                      <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 text-xs sm:text-sm font-mono font-bold">
+                        <QrCode className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>EVENT ATTENDANCE QR CODE</span>
                       </div>
-                      <p className="text-[9px] sm:text-[11px] text-slate-200 font-sans leading-tight">
-                        I-scan sa mobile camera o i-tap para mag-upload ng attendance:
+                      <p className="text-xs sm:text-sm text-slate-100 font-sans leading-relaxed">
+                        I-scan sa mobile camera o i-tap ang button sa ibaba para mag-upload ng iyong attendance:
                       </p>
                       
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.03, y: -2, boxShadow: '0 0 30px rgba(16,185,129,0.8)' }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                         onClick={() => {
                           if (onOpenUploadAccomplishment) {
                             onOpenUploadAccomplishment();
                           }
                         }}
-                        className="w-full py-1.5 px-2.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 font-mono font-black text-[10px] sm:text-xs flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all cursor-pointer border border-emerald-300 active:scale-95"
+                        className="w-full py-3 px-4 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all cursor-pointer border border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.6)] group"
                       >
-                        <Camera className="w-3.5 h-3.5 text-slate-950 shrink-0" />
-                        <span className="uppercase font-extrabold truncate">Upload Attendance Photo</span>
-                        <Upload className="w-3 h-3 text-slate-950 shrink-0" />
-                      </button>
+                        <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 shrink-0 group-hover:rotate-12 transition-transform duration-300" />
+                        <span className="uppercase font-black truncate tracking-wide text-xs sm:text-sm">Upload Attendance Photo</span>
+                        <Upload className="w-4 h-4 text-slate-950 shrink-0 group-hover:-translate-y-0.5 transition-transform duration-300" />
+                      </motion.button>
                     </div>
                   </div>
 
-                  {/* 3-Column Compact Reminder Grid (3 columns on both Mobile and Desktop to NEVER overflow vertically) */}
-                  <div className="grid grid-cols-3 gap-1 sm:gap-1.5 text-[9.5px] sm:text-[11px] font-mono text-slate-300 text-left">
+                  {/* 3-Column Reminder Grid (Larger and clearer) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs sm:text-sm font-mono text-slate-200 text-left">
                     {eventBroadcast.requiredTools && (
-                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
+                      <div className="bg-slate-950/70 p-3 rounded-2xl border border-white/15 backdrop-blur-sm flex flex-col justify-between shadow-md">
                         <div>
-                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
-                            <Wrench className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 shrink-0" />
-                            <span className="truncate">Tools:</span>
+                          <div className="flex items-center space-x-1.5 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">
+                            <Wrench className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span className="truncate">Tools Required:</span>
                           </div>
-                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
+                          <span className="text-white text-xs sm:text-sm leading-relaxed block">
                             {eventBroadcast.requiredTools}
                           </span>
                         </div>
@@ -1204,13 +1305,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     )}
 
                     {eventBroadcast.waterTumblerReminder && (
-                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
+                      <div className="bg-slate-950/70 p-3 rounded-2xl border border-white/15 backdrop-blur-sm flex flex-col justify-between shadow-md">
                         <div>
-                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
-                            <Coffee className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400 shrink-0" />
+                          <div className="flex items-center space-x-1.5 text-cyan-400 font-bold text-xs uppercase tracking-wider mb-1">
+                            <Coffee className="w-4 h-4 text-cyan-400 shrink-0" />
                             <span className="truncate">Hydration:</span>
                           </div>
-                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
+                          <span className="text-white text-xs sm:text-sm leading-relaxed block">
                             {eventBroadcast.waterTumblerReminder}
                           </span>
                         </div>
@@ -1218,13 +1319,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     )}
 
                     {eventBroadcast.recommendedAttire && (
-                      <div className="bg-slate-950/60 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm flex flex-col justify-between">
+                      <div className="bg-slate-950/70 p-3 rounded-2xl border border-white/15 backdrop-blur-sm flex flex-col justify-between shadow-md">
                         <div>
-                          <div className="flex items-center space-x-1 text-slate-400 font-bold text-[7.5px] sm:text-[8.5px] uppercase tracking-wider mb-0.5">
-                            <Shirt className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-teal-400 shrink-0" />
-                            <span className="truncate">Attire:</span>
+                          <div className="flex items-center space-x-1.5 text-teal-400 font-bold text-xs uppercase tracking-wider mb-1">
+                            <Shirt className="w-4 h-4 text-teal-400 shrink-0" />
+                            <span className="truncate">Recommended Attire:</span>
                           </div>
-                          <span className="text-white text-[8.5px] sm:text-[10.5px] leading-tight block line-clamp-3 hover:line-clamp-none">
+                          <span className="text-white text-xs sm:text-sm leading-relaxed block">
                             {eventBroadcast.recommendedAttire}
                           </span>
                         </div>
@@ -1234,19 +1335,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                   {/* Additional LGU Admin Notes */}
                   {eventBroadcast.additionalNotes && (
-                    <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-slate-950/45 border border-emerald-500/25 text-[9.5px] sm:text-[11px] font-sans text-slate-200 leading-snug text-left">
-                      <strong className="text-emerald-300 font-semibold">Admin Notes:</strong> {eventBroadcast.additionalNotes}
+                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-950/60 border border-emerald-500/35 text-xs sm:text-sm font-sans text-slate-100 leading-relaxed text-left shadow-md">
+                      <strong className="text-emerald-300 font-bold block mb-0.5 text-xs uppercase tracking-wider">Admin Notes & Instructions:</strong> 
+                      {eventBroadcast.additionalNotes}
                     </div>
                   )}
 
                   {/* Bottom Author Row */}
-                  <div className="text-[8.5px] sm:text-[10px] font-mono text-slate-400 pt-1 text-right border-t border-white/10 flex items-center justify-between">
-                    <span className="text-emerald-300 font-semibold flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <div className="text-xs sm:text-sm font-mono text-slate-300 pt-2 text-right border-t border-white/15 flex items-center justify-between">
+                    <span className="text-emerald-300 font-bold flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>{eventTimeLeft.formatted} remaining</span>
                     </span>
                     <span className="truncate">
-                      Broadcasted by: <strong className="text-emerald-400">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
+                      Broadcasted by: <strong className="text-emerald-400 font-bold">{eventBroadcast.sentByAdminName || 'Admin Officer'}</strong>
                     </span>
                   </div>
                 </div>
@@ -1266,14 +1368,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-2 shrink-0">
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                         onClick={() => setIsUnfolded(false)}
                         className="p-1 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white transition-all cursor-pointer"
                         title="Close Notice"
                       >
                         <X className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
 
@@ -1358,14 +1463,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   }}
                 >
                   {/* Pop-Up Close Icon (X) on Top Right */}
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ scale: 1.15, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                     onClick={() => setIsUnfolded(false)}
-                    className="absolute top-3 right-3 z-30 p-1.5 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-md hover:scale-105 backdrop-blur-sm"
+                    className="absolute top-3 right-3 z-30 p-1.5 rounded-full bg-slate-900/60 hover:bg-emerald-950/80 border border-emerald-500/50 text-slate-300 hover:text-white transition-all cursor-pointer shadow-md backdrop-blur-sm"
                     title="Isara ang Login Box"
                   >
                     <X className="w-4 h-4 text-emerald-400" />
-                  </button>
+                  </motion.button>
 
                   {/* LEFT SIDE FORM PANEL */}
                   <div className="md:col-span-7 p-3.5 sm:p-5 lg:p-6 flex flex-col justify-between space-y-3 sm:space-y-4 relative z-10 animate-fadeIn">
@@ -1436,90 +1544,39 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: 'transparent' }}
                             className="w-full bg-transparent text-white placeholder-slate-300 text-sm font-medium font-sans focus:outline-none"
                           />
-                          <button
+                          <motion.button
                             type="button"
+                            whileHover={{ scale: 1.2, rotate: 15 }}
+                            whileTap={{ scale: 0.9 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                             onClick={() => setShowPassword(!showPassword)}
                             className="text-slate-300 hover:text-emerald-300 transition-colors cursor-pointer ml-2"
                           >
                             {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
+                          </motion.button>
                         </div>
                       </div>
 
-                      {/* Pill-Shaped Green Gradient Login Button */}
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-2.5 sm:py-3 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs sm:text-sm tracking-wide shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-400/50 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer disabled:opacity-50"
-                      >
+
+                      {/* Clean Login Submit Button */}
+                      <div className="pt-2">
                         {isLoading ? (
-                          <span className="flex items-center space-x-2">
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Naglo-log in...</span>
-                          </span>
+                          <div className="w-full py-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-mono text-sm font-bold flex items-center justify-center space-x-2 shadow-inner">
+                            <span className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                            <span>Naglo-log in sa system...</span>
+                          </div>
                         ) : (
-                          <span className="flex items-center space-x-1.5 uppercase font-extrabold tracking-wider">
-                            <LogIn className="w-4 h-4" />
-                            <span>Login sa Admin</span>
-                          </span>
+                          <motion.button
+                            type="submit"
+                            whileHover={{ scale: 1.03, y: -2, boxShadow: '0 0 30px rgba(16,185,129,0.7)' }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                            className="w-full py-3 px-4 rounded-xl fluid-btn-emerald text-slate-950 font-mono font-black text-xs sm:text-sm flex items-center justify-center space-x-2 transition-all cursor-pointer border border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.5)] group"
+                          >
+                            <LogIn className="w-4 h-4 text-slate-950 shrink-0 group-hover:translate-x-1 transition-transform duration-300" />
+                            <span className="uppercase font-black tracking-wider">Mag-log in sa System</span>
+                          </motion.button>
                         )}
-                      </button>
-
-                      {/* Quick One-Tap Admin Access (Highly User Friendly on Mobile & Desktop) */}
-                      <div className="pt-2 border-t border-slate-700/60 text-left space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                          <span className="font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-emerald-400" />
-                            Quick Admin Access:
-                          </span>
-                          <span className="text-slate-400 text-[9px]">Pindutin para mabilisang mag-fill</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEmail('superadmin');
-                              setPassword('pesoadmin');
-                            }}
-                            className="p-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 text-[10px] sm:text-[10.5px] font-mono text-emerald-300 font-bold flex items-center justify-center space-x-1 transition-all active:scale-95 cursor-pointer"
-                            title="Auto-fill Superadmin Account (Engr. John Mark N. Orlasan)"
-                          >
-                            <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
-                            <span className="truncate">Superadmin (PESO)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEmail('admin');
-                              setPassword('admin123');
-                            }}
-                            className="p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-[10px] sm:text-[10.5px] font-mono text-white font-bold flex items-center justify-center space-x-1 transition-all active:scale-95 cursor-pointer"
-                            title="Auto-fill Operations Admin Account"
-                          >
-                            <UserIcon className="w-3 h-3 text-cyan-400 shrink-0" />
-                            <span className="truncate">Admin (MENRO)</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Quick Mobile Helper Navigation Links */}
-                      <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-300">
-                        <button
-                          type="button"
-                          onClick={() => setIsAnonymousModalOpen(true)}
-                          className="text-emerald-400 hover:text-emerald-300 underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <EyeOff className="w-3 h-3" />
-                          <span>Anonymous Report</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveView('event')}
-                          className="text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Radio className="w-3 h-3" />
-                          <span>Advisory & QR</span>
-                        </button>
                       </div>
                     </form>
                   </div>
@@ -1548,9 +1605,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </div>
                   </div>
                 </div>
-              )
-            )}
-          </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
         </div>
       </div>
 

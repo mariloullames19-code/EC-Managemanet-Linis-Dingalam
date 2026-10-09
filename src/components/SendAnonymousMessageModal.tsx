@@ -320,12 +320,12 @@ export const SendAnonymousMessageModal: React.FC<SendAnonymousMessageModalProps>
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Action Buttons with Fluid Color Flow Animation */}
               <div className="grid grid-cols-2 gap-3 pt-2 font-mono">
                 <button
                   type="button"
                   onClick={handleResetAndClose}
-                  className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                  className="py-3 rounded-xl fluid-btn-slate text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700/60 active:scale-95 hover:text-white"
                 >
                   Kanselahin
                 </button>
@@ -333,7 +333,7 @@ export const SendAnonymousMessageModal: React.FC<SendAnonymousMessageModalProps>
                 <button
                   type="submit"
                   disabled={isSubmitting || !messageText.trim()}
-                  className="py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 text-xs font-black shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="py-3 rounded-xl fluid-btn-amber text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50 border border-amber-300/40 active:scale-95"
                 >
                   {isSubmitting ? (
                     <>
@@ -342,8 +342,8 @@ export const SendAnonymousMessageModal: React.FC<SendAnonymousMessageModalProps>
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
-                      <span>Ipadala sa Admin (Anonymous)</span>
+                      <Send className="w-4 h-4 text-slate-950 shrink-0" />
+                      <span className="tracking-tight">Ipadala sa Admin (Anonymous)</span>
                     </>
                   )}
                 </button>
